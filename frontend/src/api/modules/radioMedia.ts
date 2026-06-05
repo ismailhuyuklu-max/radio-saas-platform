@@ -900,6 +900,31 @@ export interface MetricsResponse {
   sampled_at: string;
 }
 
+// --- Media library / player --------------------------------------------------
+
+export interface MediaLibraryItem {
+  id: string;
+  kind: 'content' | 'sponsor';
+  title: string;
+  part_code: string;
+  slot_time?: string | null;
+  region_code: string;
+  region_name: string;
+  render_state?: string;
+  placement_type?: string;
+  is_global?: boolean;
+  url: string;
+}
+
+export interface MediaLibraryResponse {
+  content: MediaLibraryItem[];
+  sponsors: MediaLibraryItem[];
+}
+
+export function getMediaLibrary() {
+  return requestClient.get<MediaLibraryResponse>('/media-library');
+}
+
 export function getHealth() {
   return requestClient.get<HealthResponse>('/monitoring/health');
 }

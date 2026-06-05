@@ -25,6 +25,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/media-library',
+        name: 'RadioPlatformMediaLibrary',
+        component: () => import('#/views/radio-platform/media-library/index.vue'),
+        meta: {
+          perm: 'matrix:view',
+          icon: 'lucide:music',
+          title: 'Medya Kütüphanesi',
+          authCode: 'radio:matrix:view',
+        },
+      },
+      {
         path: '/radio-platform/dashboard',
         name: 'RadioPlatformDashboard',
         component: () => import('#/views/radio-platform/dashboard/index.vue'),

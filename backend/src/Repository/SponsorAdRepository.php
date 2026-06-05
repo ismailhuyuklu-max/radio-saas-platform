@@ -69,6 +69,22 @@ final class SponsorAdRepository
         $stmt->execute(['id' => $id]);
     }
 
+    /** Resolve a sponsor id to its playable asset object. */
+    public function findPlayable(string $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT asset_bucket, asset_key, asset_mime FROM sponsors_ads WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        if ($row === false || empty($row['asset_key'])) {
+            return null;
+        }
+        return [
+            'bucket' => $row['asset_bucket'] ?: 'radio-raw',
+            'key' => $row['asset_key'],
+            'mime' => $row['asset_mime'] ?: 'audio/mpeg',
+        ];
+    }
+
     public function listBestForRegionAndContent(string $regionId, string $contentType): array
     {
         $stmt = $this->pdo->prepare(

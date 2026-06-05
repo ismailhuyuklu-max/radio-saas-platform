@@ -8,6 +8,7 @@ use RadioSaaS\Controller\AccessController;
 use RadioSaaS\Controller\AdTrafficController;
 use RadioSaaS\Controller\MatrixController;
 use RadioSaaS\Controller\MediaController;
+use RadioSaaS\Controller\MediaLibraryController;
 use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
@@ -493,6 +494,7 @@ $planningController = new PlanningController($adminAuthenticator, $planRepositor
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
+$mediaLibraryController = new MediaLibraryController($adminAuthenticator, $mediaRepository, $sponsorRepository, $storage);
 $reportController = new ReportController($adminAuthenticator, $adCampaignRepository, $planRepository, $stationRepository, $auditLogRepository);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -672,6 +674,16 @@ try {
 
     if ($method === 'GET' && preg_match('#^/api/v1/reports/([a-z-]+)$#', $path, $matches)) {
         $reportController->export($matches[1]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/media-library') {
+        $mediaLibraryController->index();
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/api/v1/media-stream/(content|sponsor)/([^/]+)$#', $path, $matches)) {
+        $mediaLibraryController->stream($matches[1], $matches[2]);
         return;
     }
 

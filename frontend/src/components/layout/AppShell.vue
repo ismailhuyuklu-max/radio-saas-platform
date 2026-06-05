@@ -23,6 +23,7 @@ const allNavGroups: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { path: '/radio-platform/operations', label: 'Yayın Merkezi', icon: 'activity', perm: 'matrix:view' },
       { path: '/radio-platform/dashboard', label: 'Genel Bakış', icon: 'grid', perm: 'matrix:view' },
+      { path: '/radio-platform/media-library', label: 'Medya Kütüphanesi', icon: 'music', perm: 'matrix:view' },
     ],
   },
   {
@@ -70,6 +71,7 @@ const navGroups = computed(() => {
 const ICONS: Record<string, string> = {
   grid: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
   activity: 'M3 12h4l2 6 4-14 2 8h6',
+  music: 'M9 18V5l12-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   gantt: 'M4 5h10 M4 10h14 M4 15h7 M4 20h11',
   kanban: 'M4 4h4v16H4z M10 4h4v10h-4z M16 4h4v7h-4z',
   trending: 'M3 17l6-6 4 4 8-8 M15 7h6v6',

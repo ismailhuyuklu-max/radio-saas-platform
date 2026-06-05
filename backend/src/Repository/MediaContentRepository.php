@@ -41,6 +41,39 @@ final class MediaContentRepository
         return $this->findLatestRenderable($regionId, $partCode);
     }
 
+    /** All media for the admin media-library/player (newest first within type). */
+    public function listLibrary(int $limit = 500): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT m.id, m.title, m.part_code, m.slot_time, m.render_state, m.source_mime,
+                    r.code AS region_code, r.name AS region_name, m.created_at
+             FROM media_contents m
+             INNER JOIN regions r ON r.id = m.region_id
+             ORDER BY m.part_code ASC, r.name ASC, m.slot_time ASC NULLS FIRST, m.created_at DESC
+             LIMIT ' . max(1, min(2000, $limit))
+        );
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /** Resolve a media id to its playable object (rendered if available, else source). */
+    public function findPlayable(string $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT rendered_bucket, rendered_key, source_bucket, source_key, source_mime
+             FROM media_contents WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        if ($row === false) {
+            return null;
+        }
+        return [
+            'bucket' => $row['rendered_bucket'] ?: $row['source_bucket'],
+            'key' => $row['rendered_key'] ?: $row['source_key'],
+            'mime' => $row['source_mime'] ?: 'audio/mpeg',
+        ];
+    }
+
     public function findLatestRenderable(string $regionId, string $partCode): ?array
     {
         $stmt = $this->pdo->prepare(
