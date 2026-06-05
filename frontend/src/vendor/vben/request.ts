@@ -19,6 +19,18 @@ interface RequestCallConfig {
   headers?: Record<string, string>;
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+/** Register a global handler invoked whenever any request returns HTTP 401. */
+export function onUnauthorized(handler: () => void) {
+  unauthorizedHandler = handler;
+}
+
+/** Manually trigger the registered 401 handler (used by non-RequestClient fetch paths). */
+export function notifyUnauthorized() {
+  unauthorizedHandler?.();
+}
+
 function toQueryString(params?: Record<string, unknown>) {
   if (!params) {
     return '';
@@ -115,6 +127,9 @@ export class RequestClient {
     const response = await fetch(requestUrl, requestInit);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        notifyUnauthorized();
+      }
       const errorText = await response.text().catch(() => '');
       throw new Error(errorText || `Request failed with status ${response.status}`);
     }

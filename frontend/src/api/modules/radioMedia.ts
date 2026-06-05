@@ -1,3 +1,5 @@
+import { notifyUnauthorized } from '@vben/request';
+
 import { requestClient } from '#/api/request';
 
 export type RegionCode =
@@ -346,6 +348,9 @@ async function sendApiRequest<T>(method: 'PATCH' | 'DELETE', path: string, data?
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
     const errorText = await response.text().catch(() => '');
     throw new Error(errorText || `Request failed with status ${response.status}`);
   }
