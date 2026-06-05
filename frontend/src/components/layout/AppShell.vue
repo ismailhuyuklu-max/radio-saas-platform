@@ -26,6 +26,7 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Yayın Yönetimi',
     items: [
+      { path: '/radio-platform/timeline', label: 'Zaman Çizelgesi', icon: 'gantt' },
       { path: '/radio-platform/planning', label: 'Planlama', icon: 'calendar' },
       { path: '/radio-platform/matrix', label: 'Bölgesel Durum', icon: 'map' },
       { path: '/radio-platform/stations', label: 'İstasyonlar', icon: 'tower' },
@@ -42,6 +43,7 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
 const ICONS: Record<string, string> = {
   grid: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
   activity: 'M3 12h4l2 6 4-14 2 8h6',
+  gantt: 'M4 5h10 M4 10h14 M4 15h7 M4 20h11',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   calendar: 'M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4',
   tower: 'M12 13v8 M8 9a5 5 0 0 1 8 0 M5 6a9 9 0 0 1 14 0 M12 12a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',

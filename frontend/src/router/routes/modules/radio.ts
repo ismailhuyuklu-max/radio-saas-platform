@@ -68,6 +68,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/timeline',
+        name: 'RadioPlatformTimeline',
+        component: () => import('#/views/radio-platform/timeline/index.vue'),
+        meta: {
+          icon: 'lucide:gantt-chart',
+          title: 'Zaman Çizelgesi',
+          keepAlive: true,
+          authCode: 'radio:planning:view',
+        },
+      },
+      {
         path: '/radio-platform/planning',
         name: 'RadioPlatformPlanning',
         component: () => import('#/views/radio-platform/planning/index.vue'),
