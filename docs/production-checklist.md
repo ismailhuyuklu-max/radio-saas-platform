@@ -102,3 +102,26 @@ curl -f http://localhost/api/v1/feeds/sample-station/news.json
 - Keep `frontend/dist/` synchronized with the deployed static bundle.
 - Keep PHP image builds immutable; do not bind-mount source code in production.
 - Ensure `media_jobs` has a monitoring alert for failed or stuck jobs.
+
+## 8. Security Hardening (REQUIRED before production)
+
+Set these before the first `migrate` run and before exposing the stack:
+
+| Variable | Purpose | Notes |
+|----------|---------|-------|
+| `APP_ENV=production` | Hardens runtime | Force-disables demo mode (auth bypass) even if `LOCAL_DEMO_MODE=1`; enables default-secret warnings in the server log. |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Seeded admin account | Read by `bin/migrate.php`. Set a strong `ADMIN_PASSWORD` **before** the first migration. With `APP_ENV=production`, leaving it as `123456` logs a `[SECURITY]` warning to STDERR. |
+| `POSTGRES_PASSWORD` | Database secret | Rotate from the default `radio_saas_password`. |
+| `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | Object storage secrets | Rotate from `minioadmin` / `minioadmin123`. In production these are also surfaced as a `[SECURITY]` log warning if left default. |
+| `MAX_UPLOAD_BYTES` | Upload size cap | Default `209715200` (200 MB). Uploads above this are rejected with HTTP 400. |
+
+Additional hardening already enforced in code:
+
+- **Upload validation**: `POST /media/upload` and `POST /sponsors/upload` detect the MIME type **server-side** (`finfo`) and reject anything outside the audio/video allowlist (`audio/mpeg`, `audio/wav`, `audio/mp4`, `audio/aac`, `audio/ogg`, `video/mp4`). The client-supplied `Content-Type` is never trusted.
+- **Demo mode** (`LOCAL_DEMO_MODE`) is for local development only and is hard-disabled whenever `APP_ENV=production`.
+
+Still operator-owned (set for your environment):
+
+- **CORS**: replace the `example.com` placeholder in `docker/nginx/nginx.prod.conf` (the `$cors_allow_origin` map) with your real panel domain(s), and set `MINIO_API_CORS_ALLOW_ORIGIN` to match.
+- **TLS**: terminate HTTPS at the nginx gateway (or an upstream load balancer) before exposing publicly.
+- **Tokens**: the frontend currently stores the session token in `localStorage`; for a hardened deployment consider serving it as an `HttpOnly` cookie.
