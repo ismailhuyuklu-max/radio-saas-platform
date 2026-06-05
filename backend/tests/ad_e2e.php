@@ -89,6 +89,24 @@ try {
     check(isset($found['metrics']['projected_revenue']) && $found['metrics']['projected_revenue'] > 0, 'campaign has positive projected revenue');
     check($found['metrics']['delivered_revenue'] > 0, 'campaign has delivered revenue (run already started)');
 
+    // record an actual airing → delivered revenue should switch to real data
+    [$c, $b] = call('POST', $base . '/ad-campaigns/' . $campaignId . '/airings', $superToken, [
+        'region_code' => 'marmara', 'part_code' => 'news', 'impressions' => 1000000,
+    ]);
+    check($c === 201, "record airing → 201 (got {$c})");
+    [, $b] = call('GET', $base . '/ad-campaigns', $superToken);
+    $afterAir = null;
+    foreach ($b['campaigns'] ?? [] as $row) {
+        if (($row['id'] ?? '') === $campaignId) {
+            $afterAir = $row;
+        }
+    }
+    check(($afterAir['metrics']['has_actuals'] ?? false) === true, 'campaign now flagged has_actuals');
+    check(($afterAir['metrics']['delivered_impressions'] ?? 0) === 1000000, 'delivered impressions from recorded airing');
+    // viewer cannot record airings (ad:write)
+    [$c] = call('POST', $base . '/ad-campaigns/' . $campaignId . '/airings', $viewerToken, ['region_code' => 'ege']);
+    check($c === 403, "viewer cannot record airing → 403 (got {$c})");
+
     // RBAC: viewer can read, cannot write
     [$c] = call('GET', $base . '/ad-campaigns', $viewerToken);
     check($c === 200, "viewer GET /ad-campaigns → 200 (got {$c})");

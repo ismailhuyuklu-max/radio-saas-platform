@@ -244,4 +244,18 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ad_campaigns_status_dates ON ad_campaigns (status, starts_at, ends_at)');
 
+// Faz 4 (realism) — recorded ad airings. When present, revenue is computed from
+// actual airings instead of the time-based projection.
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS ad_airings (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        campaign_id uuid NOT NULL REFERENCES ad_campaigns(id) ON DELETE CASCADE,
+        region_code varchar(32) NOT NULL,
+        part_code varchar(32) NOT NULL DEFAULT 'news',
+        impressions integer NOT NULL DEFAULT 0,
+        aired_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_ad_airings_campaign ON ad_airings (campaign_id)');
+
 echo "Migrations complete.\n";

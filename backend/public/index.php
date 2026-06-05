@@ -664,6 +664,11 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/api/v1/ad-campaigns/([^/]+)/airings$#', $path, $matches)) {
+        $adTrafficController->recordAiring($matches[1]);
+        return;
+    }
+
     if ($method === 'PATCH' && preg_match('#^/api/v1/ad-campaigns/([^/]+)$#', $path, $matches)) {
         $adTrafficController->update($matches[1]);
         return;

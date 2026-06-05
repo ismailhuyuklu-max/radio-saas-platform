@@ -24,17 +24,47 @@ final class AdTrafficController
         $this->guard('ad:view');
         $today = date('Y-m-d');
         $campaigns = $this->campaignRepository->listAll();
+        $actuals = $this->campaignRepository->airingTotals();
 
-        $enriched = array_map(static function (array $campaign) use ($today): array {
-            $campaign['metrics'] = RevenueService::computeCampaign($campaign, $today);
+        $enriched = array_map(static function (array $campaign) use ($today, $actuals): array {
+            $actual = $actuals[(string) ($campaign['id'] ?? '')] ?? null;
+            $campaign['metrics'] = RevenueService::computeCampaign($campaign, $today, $actual);
             return $campaign;
         }, $campaigns);
 
         $this->respond([
             'campaigns' => $enriched,
-            'summary' => RevenueService::summary($campaigns, $today),
+            'summary' => RevenueService::summary($campaigns, $today, $actuals),
             'region_reach' => RevenueService::REGION_REACH,
         ]);
+    }
+
+    /** Record an actual ad airing (typically called by broadcast automation). */
+    public function recordAiring(string $campaignId): void
+    {
+        $this->guard('ad:write');
+        $campaign = $this->campaignRepository->findById($campaignId);
+        if ($campaign === null) {
+            throw new RuntimeException('Campaign not found.');
+        }
+        $payload = $this->readJsonPayload();
+        $region = trim((string) ($payload['region_code'] ?? ''));
+        if ($region === '') {
+            throw new RuntimeException('region_code is required.');
+        }
+        $part = trim((string) ($payload['part_code'] ?? 'news'));
+        // Default impressions to the region's estimated reach when not supplied.
+        $impressions = isset($payload['impressions'])
+            ? max(0, (int) $payload['impressions'])
+            : (RevenueService::REGION_REACH[$region] ?? 0);
+
+        $this->campaignRepository->recordAiring($campaignId, $region, $part, $impressions);
+        $this->auditLogRepository->log('admin', 'record_airing', 'ad_campaign', $campaignId, [
+            'region' => $region,
+            'impressions' => $impressions,
+        ]);
+
+        $this->respond(['code' => 0, 'result' => ['recorded' => true, 'impressions' => $impressions], 'message' => 'Success'], 201);
     }
 
     public function store(): void

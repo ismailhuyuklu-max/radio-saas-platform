@@ -86,7 +86,14 @@ final class RevenueService
      * @param array<string, mixed> $campaign
      * @return array<string, mixed>
      */
-    public static function computeCampaign(array $campaign, string $today): array
+    /**
+     * @param array<string, mixed> $campaign
+     * @param array{spots:int, impressions:int}|null $actual Recorded airings; when
+     *        present (spots > 0), delivered figures come from real data instead
+     *        of the time-based projection.
+     * @return array<string, mixed>
+     */
+    public static function computeCampaign(array $campaign, string $today, ?array $actual = null): array
     {
         $model = (string) ($campaign['pricing_model'] ?? 'cpm');
         $rate = (float) ($campaign['rate'] ?? 0);
@@ -111,6 +118,14 @@ final class RevenueService
         $flatDelivered = $totalDays > 0 ? $budget * ($deliveredDays / $totalDays) : 0.0;
 
         $projectedRevenue = self::revenueFor($model, $rate, $budget, $projectedSpots, $projectedImpressions);
+
+        // Prefer real recorded airings for the delivered figures when available.
+        $hasActuals = $actual !== null && (int) ($actual['spots'] ?? 0) > 0;
+        if ($hasActuals) {
+            $deliveredSpots = (int) $actual['spots'];
+            $deliveredImpressions = (int) $actual['impressions'];
+        }
+
         $deliveredRevenue = $model === 'flat'
             ? $flatDelivered
             : self::revenueFor($model, $rate, $budget, $deliveredSpots, $deliveredImpressions);
@@ -131,6 +146,7 @@ final class RevenueService
             'budget_used_pct' => round($budgetUsedPct, 1),
             'over_budget' => $overBudget,
             'reach_per_day' => $reachSum * $spotsPerDay,
+            'has_actuals' => $hasActuals,
         ];
     }
 
@@ -140,7 +156,12 @@ final class RevenueService
      * @param list<array<string, mixed>> $campaigns
      * @return array<string, mixed>
      */
-    public static function summary(array $campaigns, string $today): array
+    /**
+     * @param list<array<string, mixed>> $campaigns
+     * @param array<string, array{spots:int, impressions:int}> $actualsByCampaign
+     * @return array<string, mixed>
+     */
+    public static function summary(array $campaigns, string $today, array $actualsByCampaign = []): array
     {
         $totalProjected = 0.0;
         $totalDelivered = 0.0;
@@ -152,7 +173,8 @@ final class RevenueService
         $byModel = ['cpm' => 0.0, 'cpp' => 0.0, 'flat' => 0.0];
 
         foreach ($campaigns as $campaign) {
-            $m = self::computeCampaign($campaign, $today);
+            $actual = $actualsByCampaign[(string) ($campaign['id'] ?? '')] ?? null;
+            $m = self::computeCampaign($campaign, $today, $actual);
             $totalProjected += $m['projected_revenue'];
             $totalDelivered += $m['delivered_revenue'];
             $totalImpressions += $m['projected_impressions'];

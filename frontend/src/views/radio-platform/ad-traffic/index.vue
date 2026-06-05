@@ -300,7 +300,12 @@ onMounted(load);
               </div>
             </div>
             <div class="ad__camp-rev">
-              <span class="ad__camp-rev-val">{{ formatCurrency(c.metrics?.delivered_revenue ?? 0) }}</span>
+              <span class="ad__camp-rev-val">
+                {{ formatCurrency(c.metrics?.delivered_revenue ?? 0) }}
+                <em class="ad__src" :class="c.metrics?.has_actuals ? 'is-real' : 'is-est'">
+                  {{ c.metrics?.has_actuals ? 'gerçek' : 'tahmini' }}
+                </em>
+              </span>
               <span class="ad__camp-rev-sub">/ {{ formatCurrency(c.metrics?.projected_revenue ?? 0) }}</span>
               <span class="ad__camp-bud" :class="{ 'is-over': c.metrics?.over_budget }">
                 bütçe {{ formatPercent(c.metrics?.budget_used_pct ?? 0) }}
@@ -319,8 +324,9 @@ onMounted(load);
     </section>
 
     <p class="ad__note">
-      Not: Gösterim ve gelir rakamları, planlanan spot sayısı × bölgesel tahmini dinleyici
-      erişimine göre hesaplanır (gerçek dinleyici telemetrisi değil).
+      Not: Yayın kaydı (airing) varsa gelir <strong>gerçek</strong> verilerden hesaplanır;
+      yoksa planlanan spot × bölgesel tahmini erişimden <strong>tahmini</strong> projeksiyon
+      kullanılır. Yayın otomasyonu her reklam çalındığında airing kaydı gönderebilir.
     </p>
 
     <!-- Create / edit modal -->
@@ -548,6 +554,24 @@ onMounted(load);
 .ad__camp-rev-sub {
   font-size: var(--t-xs);
   color: var(--c-text-3);
+}
+.ad__src {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.ad__src.is-real {
+  color: var(--c-ok);
+  background: rgba(52, 211, 153, 0.14);
+}
+.ad__src.is-est {
+  color: var(--c-text-3);
+  background: rgba(148, 163, 184, 0.14);
 }
 .ad__camp-bud {
   font-size: 10px;

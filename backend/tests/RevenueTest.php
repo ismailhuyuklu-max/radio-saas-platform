@@ -84,6 +84,28 @@ $flat = RevenueService::computeCampaign([
 check(near($flat['projected_revenue'], 1000.0), 'flat projected = budget');
 check(near($flat['delivered_revenue'], 500.0), 'flat delivered pro-rata (5/10)');
 
+// actuals override the time-based delivered figures
+$withActuals = RevenueService::computeCampaign([
+    'pricing_model' => 'cpm',
+    'rate' => 50,
+    'budget' => 1_000_000,
+    'spots_per_day' => 2,
+    'target_regions' => ['marmara'],
+    'starts_at' => '2026-06-01',
+    'ends_at' => '2026-06-10',
+    'status' => 'active',
+], '2026-06-05', ['spots' => 10, 'impressions' => 2_000_000]);
+check($withActuals['has_actuals'] === true, 'has_actuals true when airings present');
+check($withActuals['delivered_impressions'] === 2_000_000, 'delivered impressions from actual airings');
+check(near($withActuals['delivered_revenue'], 100_000.0), 'delivered revenue from actual (2M/1000*50)');
+check($withActuals['projected_revenue'] === $cpm['projected_revenue'], 'projection unchanged by actuals');
+
+$noActuals = RevenueService::computeCampaign([
+    'pricing_model' => 'cpm', 'rate' => 50, 'budget' => 0, 'spots_per_day' => 2,
+    'target_regions' => ['marmara'], 'starts_at' => '2026-06-01', 'ends_at' => '2026-06-10', 'status' => 'active',
+], '2026-06-05', ['spots' => 0, 'impressions' => 0]);
+check($noActuals['has_actuals'] === false, 'has_actuals false when zero airings (falls back to estimate)');
+
 // summary
 $summary = RevenueService::summary([
     [

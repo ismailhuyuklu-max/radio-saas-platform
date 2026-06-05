@@ -84,6 +84,36 @@ final class AdCampaignRepository
         return $stmt->rowCount() > 0;
     }
 
+    public function recordAiring(string $campaignId, string $region, string $part, int $impressions): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO ad_airings (campaign_id, region_code, part_code, impressions)
+             VALUES (:c, :r, :p, :i)'
+        );
+        $stmt->execute(['c' => $campaignId, 'r' => $region, 'p' => $part, 'i' => $impressions]);
+    }
+
+    /**
+     * Actual airing totals per campaign.
+     *
+     * @return array<string, array{spots:int, impressions:int}>
+     */
+    public function airingTotals(): array
+    {
+        $rows = $this->pdo->query(
+            'SELECT campaign_id, count(*) AS spots, COALESCE(SUM(impressions), 0) AS impressions
+             FROM ad_airings GROUP BY campaign_id'
+        )->fetchAll() ?: [];
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['campaign_id']] = [
+                'spots' => (int) $row['spots'],
+                'impressions' => (int) $row['impressions'],
+            ];
+        }
+        return $map;
+    }
+
     /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>

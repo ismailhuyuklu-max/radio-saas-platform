@@ -780,6 +780,7 @@ export interface CampaignMetrics {
   budget_used_pct: number;
   over_budget: boolean;
   reach_per_day: number;
+  has_actuals: boolean;
 }
 
 export interface AdCampaign {
@@ -846,6 +847,13 @@ export function updateAdCampaign(id: string, payload: Partial<AdCampaignPayload>
 
 export function deleteAdCampaign(id: string) {
   return sendApiRequest<{ deleted: boolean; campaign_id: string }>('DELETE', `/ad-campaigns/${id}`);
+}
+
+export function recordAdAiring(
+  id: string,
+  payload: { region_code: RegionCode; part_code?: PartCode; impressions?: number },
+) {
+  return requestClient.post(`/ad-campaigns/${id}/airings`, payload);
 }
 
 // --- Faz 5+6: NOC monitoring -------------------------------------------------
