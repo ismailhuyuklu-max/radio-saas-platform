@@ -1,0 +1,74 @@
+import type { RouteRecordRaw } from 'vue-router';
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/radio-platform',
+    name: 'RadioPlatform',
+    meta: {
+      icon: 'lucide:radio',
+      order: 2100,
+      title: 'Aircast Pro',
+      authCode: 'radio:platform:view',
+    },
+    redirect: '/radio-platform/matrix',
+    children: [
+      {
+        path: '/radio-platform/matrix',
+        name: 'RadioPlatformMatrix',
+        component: () => import('#/views/radio-platform/matrix/index.vue'),
+        meta: {
+          icon: 'lucide:grid-2x2',
+          title: 'Aircast Pro',
+          keepAlive: true,
+          authCode: 'radio:matrix:view',
+        },
+      },
+      {
+        path: '/radio-platform/sponsors',
+        name: 'RadioPlatformSponsors',
+        component: () => import('#/views/radio-platform/sponsors/index.vue'),
+        meta: {
+          icon: 'mdi:badge-account-horizontal-outline',
+          title: 'Sponsors',
+          keepAlive: true,
+          authCode: 'radio:sponsors:view',
+        },
+      },
+      {
+        path: '/radio-platform/stations',
+        name: 'RadioPlatformStations',
+        component: () => import('#/views/radio-platform/stations/index.vue'),
+        meta: {
+          icon: 'mdi:radio-tower',
+          title: 'Stations',
+          keepAlive: true,
+          authCode: 'radio:stations:view',
+        },
+      },
+      {
+        path: '/radio-platform/planning',
+        name: 'RadioPlatformPlanning',
+        component: () => import('#/views/radio-platform/planning/index.vue'),
+        meta: {
+          icon: 'lucide:calendar-range',
+          title: 'Planlama',
+          keepAlive: true,
+          authCode: 'radio:planning:view',
+        },
+      },
+      {
+        path: '/radio-platform/access',
+        name: 'RadioPlatformAccess',
+        component: () => import('#/views/radio-platform/access/index.vue'),
+        meta: {
+          icon: 'lucide:shield-check',
+          title: 'Yetki',
+          keepAlive: true,
+          authCode: 'radio:access:view',
+        },
+      },
+    ],
+  },
+];
+
+export default routes;

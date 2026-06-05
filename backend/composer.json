@@ -1,0 +1,23 @@
+{
+  "name": "haber/radio-saas-platform",
+  "description": "Regional radio SaaS backend with MinIO, PostgreSQL and FFmpeg orchestration.",
+  "license": "proprietary",
+  "type": "project",
+  "require": {
+    "php": "^8.2",
+    "aws/aws-sdk-php": "^3.0",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "RadioSaaS\\": "src/"
+    }
+  },
+  "scripts": {
+    "worker": [
+      "php bin/queue-worker.php"
+    ]
+  }
+}

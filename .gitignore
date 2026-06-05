@@ -1,0 +1,27 @@
+# Dependencies
+**/node_modules/
+backend/vendor/
+frontend/.pnpm-store/
+
+# Build output
+frontend/dist/
+frontend/public/
+
+# Logs
+*.log
+*.err.log
+setup-run.log
+
+# Env / secrets
+.env
+.env.local
+*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Docker / runtime data
+media_work/
