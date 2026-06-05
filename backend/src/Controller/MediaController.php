@@ -14,6 +14,19 @@ use RuntimeException;
 
 final class MediaController
 {
+    /** Server-side allowlist of accepted upload MIME types (detected, not client-claimed). */
+    private const ALLOWED_UPLOAD_MIMES = [
+        'audio/mpeg',
+        'audio/mp3',
+        'audio/wav',
+        'audio/x-wav',
+        'audio/mp4',
+        'audio/x-m4a',
+        'audio/aac',
+        'audio/ogg',
+        'video/mp4',
+    ];
+
     public function __construct(
         private readonly AdminAuthenticator $authenticator,
         private readonly MediaContentRepository $mediaRepository,
@@ -31,6 +44,8 @@ final class MediaController
         if (!isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
             throw new RuntimeException('File upload is required.');
         }
+
+        $detectedMime = $this->validateUpload($_FILES['file']);
 
         $partCode = (string) ($_POST['part_code'] ?? '');
         $regionInput = trim((string) ($_POST['region_id'] ?? ($_POST['region_code'] ?? '')));
@@ -51,7 +66,7 @@ final class MediaController
             'Bucket' => $bucket,
             'Key' => $key,
             'SourceFile' => $_FILES['file']['tmp_name'],
-            'ContentType' => $_FILES['file']['type'] ?: 'application/octet-stream',
+            'ContentType' => $detectedMime,
         ]);
 
         if ($localFeedMode) {
@@ -59,7 +74,7 @@ final class MediaController
                 'Bucket' => $publicBucket,
                 'Key' => $key,
                 'SourceFile' => $_FILES['file']['tmp_name'],
-                'ContentType' => $_FILES['file']['type'] ?: 'application/octet-stream',
+                'ContentType' => $detectedMime,
             ]);
         }
 
@@ -71,7 +86,7 @@ final class MediaController
             'content_kind' => $partCode,
             'source_bucket' => $bucket,
             'source_key' => $key,
-            'source_mime' => (string) ($_FILES['file']['type'] ?: 'application/octet-stream'),
+            'source_mime' => $detectedMime,
             'source_duration_ms' => (int) ($_POST['duration_ms'] ?? 0),
             'checksum_sha256' => hash_file('sha256', $_FILES['file']['tmp_name']) ?: '',
             'render_state' => 'queued',
@@ -110,10 +125,10 @@ final class MediaController
             throw new RuntimeException('Sponsor asset upload is required.');
         }
 
+        $mime = $this->validateUpload($_FILES['file']);
         $bucket = getenv('MINIO_BUCKET_RAW') ?: 'radio-raw';
         $filename = basename((string) $_FILES['file']['name']);
         $key = sprintf('sponsors/%s/%s', bin2hex(random_bytes(12)), $filename);
-        $mime = (string) ($_FILES['file']['type'] ?: 'application/octet-stream');
 
         $this->storage->client()->putObject([
             'Bucket' => $bucket,
@@ -147,6 +162,37 @@ final class MediaController
         }
 
         throw new RuntimeException('Region could not be resolved.');
+    }
+
+    /**
+     * Validates an uploaded file against a size limit and a server-detected MIME allowlist.
+     * Returns the detected MIME type (never the client-claimed one).
+     */
+    private function validateUpload(array $file): string
+    {
+        $maxBytes = (int) (getenv('MAX_UPLOAD_BYTES') ?: 209715200); // 200 MB default
+        $size = (int) ($file['size'] ?? 0);
+        if ($size <= 0 || $size > $maxBytes) {
+            throw new RuntimeException(sprintf('Gecersiz dosya boyutu: %d bayt (izin verilen en fazla %d bayt).', $size, $maxBytes));
+        }
+
+        $detected = '';
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo !== false) {
+                $detected = (string) (finfo_file($finfo, (string) $file['tmp_name']) ?: '');
+                finfo_close($finfo);
+            }
+        }
+        if ($detected === '') {
+            $detected = (string) ($file['type'] ?? '');
+        }
+
+        if (!in_array($detected, self::ALLOWED_UPLOAD_MIMES, true)) {
+            throw new RuntimeException('Gecersiz dosya turu: ' . ($detected !== '' ? $detected : 'bilinmiyor'));
+        }
+
+        return $detected;
     }
 
     private function authenticate(): void

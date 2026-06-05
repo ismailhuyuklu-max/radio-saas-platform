@@ -625,7 +625,7 @@ try {
             $status = 404;
         } elseif (str_contains($message, 'çakış') || str_contains($message, 'conflict')) {
             $status = 409;
-        } elseif (str_contains($message, 'required')) {
+        } elseif (str_contains($message, 'required') || str_contains($message, 'gecersiz')) {
             $status = 400;
         }
     }
