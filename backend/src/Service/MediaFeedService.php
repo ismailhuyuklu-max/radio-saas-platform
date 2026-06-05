@@ -29,7 +29,15 @@ final class MediaFeedService
             throw new RuntimeException('Station not found.');
         }
 
-        $media = $this->mediaRepository->findLatestRenderable((string) $station['region_id'], $partCode);
+        // Slot-aware: serve the audio bound to the broadcast slot on air now
+        // (e.g. the 18:00 bulletin between 18:00–20:00), falling back to the
+        // latest renderable when no slot-specific media exists.
+        $currentSlot = \RadioSaaS\Service\BroadcastSlot::current(time());
+        $media = $this->mediaRepository->findRenderableForSlot(
+            (string) $station['region_id'],
+            $partCode,
+            $currentSlot
+        );
 
         if ($media === null) {
             throw new RuntimeException('No active media content found for this region and part.');

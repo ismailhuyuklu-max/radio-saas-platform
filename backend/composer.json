@@ -27,13 +27,15 @@
       "php tests/ReportTest.php",
       "php tests/LoginThrottleTest.php",
       "php tests/HttpExceptionTest.php",
-      "php tests/PaginationTest.php"
+      "php tests/PaginationTest.php",
+      "php tests/BroadcastSlotTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",
       "php tests/ad_e2e.php",
       "php tests/mfa_e2e.php",
-      "php tests/security_e2e.php"
+      "php tests/security_e2e.php",
+      "php tests/csrf_e2e.php"
     ]
   }
 }

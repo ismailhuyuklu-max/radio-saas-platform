@@ -47,6 +47,13 @@ final class MediaController
         $detectedMime = $this->validateUpload($_FILES['file']);
 
         $partCode = (string) ($_POST['part_code'] ?? '');
+        $slotTime = trim((string) ($_POST['slot_time'] ?? ''));
+        // Accept HH:MM (optionally HH:MM:SS) and normalise to HH:MM; reject junk.
+        if ($slotTime !== '' && preg_match('/^([01]\d|2[0-3]):([0-5]\d)/', $slotTime, $sm)) {
+            $slotTime = $sm[1] . ':' . $sm[2];
+        } else {
+            $slotTime = '';
+        }
         $regionInput = trim((string) ($_POST['region_id'] ?? ($_POST['region_code'] ?? '')));
         $title = (string) ($_POST['title'] ?? basename((string) $_FILES['file']['name']));
         $bucket = getenv('MINIO_BUCKET_RAW') ?: 'radio-raw';
@@ -81,6 +88,7 @@ final class MediaController
             'region_id' => $regionId,
             'station_id' => null,
             'part_code' => $partCode,
+            'slot_time' => $slotTime !== '' ? $slotTime : null,
             'title' => $title,
             'content_kind' => $partCode,
             'source_bucket' => $bucket,

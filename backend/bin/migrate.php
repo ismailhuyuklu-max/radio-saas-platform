@@ -258,4 +258,9 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ad_airings_campaign ON ad_airings (campaign_id)');
 
+// Slot-aware media: bind a news/media item to a 2-hour broadcast slot so each
+// slot serves its own audio at its time (idempotent).
+$pdo->exec('ALTER TABLE media_contents ADD COLUMN IF NOT EXISTS slot_time time NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_media_region_part_slot ON media_contents (region_id, part_code, slot_time, render_state)');
+
 echo "Migrations complete.\n";

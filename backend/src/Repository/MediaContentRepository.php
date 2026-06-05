@@ -12,6 +12,35 @@ final class MediaContentRepository
     {
     }
 
+    /**
+     * Slot-aware lookup: prefer media bound to $slot (e.g. the current 2h news
+     * slot); fall back to the latest renderable when no slot media exists.
+     */
+    public function findRenderableForSlot(string $regionId, string $partCode, ?string $slot): ?array
+    {
+        if ($slot !== null && $slot !== '') {
+            $stmt = $this->pdo->prepare(
+                'SELECT m.*, s.slug AS station_slug
+                 FROM media_contents m
+                 LEFT JOIN stations s ON s.id = m.station_id
+                 WHERE m.region_id = :region_id
+                   AND m.part_code = :part_code
+                   AND m.slot_time = :slot::time
+                   AND m.effective_from <= now()
+                   AND (m.effective_until IS NULL OR m.effective_until > now())
+                 ORDER BY m.effective_from DESC, m.created_at DESC
+                 LIMIT 1'
+            );
+            $stmt->execute(['region_id' => $regionId, 'part_code' => $partCode, 'slot' => $slot]);
+            $row = $stmt->fetch();
+            if ($row !== false) {
+                return $row;
+            }
+        }
+
+        return $this->findLatestRenderable($regionId, $partCode);
+    }
+
     public function findLatestRenderable(string $regionId, string $partCode): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -37,15 +66,16 @@ final class MediaContentRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO media_contents
-                (region_id, station_id, part_code, title, content_kind, source_bucket, source_key, source_mime, source_duration_ms, checksum_sha256, render_state, published_at, effective_from)
+                (region_id, station_id, part_code, slot_time, title, content_kind, source_bucket, source_key, source_mime, source_duration_ms, checksum_sha256, render_state, published_at, effective_from)
              VALUES
-                (:region_id, :station_id, :part_code, :title, :content_kind, :source_bucket, :source_key, :source_mime, :source_duration_ms, :checksum_sha256, :render_state, :published_at, :effective_from)
+                (:region_id, :station_id, :part_code, :slot_time, :title, :content_kind, :source_bucket, :source_key, :source_mime, :source_duration_ms, :checksum_sha256, :render_state, :published_at, :effective_from)
              RETURNING id'
         );
         $stmt->execute([
             'region_id' => $row['region_id'],
             'station_id' => $row['station_id'] ?? null,
             'part_code' => $row['part_code'],
+            'slot_time' => ($row['slot_time'] ?? null) ?: null,
             'title' => $row['title'],
             'content_kind' => $row['content_kind'],
             'source_bucket' => $row['source_bucket'],
