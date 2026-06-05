@@ -24,6 +24,8 @@ import {
   type SponsorListItem,
   deleteSponsor,
   getSponsors,
+  PART_LABELS,
+  REGION_LABELS,
   REGION_LIST,
   saveSponsor,
   uploadSponsorAsset,
@@ -202,15 +204,20 @@ const columns: ColumnsType<SponsorRow> = [
   {
     title: "Hedefleme",
     key: "targeting",
-    customRender: ({ record }) =>
-      h(Space, { wrap: true }, () => [
-        ...record.target_regions.map((region) =>
-          h(Tag, { color: "geekblue" }, () => region),
-        ),
+    customRender: ({ record }) => {
+      const isGlobal = record.target_regions.length >= REGION_LIST.length;
+      const regionTags = isGlobal
+        ? [h(Tag, { color: "purple" }, () => "Tüm Bölgeler")]
+        : record.target_regions.map((region) =>
+            h(Tag, { color: "geekblue" }, () => REGION_LABELS[region] ?? region),
+          );
+      return h(Space, { wrap: true }, () => [
+        ...regionTags,
         ...record.target_parts.map((part) =>
-          h(Tag, { color: "gold" }, () => part),
+          h(Tag, { color: "gold" }, () => PART_LABELS[part] ?? part),
         ),
-      ]),
+      ]);
+    },
   },
   {
     title: "Dosya",
