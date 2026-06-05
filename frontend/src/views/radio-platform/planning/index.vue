@@ -18,6 +18,7 @@ import {
   savePlanning,
   updatePlanning,
 } from '#/api/modules/radioMedia';
+import { extractApiError } from '#/utils/api-error';
 
 const SLOTS = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
 
@@ -136,18 +137,6 @@ function openEdit(plan: ContentPlanItem) {
     station_id: undefined,
   };
   modalOpen.value = true;
-}
-
-function extractApiError(error: unknown): string | null {
-  if (error instanceof Error && error.message) {
-    try {
-      const parsed = JSON.parse(error.message) as { error?: string; message?: string };
-      if (parsed?.error || parsed?.message) return String(parsed.error ?? parsed.message);
-    } catch {
-      /* not json */
-    }
-  }
-  return null;
 }
 
 async function submit() {
