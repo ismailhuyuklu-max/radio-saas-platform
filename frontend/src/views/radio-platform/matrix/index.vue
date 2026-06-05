@@ -25,7 +25,6 @@ import {
   normalizeMatrixPayload,
   type MatrixGridCell,
   type MatrixLiveResponse,
-  type MatrixRegionPayload,
   type PartCode,
   type RegionCode,
   uploadMedia,
@@ -48,18 +47,7 @@ const partOrder: Array<{ code: PartCode; label: string }> = [
   { code: 'weather', label: 'Hava Durumu' },
 ];
 
-const seedMatrix: MatrixRegionPayload[] = [
-  {
-    region: 'akdeniz',
-    categories: {
-      news: { status: 'success', updated_at: '2026-05-29 17:30' },
-      sports: { status: 'warning', updated_at: '2026-05-29 12:00' },
-      economy: { status: 'danger', updated_at: null },
-    },
-  },
-];
-
-const matrixCells = ref<MatrixGridCell[]>(normalizeMatrixPayload(seedMatrix));
+const matrixCells = ref<MatrixGridCell[]>(normalizeMatrixPayload([]));
 const selectedRegionCode = ref<RegionCode>('marmara');
 const selectedCell = ref<MatrixGridCell | null>(null);
 const modalVisible = ref(false);
@@ -173,11 +161,15 @@ const selectedCellToneColor = computed(() => {
   return '#e11d48';
 });
 
-const sponsorPreviewItems = [
-  { label: 'Toplam reklam', value: '12', tone: 'success' },
-  { label: 'Aktif kampanya', value: '4', tone: 'warning' },
-  { label: 'Render kuyruğu', value: 'Canlı', tone: 'success' },
-] as const;
+const sponsorPreviewItems = computed(() => {
+  const sponsored = matrixCells.value.filter((cell) => cell.hasSponsor).length;
+  const live = matrixCells.value.filter((cell) => cell.status === 'success').length;
+  return [
+    { label: 'Sponsorlu içerik', value: String(sponsored), tone: 'success' },
+    { label: 'Canlı içerik', value: String(live), tone: 'warning' },
+    { label: 'Aktif radyo', value: String(liveStations.value.length), tone: 'success' },
+  ];
+});
 
 function goToSponsors() {
   window.open('/radio-platform/sponsors', '_blank', 'noopener,noreferrer');
@@ -267,8 +259,7 @@ async function loadMatrix() {
     const response = await getMatrixStatus();
     matrixCells.value = normalizeMatrixPayload(response);
   } catch (error) {
-    matrixCells.value = normalizeMatrixPayload(seedMatrix);
-    console.warn('Matrix data could not be loaded, using seeded data.', error);
+    console.warn('Matrix data could not be loaded.', error);
   }
 }
 
