@@ -77,23 +77,6 @@ const statusOptions: Array<{ label: string; value: StationItem['status'] }> = [
   { label: 'Arşivlendi', value: 'archived' },
 ];
 
-const seedStationRows = ref<StationRow[]>([
-  {
-    id: 'seed-station-1',
-    name: 'Adana FM',
-    slug: 'adana-fm',
-    region_code: 'akdeniz',
-    region_name: 'Akdeniz',
-    city_name: 'Adana',
-    status: 'active',
-    is_active: true,
-    station_token: 'seed-token-adana',
-    stream_token: 'seed-token-adana',
-    selectedCategory: 'news',
-    soleaUrl: buildSoleaLink('akdeniz', 'news', 'seed-token-adana'),
-  },
-]);
-
 const stationRows = ref<StationRow[]>([]);
 const searchKeyword = ref('');
 const regionFilter = ref<RegionCode | undefined>();
@@ -316,27 +299,17 @@ async function loadStations() {
       status: statusFilter.value,
     });
 
-    if (Array.isArray(response) && response.length > 0) {
-      stationRows.value = response.map((row) => {
-        const mapped = mapStationRow(row);
-        selectedCategoryByStationId.value[mapped.id] =
-          selectedCategoryByStationId.value[mapped.id] || mapped.selectedCategory;
-        syncRowLink(mapped);
-        return mapped;
-      });
-      return;
-    }
-
-    stationRows.value = seedStationRows.value.map((row) => {
-      syncRowLink(row);
-      return row;
+    stationRows.value = (Array.isArray(response) ? response : []).map((row) => {
+      const mapped = mapStationRow(row);
+      selectedCategoryByStationId.value[mapped.id] =
+        selectedCategoryByStationId.value[mapped.id] || mapped.selectedCategory;
+      syncRowLink(mapped);
+      return mapped;
     });
   } catch (error) {
-    console.warn('Station list could not be fetched, using seed data.', error);
-    stationRows.value = seedStationRows.value.map((row) => {
-      syncRowLink(row);
-      return row;
-    });
+    console.error('Station list could not be fetched.', error);
+    stationRows.value = [];
+    message.error('İstasyon listesi alınamadı.');
   }
 }
 
