@@ -108,8 +108,9 @@ final class AuthController
             $roles = ['super'];
         }
 
+        // NOTE: the raw session token is intentionally NOT returned in the body.
+        // It lives only in the HttpOnly cookie, so it cannot leak via XSS/logging.
         return [
-            'token' => $token,
             'userId' => (string) $user['id'],
             'username' => (string) $user['username'],
             'realName' => (string) $user['real_name'],

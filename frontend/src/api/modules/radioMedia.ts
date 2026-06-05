@@ -349,6 +349,7 @@ async function sendApiRequest<T>(method: 'PATCH' | 'DELETE', path: string, data?
     method,
     headers,
     body,
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -745,8 +746,9 @@ export async function exportAuditLogsCsv(filters: AuditLogFilters = {}) {
 
   const csvToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
   const response = await fetch(resolveApiUrl(`/audit/logs?${query.toString()}`), {
-    // Same-origin request: the HttpOnly session cookie is sent automatically.
+    // The HttpOnly session cookie carries auth (sent cross-origin via credentials).
     // Only add a Bearer header if a legacy token is present (never an empty one).
+    credentials: 'include',
     headers: {
       Accept: 'text/csv',
       ...(csvToken ? { Authorization: `Bearer ${csvToken}` } : {}),

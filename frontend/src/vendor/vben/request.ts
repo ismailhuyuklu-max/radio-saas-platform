@@ -124,7 +124,8 @@ export class RequestClient {
     }
 
     const { url: requestUrl, ...requestInit } = finalConfig;
-    const response = await fetch(requestUrl, requestInit);
+    // Always send the HttpOnly session cookie, including for a cross-origin API base URL.
+    const response = await fetch(requestUrl, { ...requestInit, credentials: 'include' });
 
     if (!response.ok) {
       if (response.status === 401) {

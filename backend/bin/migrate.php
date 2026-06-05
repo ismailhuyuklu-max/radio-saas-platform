@@ -94,7 +94,8 @@ $defaultRealName = getenv('ADMIN_REAL_NAME') ?: 'İsmail Hüyüklü';
 $defaultRoles = json_encode(['super'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 if ($appEnv === 'production' && $defaultPassword === '123456') {
-    fwrite(STDERR, "[GUVENLIK UYARISI] Production ortaminda varsayilan admin sifresi (123456) kullaniliyor. ADMIN_PASSWORD ortam degiskenini ayarlayin.\n");
+    fwrite(STDERR, "[GUVENLIK HATASI] Production ortaminda varsayilan/bos admin sifresi (123456). Migrasyon durduruldu; ADMIN_PASSWORD ortam degiskenini guclu bir deger ile ayarlayin.\n");
+    exit(1);
 }
 
 $passwordHash = password_hash($defaultPassword, PASSWORD_BCRYPT);

@@ -17,7 +17,15 @@ TARGET_TP="${TARGET_TP:--1.5}"
 
 main_duration="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$MAIN_INPUT")"
 ad_duration="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$AD_INPUT")"
-has_video="$(ffprobe -v error -select_streams v:0 -show_entries stream=index -of csv=p=0 "$MAIN_INPUT" | head -n 1 || true)"
+main_has_video="$(ffprobe -v error -select_streams v:0 -show_entries stream=index -of csv=p=0 "$MAIN_INPUT" | head -n 1 || true)"
+ad_has_video="$(ffprobe -v error -select_streams v:0 -show_entries stream=index -of csv=p=0 "$AD_INPUT" | head -n 1 || true)"
+# The xfade/video branch needs a video stream in BOTH inputs. If either input is
+# audio-only (e.g. an audio sponsor jingle over a video bulletin), fall back to the
+# audio crossfade branch instead of failing on a missing [x:v] stream specifier.
+has_video=""
+if [[ -n "$main_has_video" && -n "$ad_has_video" ]]; then
+  has_video="1"
+fi
 
 calc_offset() {
   awk -v duration="$1" -v crossfade="$2" 'BEGIN { offset = duration - crossfade; if (offset < 0) offset = 0; printf "%.3f", offset }'

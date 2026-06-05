@@ -434,6 +434,7 @@ function resetSponsorEditor() {
     target_regions: ["akdeniz"],
     target_parts: ["sports"],
     priority: 10,
+    campaign_range: null,
   });
 }
 
@@ -455,8 +456,10 @@ async function handleSubmitSponsor(values: SponsorFormValues) {
     const targetParts = values.target_parts || [];
     const priority = values.priority ?? 10;
     const range = values.campaign_range;
-    const startsAt = range?.[0] ? range[0].toISOString() : null;
-    const endsAt = range?.[1] ? range[1].toISOString() : null;
+    // Use the local day boundaries (with offset) so the persisted date does not
+    // shift to the previous calendar day in timezones east of UTC.
+    const startsAt = range?.[0] ? range[0].startOf("day").format() : null;
+    const endsAt = range?.[1] ? range[1].endOf("day").format() : null;
 
     if (!name) {
       message.warning("Reklam adı zorunludur.");

@@ -31,7 +31,20 @@ async function handleSubmit() {
     message.error(response?.message || 'Kullanıcı adı veya şifre hatalı.');
   } catch (error) {
     console.error(error);
-    message.error('Giriş başarısız. Sunucuya ulaşılamıyor olabilir.');
+    // The request layer throws on non-2xx (e.g. 401) with the JSON body as the
+    // message; surface the backend's real reason instead of a generic one.
+    let reason = 'Giriş başarısız. Sunucuya ulaşılamıyor olabilir.';
+    if (error instanceof Error && error.message) {
+      try {
+        const parsed = JSON.parse(error.message) as { error?: string; message?: string };
+        if (parsed?.message || parsed?.error) {
+          reason = String(parsed.message ?? parsed.error);
+        }
+      } catch {
+        // message was not JSON (network error) — keep the generic reason.
+      }
+    }
+    message.error(reason);
   } finally {
     loading.value = false;
   }

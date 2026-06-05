@@ -17,7 +17,6 @@ final class MediaController
     /** Server-side allowlist of accepted upload MIME types (detected, not client-claimed). */
     private const ALLOWED_UPLOAD_MIMES = [
         'audio/mpeg',
-        'audio/mp3',
         'audio/wav',
         'audio/x-wav',
         'audio/mp4',
@@ -184,12 +183,15 @@ final class MediaController
                 finfo_close($finfo);
             }
         }
+
+        // Fail closed: never trust the client-supplied Content-Type. If the server
+        // cannot determine the real MIME type, reject the upload outright.
         if ($detected === '') {
-            $detected = (string) ($file['type'] ?? '');
+            throw new RuntimeException('Gecersiz dosya: dosya turu sunucuda dogrulanamadi.');
         }
 
         if (!in_array($detected, self::ALLOWED_UPLOAD_MIMES, true)) {
-            throw new RuntimeException('Gecersiz dosya turu: ' . ($detected !== '' ? $detected : 'bilinmiyor'));
+            throw new RuntimeException('Gecersiz dosya turu: ' . $detected);
         }
 
         return $detected;
