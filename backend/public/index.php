@@ -508,6 +508,31 @@ try {
         return;
     }
 
+    if ($method === 'POST' && $path === '/api/v1/auth/mfa/verify') {
+        $authController->mfaVerify();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/mfa/setup') {
+        $authController->mfaSetup();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/mfa/enable') {
+        $authController->mfaEnable();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/mfa/disable') {
+        $authController->mfaDisable();
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/auth/mfa/status') {
+        $authController->mfaStatus();
+        return;
+    }
+
     if ($method === 'GET' && ($path === '/api/v1/user/info' || $path === '/api/v1/auth/user')) {
         $authController->userInfo();
         return;

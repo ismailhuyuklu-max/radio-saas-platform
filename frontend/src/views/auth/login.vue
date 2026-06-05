@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { Button, Input, message } from 'ant-design-vue';
 
-import { login } from '#/api/modules/auth';
+import { login, verifyMfa } from '#/api/modules/auth';
 
 const route = useRoute();
 const router = useRouter();
@@ -12,6 +12,42 @@ const router = useRouter();
 const username = ref('admin');
 const password = ref('');
 const loading = ref(false);
+
+// MFA second step
+const mfaToken = ref<string | null>(null);
+const mfaCode = ref('');
+
+function redirectAfterLogin() {
+  const redirect = (route.query.redirect as string) || '/radio-platform/operations';
+  return router.replace(redirect);
+}
+
+async function verifyCode() {
+  if (!mfaToken.value || !mfaCode.value.trim()) {
+    message.warning('Doğrulama kodu gerekli.');
+    return;
+  }
+  loading.value = true;
+  try {
+    const response = await verifyMfa(mfaToken.value, mfaCode.value.trim());
+    if (response?.code === 0 && response.result && !('mfa_required' in response.result)) {
+      message.success('Giriş başarılı.');
+      await redirectAfterLogin();
+      return;
+    }
+    message.error(response?.message || 'Doğrulama kodu hatalı.');
+  } catch {
+    message.error('Doğrulama kodu hatalı veya süresi doldu.');
+  } finally {
+    loading.value = false;
+  }
+}
+
+function cancelMfa() {
+  mfaToken.value = null;
+  mfaCode.value = '';
+  password.value = '';
+}
 
 async function handleSubmit() {
   if (!username.value.trim() || !password.value) {
@@ -22,10 +58,16 @@ async function handleSubmit() {
   loading.value = true;
   try {
     const response = await login({ username: username.value.trim(), password: password.value });
+    if (response?.code === 0 && response.result && 'mfa_required' in response.result) {
+      // Two-factor enabled — switch to the code entry step.
+      mfaToken.value = response.result.mfa_token;
+      mfaCode.value = '';
+      message.info('İki adımlı doğrulama gerekli.');
+      return;
+    }
     if (response?.code === 0 && response.result) {
       message.success('Giriş başarılı.');
-      const redirect = (route.query.redirect as string) || '/radio-platform/dashboard';
-      await router.replace(redirect);
+      await redirectAfterLogin();
       return;
     }
     message.error(response?.message || 'Kullanıcı adı veya şifre hatalı.');
@@ -62,7 +104,7 @@ async function handleSubmit() {
         </div>
       </div>
 
-      <form class="login-form" @submit.prevent="handleSubmit">
+      <form v-if="!mfaToken" class="login-form" @submit.prevent="handleSubmit">
         <label>
           <span>Kullanıcı Adı</span>
           <Input v-model:value="username" size="large" placeholder="admin" autocomplete="username" />
@@ -83,7 +125,29 @@ async function handleSubmit() {
         </Button>
       </form>
 
-      <p class="login-hint">Oturum HttpOnly çerez ile güvenli tutulur.</p>
+      <form v-else class="login-form" @submit.prevent="verifyCode">
+        <label>
+          <span>Doğrulama Kodu</span>
+          <Input
+            v-model:value="mfaCode"
+            size="large"
+            placeholder="6 haneli kod"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            @press-enter="verifyCode"
+          />
+        </label>
+        <Button type="primary" size="large" block :loading="loading" html-type="submit">
+          Doğrula
+        </Button>
+        <Button size="large" block @click="cancelMfa">Geri</Button>
+        <p class="login-hint">
+          Authenticator uygulamanızdaki 6 haneli kodu girin. Kurtarma kodunuzu da
+          kullanabilirsiniz.
+        </p>
+      </form>
+
+      <p v-if="!mfaToken" class="login-hint">Oturum HttpOnly çerez ile güvenli tutulur.</p>
     </div>
   </div>
 </template>

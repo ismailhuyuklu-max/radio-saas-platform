@@ -54,12 +54,68 @@ final class UserRepository
     public function listUsers(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT id, username, real_name, roles, is_active, last_login_at, created_at, updated_at
+            'SELECT id, username, real_name, roles, is_active, mfa_enabled, last_login_at, created_at, updated_at
              FROM users
              ORDER BY created_at ASC, username ASC'
         );
 
         return array_map([$this, 'normalizeRow'], $stmt->fetchAll() ?: []);
+    }
+
+    public function setMfaSecret(string $userId, string $secret): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET mfa_secret = :secret, updated_at = now() WHERE id = :id'
+        );
+        $stmt->execute(['id' => $userId, 'secret' => $secret]);
+    }
+
+    /** @param list<string> $recoveryHashes */
+    public function enableMfa(string $userId, array $recoveryHashes): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users
+             SET mfa_enabled = true,
+                 mfa_recovery_codes = CAST(:codes AS jsonb),
+                 updated_at = now()
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $userId,
+            'codes' => json_encode(array_values($recoveryHashes)),
+        ]);
+    }
+
+    public function disableMfa(string $userId): void
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE users
+             SET mfa_enabled = false,
+                 mfa_secret = NULL,
+                 mfa_recovery_codes = '[]'::jsonb,
+                 updated_at = now()
+             WHERE id = :id"
+        );
+        $stmt->execute(['id' => $userId]);
+    }
+
+    /** Remove a recovery hash if present; returns true when it was consumed. */
+    public function consumeRecoveryCode(string $userId, string $codeHash): bool
+    {
+        $user = $this->findById($userId);
+        if ($user === null) {
+            return false;
+        }
+        $codes = (array) ($user['mfa_recovery_codes'] ?? []);
+        if (!in_array($codeHash, $codes, true)) {
+            return false;
+        }
+        $remaining = array_values(array_filter($codes, static fn ($c) => $c !== $codeHash));
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET mfa_recovery_codes = CAST(:codes AS jsonb), updated_at = now() WHERE id = :id'
+        );
+        $stmt->execute(['id' => $userId, 'codes' => json_encode($remaining)]);
+        return true;
     }
 
     public function updateRoles(string $userId, array $roles): ?array
@@ -116,6 +172,19 @@ final class UserRepository
             is_array($roles) ? $roles : [],
             static fn (mixed $role): bool => is_string($role) && $role !== ''
         ));
+
+        if (array_key_exists('mfa_enabled', $row)) {
+            $row['mfa_enabled'] = filter_var($row['mfa_enabled'], FILTER_VALIDATE_BOOL);
+        }
+
+        if (array_key_exists('mfa_recovery_codes', $row)) {
+            $codes = $row['mfa_recovery_codes'];
+            if (is_string($codes)) {
+                $decoded = json_decode($codes, true);
+                $codes = is_array($decoded) ? $decoded : [];
+            }
+            $row['mfa_recovery_codes'] = is_array($codes) ? array_values($codes) : [];
+        }
 
         return $row;
     }

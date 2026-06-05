@@ -87,6 +87,14 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_admin_sessions_active ON admin_sessions (token_hash, expires_at, revoked_at)');
 
+// Faz 7-MFA — TOTP two-factor columns (idempotent).
+$pdo->exec(
+    "ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS mfa_secret varchar(64) NULL,
+        ADD COLUMN IF NOT EXISTS mfa_enabled boolean NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS mfa_recovery_codes jsonb NOT NULL DEFAULT '[]'::jsonb"
+);
+
 $appEnv = getenv('APP_ENV') ?: 'local';
 $defaultUsername = getenv('ADMIN_USERNAME') ?: 'admin';
 $defaultPassword = getenv('ADMIN_PASSWORD') ?: '123456';

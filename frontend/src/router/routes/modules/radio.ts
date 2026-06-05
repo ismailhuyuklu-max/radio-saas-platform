@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/security',
+        name: 'RadioPlatformSecurity',
+        component: () => import('#/views/radio-platform/security/index.vue'),
+        meta: {
+          icon: 'lucide:key-round',
+          title: 'Güvenlik',
+          authCode: 'radio:platform:view',
+        },
+      },
+      {
         path: '/radio-platform/access',
         name: 'RadioPlatformAccess',
         component: () => import('#/views/radio-platform/access/index.vue'),
