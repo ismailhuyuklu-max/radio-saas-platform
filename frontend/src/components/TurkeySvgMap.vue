@@ -476,12 +476,33 @@ onMounted(() => {
 .turkey-map-shell[data-active-region='ic-anadolu'] svg #turkiye > g[data-region='ic-anadolu'] path,
 .turkey-map-shell[data-active-region='dogu-anadolu'] svg #turkiye > g[data-region='dogu-anadolu'] path,
 .turkey-map-shell[data-active-region='guneydogu-anadolu'] svg #turkiye > g[data-region='guneydogu-anadolu'] path {
-  fill: rgba(var(--accent), 0.16);
-  stroke: rgba(var(--accent), 0.96);
-  stroke-width: 1.15;
-  filter:
-    drop-shadow(0 0 9px rgba(var(--accent), 0.7))
-    drop-shadow(0 0 24px rgba(var(--accent), 0.3));
+  fill: rgba(var(--accent), 0.18);
+  stroke: rgba(var(--accent), 0.98);
+  stroke-width: 1.2;
+  animation: turkeyRegionPulse 2.6s ease-in-out infinite;
+}
+
+/* Selected region "breathes" in its status colour. */
+@keyframes turkeyRegionPulse {
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 0 7px rgba(var(--accent), 0.55))
+      drop-shadow(0 0 18px rgba(var(--accent), 0.22));
+  }
+
+  50% {
+    filter:
+      drop-shadow(0 0 14px rgba(var(--accent), 0.9))
+      drop-shadow(0 0 34px rgba(var(--accent), 0.42));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turkey-map-shell svg #turkiye > g[data-region] path {
+    animation: none !important;
+    filter: drop-shadow(0 0 10px rgba(var(--accent), 0.6));
+  }
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] text {
