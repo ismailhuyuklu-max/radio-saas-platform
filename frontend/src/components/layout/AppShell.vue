@@ -35,6 +35,10 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
     ],
   },
   {
+    title: 'Ticari',
+    items: [{ path: '/radio-platform/ad-traffic', label: 'Reklam Trafik', icon: 'trending' }],
+  },
+  {
     title: 'Sistem',
     items: [{ path: '/radio-platform/access', label: 'Yetki & Erişim', icon: 'shield' }],
   },
@@ -46,6 +50,7 @@ const ICONS: Record<string, string> = {
   activity: 'M3 12h4l2 6 4-14 2 8h6',
   gantt: 'M4 5h10 M4 10h14 M4 15h7 M4 20h11',
   kanban: 'M4 4h4v16H4z M10 4h4v10h-4z M16 4h4v7h-4z',
+  trending: 'M3 17l6-6 4 4 8-8 M15 7h6v6',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   calendar: 'M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4',
   tower: 'M12 13v8 M8 9a5 5 0 0 1 8 0 M5 6a9 9 0 0 1 14 0 M12 12a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',

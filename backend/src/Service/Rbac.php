@@ -52,6 +52,7 @@ final class Rbac
         'plans:view' => self::ANY,
         'stations:view' => self::ANY,
         'sponsors:view' => self::ANY,
+        'ad:view' => self::ANY,
 
         // Content authoring — editor and up.
         'plans:write' => self::CONTENT_WRITERS,
@@ -62,6 +63,7 @@ final class Rbac
         'stations:write' => self::MANAGERS,
         'stations:delete' => self::MANAGERS,
         'sponsors:write' => self::MANAGERS,
+        'ad:write' => self::MANAGERS,
         'audit:view' => self::MANAGERS,
 
         // User / role administration — super only.

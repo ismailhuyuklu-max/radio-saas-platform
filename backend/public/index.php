@@ -5,6 +5,7 @@ declare(strict_types=1);
 use RadioSaaS\Controller\FeedController;
 use RadioSaaS\Controller\AuthController;
 use RadioSaaS\Controller\AccessController;
+use RadioSaaS\Controller\AdTrafficController;
 use RadioSaaS\Controller\MatrixController;
 use RadioSaaS\Controller\MediaController;
 use RadioSaaS\Controller\PlanningController;
@@ -12,6 +13,7 @@ use RadioSaaS\Controller\StationController;
 use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Infrastructure\PdoFactory;
 use RadioSaaS\Repository\AuditLogRepository;
+use RadioSaaS\Repository\AdCampaignRepository;
 use RadioSaaS\Repository\AdminSessionRepository;
 use RadioSaaS\Repository\ApiTokenRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
@@ -458,6 +460,7 @@ $regionRepository = new RegionRepository($pdo);
 $planRepository = new ContentPlanRepository($pdo);
 $auditLogRepository = new AuditLogRepository($pdo);
 $userRepository = new UserRepository($pdo);
+$adCampaignRepository = new AdCampaignRepository($pdo);
 $adminSessionRepository = new AdminSessionRepository($pdo);
 $matrixRepository = new MatrixRepository($pdo, $mediaRepository, $sponsorRepository);
 
@@ -473,6 +476,7 @@ $matrixController = new MatrixController($adminAuthenticator, $matrixRepository,
 $stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository);
 $planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
+$adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -586,6 +590,26 @@ try {
 
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/token$#', $path, $matches)) {
         $stationController->generateToken($matches[1]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/ad-campaigns') {
+        $adTrafficController->index();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/ad-campaigns') {
+        $adTrafficController->store();
+        return;
+    }
+
+    if ($method === 'PATCH' && preg_match('#^/api/v1/ad-campaigns/([^/]+)$#', $path, $matches)) {
+        $adTrafficController->update($matches[1]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/api/v1/ad-campaigns/([^/]+)$#', $path, $matches)) {
+        $adTrafficController->destroy($matches[1]);
         return;
     }
 

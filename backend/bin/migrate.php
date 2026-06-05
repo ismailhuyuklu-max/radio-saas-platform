@@ -201,4 +201,29 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_content_plans_station_date ON content
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC)');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs (entity_type, entity_id)');
 
+/**
+ * Faz 4 — Ad Traffic / revenue. Campaigns drive CPM/CPP/flat revenue
+ * projections (impressions are estimated from planned spots × regional reach).
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS ad_campaigns (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        advertiser_name varchar(160) NOT NULL,
+        sponsor_ad_id uuid NULL,
+        pricing_model varchar(16) NOT NULL DEFAULT 'cpm',
+        rate numeric(12,2) NOT NULL DEFAULT 0,
+        budget numeric(14,2) NOT NULL DEFAULT 0,
+        currency varchar(8) NOT NULL DEFAULT 'TRY',
+        spots_per_day integer NOT NULL DEFAULT 1,
+        target_regions jsonb NOT NULL DEFAULT '[]'::jsonb,
+        target_parts jsonb NOT NULL DEFAULT '[]'::jsonb,
+        starts_at date NOT NULL,
+        ends_at date NOT NULL,
+        status varchar(16) NOT NULL DEFAULT 'active',
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_ad_campaigns_status_dates ON ad_campaigns (status, starts_at, ends_at)');
+
 echo "Migrations complete.\n";

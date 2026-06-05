@@ -101,6 +101,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/ad-traffic',
+        name: 'RadioPlatformAdTraffic',
+        component: () => import('#/views/radio-platform/ad-traffic/index.vue'),
+        meta: {
+          icon: 'lucide:trending-up',
+          // Revenue should be fresh on each visit, so do not keep-alive this view.
+          title: 'Reklam Trafik',
+          authCode: 'radio:sponsors:view',
+        },
+      },
+      {
         path: '/radio-platform/access',
         name: 'RadioPlatformAccess',
         component: () => import('#/views/radio-platform/access/index.vue'),

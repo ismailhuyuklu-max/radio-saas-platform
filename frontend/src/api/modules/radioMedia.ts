@@ -762,6 +762,92 @@ export async function exportAuditLogsCsv(filters: AuditLogFilters = {}) {
   return response.text();
 }
 
+// --- Faz 4: Ad Traffic / revenue --------------------------------------------
+
+export type PricingModel = 'cpm' | 'cpp' | 'flat';
+export type CampaignStatus = 'active' | 'paused' | 'ended' | 'draft';
+
+export interface CampaignMetrics {
+  pricing_model: PricingModel;
+  total_days: number;
+  delivered_days: number;
+  projected_spots: number;
+  delivered_spots: number;
+  projected_impressions: number;
+  delivered_impressions: number;
+  projected_revenue: number;
+  delivered_revenue: number;
+  budget_used_pct: number;
+  over_budget: boolean;
+  reach_per_day: number;
+}
+
+export interface AdCampaign {
+  id: string;
+  advertiser_name: string;
+  sponsor_ad_id?: string | null;
+  pricing_model: PricingModel;
+  rate: number;
+  budget: number;
+  currency: string;
+  spots_per_day: number;
+  target_regions: RegionCode[];
+  target_parts: PartCode[];
+  starts_at: string;
+  ends_at: string;
+  status: CampaignStatus;
+  metrics?: CampaignMetrics;
+}
+
+export interface AdTrafficSummary {
+  total_projected_revenue: number;
+  total_delivered_revenue: number;
+  total_projected_impressions: number;
+  total_budget: number;
+  budget_used_pct: number;
+  active_campaigns: number;
+  campaign_count: number;
+  avg_cpm: number;
+  revenue_by_region: Record<string, number>;
+  revenue_by_model: Record<string, number>;
+}
+
+export interface AdTrafficResponse {
+  campaigns: AdCampaign[];
+  summary: AdTrafficSummary;
+  region_reach: Record<string, number>;
+}
+
+export interface AdCampaignPayload {
+  advertiser_name: string;
+  pricing_model: PricingModel;
+  rate: number;
+  budget: number;
+  spots_per_day: number;
+  target_regions: RegionCode[];
+  target_parts: PartCode[];
+  starts_at: string;
+  ends_at: string;
+  status: CampaignStatus;
+  currency?: string;
+}
+
+export function getAdTraffic() {
+  return requestClient.get<AdTrafficResponse>('/ad-campaigns');
+}
+
+export function createAdCampaign(payload: AdCampaignPayload) {
+  return requestClient.post('/ad-campaigns', payload);
+}
+
+export function updateAdCampaign(id: string, payload: Partial<AdCampaignPayload>) {
+  return sendApiRequest('PATCH', `/ad-campaigns/${id}`, payload);
+}
+
+export function deleteAdCampaign(id: string) {
+  return sendApiRequest<{ deleted: boolean; campaign_id: string }>('DELETE', `/ad-campaigns/${id}`);
+}
+
 export function getUsers() {
   return requestClient.get<UserAdminItem[]>('/users');
 }
