@@ -27,7 +27,11 @@ use RadioSaaS\Service\MediaFeedService;
 use RadioSaaS\Service\RenderQueueService;
 use RadioSaaS\Service\TokenAuthenticator;
 
-$demoMode = filter_var(getenv('LOCAL_DEMO_MODE') ?: '0', FILTER_VALIDATE_BOOL);
+$appEnv = getenv('APP_ENV') ?: 'local';
+// Demo mode bypasses all authentication and must NEVER be active in production,
+// even if LOCAL_DEMO_MODE=1 is left set by mistake.
+$demoMode = $appEnv !== 'production'
+    && filter_var(getenv('LOCAL_DEMO_MODE') ?: '0', FILTER_VALIDATE_BOOL);
 $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
 
 if (!$demoMode && !is_file($vendorAutoload)) {
@@ -39,6 +43,20 @@ if (!$demoMode && !is_file($vendorAutoload)) {
 
 if (!$demoMode) {
     require $vendorAutoload;
+}
+
+// Production safety net: surface insecure default secrets in the server log.
+if ($appEnv === 'production') {
+    $weakDefaults = [];
+    if ((getenv('MINIO_SECRET_KEY') ?: 'minioadmin123') === 'minioadmin123') {
+        $weakDefaults[] = 'MINIO_SECRET_KEY';
+    }
+    if ((getenv('DB_PASSWORD') ?: 'radio_saas_password') === 'radio_saas_password') {
+        $weakDefaults[] = 'DB_PASSWORD';
+    }
+    if ($weakDefaults !== []) {
+        error_log('[SECURITY] Production ortaminda varsayilan sirlar kullaniliyor: ' . implode(', ', $weakDefaults));
+    }
 }
 
 if ($demoMode) {

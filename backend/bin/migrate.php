@@ -87,10 +87,16 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_admin_sessions_active ON admin_sessions (token_hash, expires_at, revoked_at)');
 
-$defaultUsername = 'admin';
-$defaultPassword = '123456';
-$defaultRealName = 'İsmail Hüyüklü';
+$appEnv = getenv('APP_ENV') ?: 'local';
+$defaultUsername = getenv('ADMIN_USERNAME') ?: 'admin';
+$defaultPassword = getenv('ADMIN_PASSWORD') ?: '123456';
+$defaultRealName = getenv('ADMIN_REAL_NAME') ?: 'İsmail Hüyüklü';
 $defaultRoles = json_encode(['super'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+if ($appEnv === 'production' && $defaultPassword === '123456') {
+    fwrite(STDERR, "[GUVENLIK UYARISI] Production ortaminda varsayilan admin sifresi (123456) kullaniliyor. ADMIN_PASSWORD ortam degiskenini ayarlayin.\n");
+}
+
 $passwordHash = password_hash($defaultPassword, PASSWORD_BCRYPT);
 
 $seedUser = $pdo->prepare('SELECT 1 FROM users WHERE username = :username LIMIT 1');
