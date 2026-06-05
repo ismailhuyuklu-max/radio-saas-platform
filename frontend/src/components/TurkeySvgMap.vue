@@ -364,11 +364,12 @@ onMounted(() => {
   border-radius: 28px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   isolation: isolate;
-  /* Premium opaque "ocean" base — wins over any inherited tone-* flood. */
+  /* Premium opaque deep-water base — wins over any inherited tone-* flood.
+     Sea and the lake cut-outs read as water rather than flat dark. */
   background:
-    radial-gradient(120% 82% at 50% -12%, rgba(56, 189, 248, 0.07), transparent 55%),
-    radial-gradient(90% 70% at 50% 116%, rgba(2, 6, 23, 0.55), transparent 60%),
-    linear-gradient(180deg, #0d1628 0%, #0a1120 55%, #070c17 100%) !important;
+    radial-gradient(120% 88% at 50% -10%, rgba(56, 189, 248, 0.12), transparent 56%),
+    radial-gradient(100% 80% at 50% 120%, rgba(14, 46, 71, 0.4), transparent 62%),
+    linear-gradient(180deg, #0b1c30 0%, #0a1626 52%, #07101d 100%) !important;
   box-shadow:
     0 34px 80px rgba(2, 6, 23, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -428,9 +429,12 @@ onMounted(() => {
   transform-origin: top center;
 }
 
-/* Float the whole Turkey silhouette above the ocean for depth. */
+/* Float the whole Turkey silhouette above the water: soft depth shadow below
+   plus a faint coastline rim-light where land meets the sea. */
 .turkey-map-shell svg #turkiye {
-  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
+  filter:
+    drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 1.5px rgba(125, 211, 252, 0.35));
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] {
