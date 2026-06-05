@@ -240,10 +240,34 @@ async function submitPlan() {
     await loadPlanning();
   } catch (error) {
     console.error(error);
-    message.error('Plan kaydedilemedi.');
+    message.error(extractApiError(error) ?? 'Plan kaydedilemedi.');
   } finally {
     saving.value = false;
   }
+}
+
+/**
+ * Backend hata gövdesinden anlamlı mesajı çıkarır (örn. 409 çakışma uyarısı).
+ * Hem raw fetch (Error.message = JSON gövde) hem de axios benzeri istemciyi kapsar.
+ */
+function extractApiError(error: unknown): string | null {
+  if (error instanceof Error && error.message) {
+    try {
+      const parsed = JSON.parse(error.message) as { error?: string; message?: string };
+      if (parsed?.error || parsed?.message) {
+        return String(parsed.error ?? parsed.message);
+      }
+    } catch {
+      // mesaj JSON değil; aşağıdaki kontrollere düş
+    }
+  }
+
+  const data = (error as { response?: { data?: { error?: string; message?: string } } }).response?.data;
+  if (data?.error || data?.message) {
+    return String(data.error ?? data.message);
+  }
+
+  return null;
 }
 
 onMounted(async () => {
