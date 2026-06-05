@@ -106,6 +106,11 @@ function buildData(active: RegionCode) {
         shadowColor: selected ? tone.glow : 'transparent',
         shadowBlur: selected ? 16 : 0,
       },
+      label: {
+        color: selected ? '#ffffff' : '#cdd7e6',
+        fontWeight: selected ? 800 : 600,
+        fontSize: selected ? 10.5 : 9,
+      },
     };
   });
 }
@@ -150,7 +155,8 @@ function buildOption(active: RegionCode): ECOption {
       {
         type: 'map',
         map: 'turkiye',
-        roam: false,
+        roam: true,
+        scaleLimit: { min: 1, max: 4 },
         selectedMode: false,
         animationDurationUpdate: 520,
         label: {
@@ -189,7 +195,7 @@ function refreshData() {
   chart.value?.setOption({ series: [{ data: buildData(props.selectedRegionCode) }] });
 }
 
-onMounted(() => {
+function createChart() {
   if (!containerRef.value) {
     return;
   }
@@ -216,9 +222,21 @@ onMounted(() => {
   instance.getZr().on('mouseout', () => {
     lastHovered = null;
   });
+}
 
-  resizeObserver = new ResizeObserver(() => instance.resize());
-  resizeObserver.observe(containerRef.value);
+// Roam (zoom/pan) leaves the map translated/scaled; dispose + recreate is the most
+// reliable way to snap the view fully back to its default fit.
+function resetView() {
+  chart.value?.dispose();
+  createChart();
+}
+
+onMounted(() => {
+  createChart();
+  if (containerRef.value) {
+    resizeObserver = new ResizeObserver(() => chart.value?.resize());
+    resizeObserver.observe(containerRef.value);
+  }
 });
 
 watch(() => props.selectedRegionCode, refreshData);
@@ -235,6 +253,15 @@ onBeforeUnmount(() => {
 <template>
   <div class="turkey-map-shell" :class="[`tone-${activeTone}`]">
     <div ref="containerRef" class="turkey-echart" />
+    <button
+      class="map-reset"
+      type="button"
+      title="Görünümü sıfırla"
+      aria-label="Harita görünümünü sıfırla"
+      @click="resetView"
+    >
+      ⤢
+    </button>
     <div class="map-legend" aria-hidden="true">
       <span class="map-legend__item"><i class="map-legend__dot is-success" />Canlı</span>
       <span class="map-legend__item"><i class="map-legend__dot is-warning" />Uyarı</span>
@@ -302,6 +329,36 @@ onBeforeUnmount(() => {
   50% {
     opacity: 1;
   }
+}
+
+.map-reset {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(8, 14, 26, 0.7);
+  color: rgba(226, 232, 240, 0.85);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.map-reset:hover {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(var(--accent), 0.6);
+  color: #fff;
+  transform: scale(1.06);
 }
 
 .map-legend {
