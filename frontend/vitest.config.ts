@@ -35,7 +35,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.{test,spec}.ts', 'src/test/**', 'src/vendor/**'],
+      exclude: ['src/**/*.{test,spec}.ts', 'src/**/*.stories.ts', 'src/test/**', 'src/vendor/**'],
       // Ratchet: business logic in src/utils must stay well-covered; the global
       // floor guards against overall regression (views are exercised via
       // Playwright E2E, not unit coverage).
