@@ -28,6 +28,15 @@ final class AdminSessionRepository
         return $rawToken;
     }
 
+    public function revokeByToken(string $rawToken): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE admin_sessions SET revoked_at = now()
+             WHERE token_hash = :token_hash AND revoked_at IS NULL'
+        );
+        $stmt->execute(['token_hash' => hash('sha256', $rawToken)]);
+    }
+
     public function findActiveUserByToken(string $rawToken): ?array
     {
         $stmt = $this->pdo->prepare(

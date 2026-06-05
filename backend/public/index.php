@@ -477,9 +477,20 @@ $accessController = new AccessController($adminAuthenticator, $userRepository, $
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
+// Allow HttpOnly cookie auth: promote the session cookie to a Bearer header so
+// every endpoint that reads Authorization works without the token living in JS.
+if (empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session'])) {
+    $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $_COOKIE['radio_session'];
+}
+
 try {
     if ($method === 'POST' && $path === '/api/v1/media/upload') {
         $mediaController->upload();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/logout') {
+        $authController->logout();
         return;
     }
 

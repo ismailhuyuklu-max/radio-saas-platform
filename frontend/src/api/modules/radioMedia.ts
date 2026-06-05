@@ -728,10 +728,13 @@ export async function exportAuditLogsCsv(filters: AuditLogFilters = {}) {
   if (filters.date_from) query.set('date_from', filters.date_from);
   if (filters.date_to) query.set('date_to', filters.date_to);
 
+  const csvToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
   const response = await fetch(resolveApiUrl(`/audit/logs?${query.toString()}`), {
+    // Same-origin request: the HttpOnly session cookie is sent automatically.
+    // Only add a Bearer header if a legacy token is present (never an empty one).
     headers: {
       Accept: 'text/csv',
-      Authorization: `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token') || ''}`,
+      ...(csvToken ? { Authorization: `Bearer ${csvToken}` } : {}),
     },
   });
 

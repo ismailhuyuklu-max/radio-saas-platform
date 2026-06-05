@@ -45,9 +45,27 @@ final class AuthController
             'roles' => $user['roles'] ?? [],
         ]);
 
+        $token = $this->sessionRepository->create((string) $user['id']);
+        $this->issueSessionCookie($token);
+
         $this->respond([
             'code' => 0,
-            'result' => $this->toAuthResult($user, $this->sessionRepository->create((string) $user['id'])),
+            'result' => $this->toAuthResult($user, $token),
+            'message' => 'Success',
+        ]);
+    }
+
+    public function logout(): void
+    {
+        $token = $this->extractToken();
+        if ($token !== null && $token !== '') {
+            $this->sessionRepository->revokeByToken($token);
+        }
+        $this->clearSessionCookie();
+
+        $this->respond([
+            'code' => 0,
+            'result' => null,
             'message' => 'Success',
         ]);
     }
@@ -126,7 +144,31 @@ final class AuthController
             return trim($matches[1]);
         }
 
-        return $_SERVER['HTTP_X_API_TOKEN'] ?? null;
+        return $_SERVER['HTTP_X_API_TOKEN'] ?? ($_COOKIE['radio_session'] ?? null);
+    }
+
+    private function issueSessionCookie(string $token, int $ttlSeconds = 28800): void
+    {
+        $this->writeSessionCookie($token, time() + $ttlSeconds);
+    }
+
+    private function clearSessionCookie(): void
+    {
+        $this->writeSessionCookie('', time() - 3600);
+    }
+
+    private function writeSessionCookie(string $value, int $expires): void
+    {
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ($_SERVER['REQUEST_SCHEME'] ?? 'http');
+        $secure = $proto === 'https' || (getenv('APP_ENV') ?: 'local') === 'production';
+
+        setcookie('radio_session', $value, [
+            'expires' => $expires,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure' => $secure,
+        ]);
     }
 
     private function respond(array $payload, int $status = 200): void
