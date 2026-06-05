@@ -1,0 +1,21 @@
+# Normalize line endings: store everything as LF in the repo
+* text=auto eol=lf
+
+# Shell scripts must stay LF
+*.sh text eol=lf
+
+# Windows scripts stay CRLF
+*.ps1 text eol=crlf
+
+# Binary assets (no normalization)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp3 binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
