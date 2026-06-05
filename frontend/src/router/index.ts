@@ -7,7 +7,7 @@ import routes from './routes';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/radio-platform/dashboard' },
+    { path: '/', redirect: '/radio-platform/operations' },
     ...routes,
   ],
 });
@@ -16,7 +16,7 @@ router.beforeEach((to) => {
   const authed = isAuthenticated();
 
   if (to.path === '/login') {
-    return authed ? { path: '/radio-platform/dashboard' } : true;
+    return authed ? { path: '/radio-platform/operations' } : true;
   }
 
   if (!authed) {
