@@ -122,8 +122,12 @@ Additional hardening already enforced in code:
 - **Security headers**: the nginx gateway sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin` on both SPA and API responses (clickjacking / MIME-sniffing protection).
 - **Render pipeline regression test**: `media/ffmpeg/test_render.sh` guards the FFmpeg sponsor-render logic. Run with `docker compose -f docker-compose.prod.yml exec -T worker bash /var/media-tools/ffmpeg/test_render.sh`.
 
+Known limitation (audio-first platform):
+
+- **Video bulletins + video sponsor**: the FFmpeg video branch (`render_ad_injection.sh`) is only taken when **both** the main media and the sponsor asset have a video stream (an audio sponsor over a video bulletin safely falls back to the audio crossfade). The video crossfade `xfade` offset is derived from the container duration; for true video+video crossfades verify A/V sync on a sample before relying on it in production. Pure audio (the radio use case) is fully covered by the regression test.
+
 Still operator-owned (set for your environment):
 
-- **CORS**: replace the `example.com` placeholder in `docker/nginx/nginx.prod.conf` (the `$cors_allow_origin` map) with your real panel domain(s), and set `MINIO_API_CORS_ALLOW_ORIGIN` to match.
+- **CORS**: replace the `example.com` placeholder in `docker/nginx/nginx.prod.conf` (the `$cors_allow_origin` map) with your real panel domain(s), and set `MINIO_API_CORS_ALLOW_ORIGIN` to match. For a hardened deployment also **remove the `localhost`/`127.0.0.1`/`192.168.*`/`10.*` reflections** from that map — combined with `Access-Control-Allow-Credentials: true` they let any page on those origins make credentialed cross-origin calls. (Low risk: an attacker must already control content on a loopback/private-range origin. The default same-origin `/api/v1` flow does not use CORS at all.)
 - **TLS**: terminate HTTPS at the nginx gateway (or an upstream load balancer) before exposing publicly.
 - **Tokens**: the frontend currently stores the session token in `localStorage`; for a hardened deployment consider serving it as an `HttpOnly` cookie.

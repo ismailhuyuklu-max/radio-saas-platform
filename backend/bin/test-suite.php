@@ -76,7 +76,19 @@ function httpJsonRequest(string $method, string $url, array $payload = [], array
     return [
         'status' => (int) $matches[1],
         'body' => $decoded,
+        'headers' => $responseHeaders,
     ];
+}
+
+function extractSessionCookie(array $response): string
+{
+    foreach ($response['headers'] ?? [] as $header) {
+        if (preg_match('/^Set-Cookie:\s*radio_session=([^;]+)/i', $header, $m)) {
+            return trim($m[1]);
+        }
+    }
+
+    return '';
 }
 
 try {
@@ -112,10 +124,15 @@ try {
     assertTrue($loginResponse['status'] === 200, 'Login endpoint did not return HTTP 200.');
     assertTrue(($loginResponse['body']['code'] ?? null) === 0, 'Login response code is not 0.');
     assertTrue(is_array($loginResponse['body']['result'] ?? null), 'Login result payload is missing.');
-    assertTrue(!empty($loginResponse['body']['result']['token'] ?? null), 'Login token is missing.');
+    assertTrue(!empty($loginResponse['body']['result']['username'] ?? null), 'Login profile (username) is missing.');
+    assertTrue(empty($loginResponse['body']['result']['token'] ?? null), 'Login response must NOT leak the raw token in the body.');
     succeed('Auth login endpoint returned a valid Vben-compatible payload.');
 
-    $authorizationHeaders = ['Authorization: Bearer ' . $loginResponse['body']['result']['token']];
+    // The session token now lives only in the HttpOnly cookie; authenticate
+    // subsequent requests with it (accepted via the cookie->Bearer promotion).
+    $sessionToken = extractSessionCookie($loginResponse);
+    assertTrue($sessionToken !== '', 'Login did not set the HttpOnly session cookie.');
+    $authorizationHeaders = ['Cookie: radio_session=' . $sessionToken];
     $stationResponse = httpJsonRequest('POST', $gatewayBase . '/stations', [
         'name' => 'Smoke Test Station',
         'slug' => 'smoke-station-' . bin2hex(random_bytes(4)),
