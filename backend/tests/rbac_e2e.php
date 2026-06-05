@@ -86,6 +86,12 @@ try {
     check(call('GET', $base . '/users', $viewerToken) === 403, 'viewer GET /users → 403');
     check(call('GET', $base . '/audit/logs', $viewerToken) === 403, 'viewer GET /audit/logs → 403');
 
+    // media:write guard must resolve (regression guard for the guard() method).
+    // viewer is denied (403); editor passes the guard and fails on the missing
+    // file instead (400/4xx) — never a 500 "undefined method".
+    check(call('POST', $base . '/media/upload', $viewerToken) === 403, 'viewer POST /media/upload → 403');
+    check(call('POST', $base . '/media/upload', $editorToken) < 500, 'editor POST /media/upload guard resolves (no 500)');
+
     // editor: can write content, cannot write infra, cannot administer
     check(call('GET', $base . '/plans', $editorToken) === 200, 'editor GET /plans → 200');
     check(call('POST', $base . '/stations', $editorToken) === 403, 'editor POST /stations → 403');

@@ -197,10 +197,9 @@ final class MediaController
         return $detected;
     }
 
-    private function authenticate(): void
+    private function guard(string $permission): void
     {
-        $token = $this->extractToken();
-        $this->authenticator->authenticate($token);
+        $this->authenticator->authorize($this->extractToken(), $permission);
     }
 
     private function extractToken(): ?string
