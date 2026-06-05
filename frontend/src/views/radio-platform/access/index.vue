@@ -16,14 +16,23 @@ import {
 
 const CheckboxGroup = Checkbox.Group;
 
+// Roles mirror the backend RBAC policy (RadioSaaS\Service\Rbac).
 const ROLE_LABELS: Record<string, string> = {
   super: 'Süper Yönetici',
   radio_manager: 'Radyo Yöneticisi',
-  planner: 'Planlayıcı',
   editor: 'Editör',
-  auditor: 'Denetçi',
+  viewer: 'İzleyici',
 };
-const roleOptions = Object.entries(ROLE_LABELS).map(([value, label]) => ({ label, value }));
+const ROLE_HINTS: Record<string, string> = {
+  super: 'Tam yetki — kullanıcı ve rol yönetimi dahil',
+  radio_manager: 'Tüm yayın operasyonları (istasyon, sponsor, plan)',
+  editor: 'İçerik oluşturma/düzenleme (plan, medya)',
+  viewer: 'Salt-okunur — panoları ve listeleri görüntüler',
+};
+const roleOptions = Object.entries(ROLE_LABELS).map(([value, label]) => ({
+  label: `${label} — ${ROLE_HINTS[value] ?? ''}`,
+  value,
+}));
 
 const ACTION_LABELS: Record<string, string> = {
   login: 'Giriş yapıldı',

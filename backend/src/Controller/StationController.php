@@ -24,7 +24,7 @@ final class StationController
 
     public function index(): void
     {
-        $this->authenticate();
+        $this->guard('stations:view');
 
         $filters = [
             'keyword' => $_GET['keyword'] ?? null,
@@ -39,7 +39,7 @@ final class StationController
 
     public function store(): void
     {
-        $this->authenticate();
+        $this->guard('stations:write');
         $payload = $this->readJsonPayload();
         $name = trim((string) ($payload['name'] ?? ''));
         $regionCode = trim((string) ($payload['region_code'] ?? $payload['region'] ?? ''));
@@ -75,7 +75,7 @@ final class StationController
 
     public function update(string $stationId): void
     {
-        $this->authenticate();
+        $this->guard('stations:write');
         $existing = $this->stationRepository->findById($stationId);
         if ($existing === null) {
             throw new RuntimeException('Station not found.');
@@ -111,7 +111,7 @@ final class StationController
 
     public function destroy(string $stationId): void
     {
-        $this->authenticate();
+        $this->guard('stations:delete');
         $existing = $this->stationRepository->findById($stationId);
         if ($existing === null) {
             throw new RuntimeException('Station not found.');
@@ -128,7 +128,7 @@ final class StationController
 
     public function toggle(string $stationId): void
     {
-        $this->authenticate();
+        $this->guard('stations:write');
         $payload = $this->readJsonPayload();
         $isActive = $this->readBool($payload['is_active'] ?? null, true);
 
@@ -147,7 +147,7 @@ final class StationController
 
     public function generateToken(string $stationId): void
     {
-        $this->authenticate();
+        $this->guard('stations:write');
 
         $station = $this->stationRepository->findById($stationId);
         if ($station === null) {
@@ -167,14 +167,14 @@ final class StationController
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function authenticate(): void
+    private function guard(string $permission): void
     {
         $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
         if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $matches)) {
             $token = trim($matches[1]);
         }
 
-        $this->authenticator->authenticate($token);
+        $this->authenticator->authorize($token, $permission);
     }
 
     private function resolveRegionId(string $regionCode): ?string

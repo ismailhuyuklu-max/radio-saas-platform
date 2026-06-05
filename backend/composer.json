@@ -18,6 +18,12 @@
   "scripts": {
     "worker": [
       "php bin/queue-worker.php"
+    ],
+    "test": [
+      "php tests/RbacTest.php"
+    ],
+    "test:e2e": [
+      "php tests/rbac_e2e.php"
     ]
   }
 }

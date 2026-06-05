@@ -22,7 +22,7 @@ final class PlanningController
 
     public function index(): void
     {
-        $this->authenticate();
+        $this->guard('plans:view');
         $filters = [
             'date' => $_GET['date'] ?? date('Y-m-d'),
             'region' => $_GET['region'] ?? null,
@@ -42,7 +42,7 @@ final class PlanningController
 
     public function store(): void
     {
-        $this->authenticate();
+        $this->guard('plans:write');
         $payload = $this->readJsonPayload();
         $validated = $this->normalizePayload($payload);
         if (empty($validated['region_id'])) {
@@ -63,7 +63,7 @@ final class PlanningController
 
     public function update(string $planId): void
     {
-        $this->authenticate();
+        $this->guard('plans:write');
         $existing = $this->planRepository->findById($planId);
         if ($existing === null) {
             throw new RuntimeException('Plan not found.');
@@ -83,14 +83,14 @@ final class PlanningController
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function authenticate(): void
+    private function guard(string $permission): void
     {
         $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
         if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $matches)) {
             $token = trim($matches[1]);
         }
 
-        $this->authenticator->authenticate($token);
+        $this->authenticator->authorize($token, $permission);
     }
 
     private function readJsonPayload(): array

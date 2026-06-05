@@ -461,7 +461,7 @@ $userRepository = new UserRepository($pdo);
 $adminSessionRepository = new AdminSessionRepository($pdo);
 $matrixRepository = new MatrixRepository($pdo, $mediaRepository, $sponsorRepository);
 
-$adminAuthenticator = new AdminAuthenticator($adminSessionRepository);
+$adminAuthenticator = new AdminAuthenticator($adminSessionRepository, $auditLogRepository);
 $authenticator = new TokenAuthenticator($tokenRepository, $stationRepository);
 $feedService = new MediaFeedService($stationRepository, $mediaRepository, $sponsorRepository, $storage);
 $renderQueue = new RenderQueueService($jobRepository);

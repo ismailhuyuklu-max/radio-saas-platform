@@ -25,21 +25,21 @@ final class MatrixController
 
     public function regions(): void
     {
-        $this->authenticate();
+        $this->guard('matrix:view');
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($this->matrixRepository->listRegions(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function matrix(): void
     {
-        $this->authenticate();
+        $this->guard('matrix:view');
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($this->matrixRepository->buildMatrix(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function assignSponsor(): void
     {
-        $this->authenticate();
+        $this->guard('sponsors:write');
 
         $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
         $payload = str_contains($contentType, 'application/json')
@@ -112,7 +112,7 @@ final class MatrixController
 
     public function sponsors(): void
     {
-        $this->authenticate();
+        $this->guard('sponsors:view');
 
         $rows = $this->matrixRepository->listSponsors();
         $out = array_map(static function (array $r): array {
@@ -145,7 +145,7 @@ final class MatrixController
 
     public function deleteSponsor(string $id): void
     {
-        $this->authenticate();
+        $this->guard('sponsors:write');
 
         $this->matrixRepository->deleteSponsor($id);
         $this->auditLogRepository->log('admin', 'delete', 'sponsor', $id, []);
@@ -156,14 +156,14 @@ final class MatrixController
 
     public function refresh(): void
     {
-        $this->authenticate();
+        $this->guard('matrix:refresh');
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['refreshed' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function live(): void
     {
-        $this->authenticate();
+        $this->guard('matrix:view');
 
         $regionCode = (string) ($_GET['region'] ?? 'marmara');
         $region = $this->regionRepository->findByCode($regionCode);
@@ -244,14 +244,14 @@ final class MatrixController
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function authenticate(): void
+    private function guard(string $permission): void
     {
         $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
         if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $matches)) {
             $token = trim($matches[1]);
         }
 
-        $this->authenticator->authenticate($token);
+        $this->authenticator->authorize($token, $permission);
     }
 
     private function readBool(mixed $value, bool $default = false): bool

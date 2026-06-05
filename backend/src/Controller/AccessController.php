@@ -7,6 +7,7 @@ namespace RadioSaaS\Controller;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\Rbac;
 use RuntimeException;
 
 final class AccessController
@@ -20,14 +21,14 @@ final class AccessController
 
     public function users(): void
     {
-        $this->authenticate();
+        $this->guard('users:manage');
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($this->userRepository->listUsers(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function updateRoles(string $userId): void
     {
-        $this->authenticate();
+        $this->guard('users:manage');
         $payload = $this->readJsonPayload();
         $roles = $payload['roles'] ?? [];
 
@@ -38,6 +39,12 @@ final class AccessController
 
         if (!is_array($roles)) {
             throw new RuntimeException('Roles payload is invalid.');
+        }
+
+        // Only persist known, assignable roles — reject typos/unknown roles.
+        $roles = Rbac::sanitizeRoles($roles);
+        if ($roles === []) {
+            throw new RuntimeException('At least one valid role is required.');
         }
 
         $user = $this->userRepository->updateRoles($userId, $roles);
@@ -57,7 +64,7 @@ final class AccessController
 
     public function toggleActive(string $userId): void
     {
-        $this->authenticate();
+        $this->guard('users:manage');
         $payload = $this->readJsonPayload();
         $isActive = $this->readBool($payload['is_active'] ?? true);
 
@@ -78,7 +85,7 @@ final class AccessController
 
     public function auditLogs(): void
     {
-        $this->authenticate();
+        $this->guard('audit:view');
         $limit = max(1, min(200, (int) ($_GET['limit'] ?? 100)));
         $filters = [
             'actor_username' => trim((string) ($_GET['actor_username'] ?? '')),
@@ -101,14 +108,14 @@ final class AccessController
         echo json_encode($this->auditLogRepository->listLogs($filters, $limit), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function authenticate(): void
+    private function guard(string $permission): void
     {
         $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
         if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $matches)) {
             $token = trim($matches[1]);
         }
 
-        $this->authenticator->authenticate($token, ['super']);
+        $this->authenticator->authorize($token, $permission);
     }
 
     private function readJsonPayload(): array

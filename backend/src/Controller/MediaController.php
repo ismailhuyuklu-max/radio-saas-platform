@@ -38,7 +38,7 @@ final class MediaController
 
     public function upload(): void
     {
-        $this->authenticate();
+        $this->guard('media:write');
 
         if (!isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
             throw new RuntimeException('File upload is required.');
@@ -118,7 +118,7 @@ final class MediaController
 
     public function uploadSponsorAsset(): void
     {
-        $this->authenticate();
+        $this->guard('media:write');
 
         if (!isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
             throw new RuntimeException('Sponsor asset upload is required.');
