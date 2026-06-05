@@ -10,6 +10,7 @@ use RadioSaaS\Controller\MatrixController;
 use RadioSaaS\Controller\MediaController;
 use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
+use RadioSaaS\Controller\ReportController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Infrastructure\PdoFactory;
@@ -479,6 +480,7 @@ $planningController = new PlanningController($adminAuthenticator, $planRepositor
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
+$reportController = new ReportController($adminAuthenticator, $adCampaignRepository, $planRepository, $stationRepository, $auditLogRepository);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -617,6 +619,11 @@ try {
 
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/token$#', $path, $matches)) {
         $stationController->generateToken($matches[1]);
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/api/v1/reports/([a-z-]+)$#', $path, $matches)) {
+        $reportController->export($matches[1]);
         return;
     }
 

@@ -36,7 +36,10 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
   },
   {
     title: 'Ticari',
-    items: [{ path: '/radio-platform/ad-traffic', label: 'Reklam Trafik', icon: 'trending' }],
+    items: [
+      { path: '/radio-platform/ad-traffic', label: 'Reklam Trafik', icon: 'trending' },
+      { path: '/radio-platform/reports', label: 'Raporlar', icon: 'report' },
+    ],
   },
   {
     title: 'Sistem',
@@ -62,6 +65,7 @@ const ICONS: Record<string, string> = {
   shield: 'M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z',
   key: 'M14 7a4 4 0 1 0-3.8 5.3L7 15.5V18h2.5l.5-.5.7-.7.8-.8a4 4 0 0 0 2.5-9z M16 8.5h.01',
   server: 'M4 5h16v5H4z M4 14h16v5H4z M7 7.5h.01 M7 16.5h.01',
+  report: 'M6 3h9l5 5v13H6z M14 3v6h6 M12 12v6 M9 15l3 3 3-3',
 };
 
 const allItems = computed(() => navGroups.flatMap((group) => group.items));
