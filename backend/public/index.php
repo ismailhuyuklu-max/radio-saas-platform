@@ -490,7 +490,7 @@ $feedController = new FeedController($authenticator, $feedService, $auditLogRepo
 $mediaController = new MediaController($adminAuthenticator, $mediaRepository, $renderQueue, $storage, $regionRepository, $auditLogRepository);
 $matrixController = new MatrixController($adminAuthenticator, $matrixRepository, $regionRepository, $stationRepository, $feedService, $auditLogRepository);
 $stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository);
-$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository);
+$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -599,6 +599,11 @@ try {
 
     if ($method === 'GET' && $path === '/api/v1/plans') {
         $planningController->index();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/plans/bulk') {
+        $planningController->bulkStore();
         return;
     }
 

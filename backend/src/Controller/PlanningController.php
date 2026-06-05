@@ -7,7 +7,9 @@ namespace RadioSaaS\Controller;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
 use RadioSaaS\Repository\RegionRepository;
+use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\TrafficPlanner;
 use RuntimeException;
 
 final class PlanningController
@@ -16,8 +18,118 @@ final class PlanningController
         private readonly AdminAuthenticator $authenticator,
         private readonly ContentPlanRepository $planRepository,
         private readonly AuditLogRepository $auditLogRepository,
-        private readonly RegionRepository $regionRepository
+        private readonly RegionRepository $regionRepository,
+        private readonly ?StationRepository $stationRepository = null
     ) {
+    }
+
+    /**
+     * Traffic-center bulk planner: target (regions/stations) × slots × dates,
+     * created in one transaction with conflict reporting. Powers one-click
+     * "Tüm Türkiye / 7 gün / Sabah Haber Kuşağı" style planning.
+     */
+    public function bulkStore(): void
+    {
+        $this->guard('plans:write');
+        $payload = $this->readJsonPayload();
+
+        $regionCodes = $this->asArray($payload['target_regions'] ?? []);
+        $stationIds = $this->asArray($payload['station_ids'] ?? []);
+        $slots = $this->asArray($payload['slots'] ?? []);
+        $startDate = (string) ($payload['start_date'] ?? date('Y-m-d'));
+        $repeatDays = (int) ($payload['repeat_days'] ?? 1);
+
+        if ($slots === []) {
+            throw new RuntimeException('En az bir yayın kuşağı (slot) gerekli.');
+        }
+
+        // Build targets: region-scope (station_id null) + station-scope.
+        $targets = [];
+        foreach ($regionCodes as $code) {
+            $rid = $this->resolveRegionId((string) $code);
+            if ($rid !== null) {
+                $targets[] = ['region_id' => $rid, 'region_code' => (string) $code, 'station_id' => null];
+            }
+        }
+        foreach ($stationIds as $sid) {
+            $station = $this->stationRepository?->findById((string) $sid);
+            if ($station !== null) {
+                $targets[] = [
+                    'region_id' => (string) $station['region_id'],
+                    'region_code' => (string) ($station['region_code'] ?? ''),
+                    'station_id' => (string) $sid,
+                ];
+            }
+        }
+
+        if ($targets === []) {
+            throw new RuntimeException('Geçerli bir hedef (bölge/istasyon) seçilmedi.');
+        }
+
+        $dates = TrafficPlanner::expandDates($startDate, $repeatDays);
+        $specs = TrafficPlanner::buildSpecs($targets, $slots, $dates);
+
+        $created = 0;
+        $skipped = 0;
+        $conflicts = [];
+        foreach ($specs as $spec) {
+            $plan = [
+                'region_id' => (string) $spec['region_id'],
+                'station_id' => $spec['station_id'] ?? null,
+                'part_code' => (string) ($spec['part_code'] ?? 'news'),
+                'slot_time' => (string) ($spec['slot_time'] ?? '08:00'),
+                'plan_date' => (string) $spec['plan_date'],
+                'content_title' => (string) ($spec['content_title'] ?? 'Yayın'),
+                'content_kind' => (string) ($spec['part_code'] ?? 'news'),
+                'status' => (string) ($spec['status'] ?? 'published'),
+                'is_global' => false,
+                'target_regions' => [$spec['region_code'] ?? ''],
+                'target_parts' => [$spec['part_code'] ?? 'news'],
+                'created_by' => 'admin',
+            ];
+            // Region-level plans must not double-book a slot; station-level plans
+            // are per-station so the region conflict check is skipped for them.
+            if ($plan['station_id'] === null && $this->planRepository->hasConflict($plan)) {
+                $skipped++;
+                if (count($conflicts) < 25) {
+                    $conflicts[] = $plan['slot_time'] . ' · ' . ($spec['region_code'] ?? '') . ' · ' . $plan['plan_date'];
+                }
+                continue;
+            }
+            $this->planRepository->upsert($plan);
+            $created++;
+        }
+
+        $this->auditLogRepository->log('admin', 'bulk_plan', 'content_plan', null, [
+            'created' => $created,
+            'skipped' => $skipped,
+            'targets' => count($targets),
+            'slots' => count($slots),
+            'days' => count($dates),
+        ]);
+
+        http_response_code(201);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'code' => 0,
+            'result' => [
+                'created' => $created,
+                'skipped' => $skipped,
+                'total' => count($specs),
+                'conflicts' => $conflicts,
+            ],
+            'message' => 'Success',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** @return list<mixed> */
+    private function asArray(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? array_values($decoded) : [];
+        }
+        return is_array($value) ? array_values($value) : [];
     }
 
     public function index(): void

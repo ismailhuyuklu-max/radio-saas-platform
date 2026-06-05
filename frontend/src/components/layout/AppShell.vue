@@ -29,6 +29,7 @@ const allNavGroups: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Yayın Yönetimi',
     items: [
+      { path: '/radio-platform/traffic-center', label: 'Yayın Trafik Merkezi', icon: 'target', perm: 'plans:write' },
       { path: '/radio-platform/timeline', label: 'Zaman Çizelgesi', icon: 'gantt', perm: 'plans:view' },
       { path: '/radio-platform/kanban', label: 'Haber Akışı', icon: 'kanban', perm: 'plans:view' },
       { path: '/radio-platform/planning', label: 'Planlama', icon: 'calendar', perm: 'plans:view' },
@@ -73,6 +74,7 @@ const ICONS: Record<string, string> = {
   activity: 'M3 12h4l2 6 4-14 2 8h6',
   music: 'M9 18V5l12-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   gantt: 'M4 5h10 M4 10h14 M4 15h7 M4 20h11',
+  target: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M12 12h.01',
   kanban: 'M4 4h4v16H4z M10 4h4v10h-4z M16 4h4v7h-4z',
   trending: 'M3 17l6-6 4 4 8-8 M15 7h6v6',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',

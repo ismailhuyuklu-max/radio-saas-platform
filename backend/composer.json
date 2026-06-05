@@ -28,7 +28,8 @@
       "php tests/LoginThrottleTest.php",
       "php tests/HttpExceptionTest.php",
       "php tests/PaginationTest.php",
-      "php tests/BroadcastSlotTest.php"
+      "php tests/BroadcastSlotTest.php",
+      "php tests/TrafficPlannerTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",

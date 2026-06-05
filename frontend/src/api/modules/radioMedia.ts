@@ -704,6 +704,25 @@ export function savePlanning(payload: PlanningSavePayload) {
   return requestClient.post('/plans', payload);
 }
 
+export interface BulkPlanPayload {
+  target_regions?: string[];
+  station_ids?: string[];
+  slots: Array<{ slot_time: string; part_code: string; content_title: string; status: string }>;
+  start_date: string;
+  repeat_days: number;
+}
+
+export interface BulkPlanResult {
+  created: number;
+  skipped: number;
+  total: number;
+  conflicts: string[];
+}
+
+export function bulkPlan(payload: BulkPlanPayload) {
+  return requestClient.post<{ code: number; result: BulkPlanResult }>('/plans/bulk', payload);
+}
+
 export function updatePlanning(planId: string, payload: PlanningSavePayload) {
   return sendApiRequest('PATCH', `/plans/${planId}`, payload);
 }

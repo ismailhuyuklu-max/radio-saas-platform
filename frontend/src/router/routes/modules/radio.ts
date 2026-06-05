@@ -84,6 +84,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/traffic-center',
+        name: 'RadioPlatformTrafficCenter',
+        component: () => import('#/views/radio-platform/traffic-center/index.vue'),
+        meta: {
+          perm: 'plans:write',
+          icon: 'lucide:target',
+          title: 'Yayın Trafik Merkezi',
+          authCode: 'radio:planning:view',
+        },
+      },
+      {
         path: '/radio-platform/timeline',
         name: 'RadioPlatformTimeline',
         component: () => import('#/views/radio-platform/timeline/index.vue'),
