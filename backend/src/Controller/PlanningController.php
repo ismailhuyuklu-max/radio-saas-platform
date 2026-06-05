@@ -6,6 +6,7 @@ namespace RadioSaaS\Controller;
 
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
+use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RuntimeException;
 
@@ -14,7 +15,8 @@ final class PlanningController
     public function __construct(
         private readonly AdminAuthenticator $authenticator,
         private readonly ContentPlanRepository $planRepository,
-        private readonly AuditLogRepository $auditLogRepository
+        private readonly AuditLogRepository $auditLogRepository,
+        private readonly RegionRepository $regionRepository
     ) {
     }
 
@@ -43,6 +45,9 @@ final class PlanningController
         $this->authenticate();
         $payload = $this->readJsonPayload();
         $validated = $this->normalizePayload($payload);
+        if (empty($validated['region_id'])) {
+            throw new RuntimeException('Region is required.');
+        }
         $this->assertNoConflict($validated);
         $plan = $this->planRepository->upsert($validated);
         $this->auditLogRepository->log('admin', 'create', 'content_plan', (string) ($plan['id'] ?? ''), $plan);
@@ -117,7 +122,7 @@ final class PlanningController
 
         return [
             'id' => $payload['id'] ?? null,
-            'region_id' => $payload['region_id'] ?? $payload['regionId'] ?? null,
+            'region_id' => $this->resolveRegionId($payload['region_id'] ?? $payload['regionId'] ?? null),
             'station_id' => $payload['station_id'] ?? $payload['stationId'] ?? null,
             'part_code' => $payload['part_code'] ?? $payload['partCode'] ?? 'news',
             'slot_time' => $payload['slot_time'] ?? $payload['slotTime'] ?? '08:00',
@@ -131,6 +136,19 @@ final class PlanningController
             'notes' => $payload['notes'] ?? null,
             'created_by' => $payload['created_by'] ?? 'admin',
         ];
+    }
+
+    private function resolveRegionId(?string $region): ?string
+    {
+        $region = $region !== null ? trim($region) : '';
+        if ($region === '') {
+            return null;
+        }
+        if (preg_match('/^[0-9a-f-]{36}$/i', $region)) {
+            return $region;
+        }
+
+        return $this->regionRepository->findIdByCode($region);
     }
 
     private function readBool(mixed $value, bool $default = false): bool

@@ -211,9 +211,7 @@ async function submitPlan() {
 
   saving.value = true;
   try {
-    const payload = {
-      id: editingPlanId.value ?? undefined,
-      region_id: formState.value.region_id,
+    const base = {
       station_id: formState.value.station_id || null,
       part_code: formState.value.part_code,
       slot_time: formState.value.slot_time,
@@ -222,17 +220,52 @@ async function submitPlan() {
       content_kind: formState.value.content_kind,
       status: formState.value.status,
       is_global: formState.value.is_global,
-      target_regions: [formState.value.region_id],
       target_parts: [formState.value.part_code],
       notes: formState.value.notes ?? '',
       created_by: 'admin',
     };
 
     if (editingPlanId.value) {
-      await updatePlanning(editingPlanId.value, payload);
+      await updatePlanning(editingPlanId.value, {
+        ...base,
+        id: editingPlanId.value,
+        region_id: formState.value.region_id,
+        target_regions: [formState.value.region_id],
+      });
       message.success('Plan güncellendi.');
+    } else if (formState.value.is_global) {
+      // Global plan: her bölge için ayrı bir plan satırı oluştur, çakışanları atla.
+      const regions = [...REGION_LIST];
+      let created = 0;
+      const conflicts: string[] = [];
+      for (const region of regions) {
+        try {
+          await savePlanning({ ...base, region_id: region, target_regions: regions });
+          created += 1;
+        } catch (error) {
+          const msg = extractApiError(error) ?? '';
+          if (/çakış|conflict/i.test(msg)) {
+            conflicts.push(REGION_LABELS[region]);
+          } else {
+            throw error;
+          }
+        }
+      }
+      if (created > 0) {
+        message.success(`${created} bölgede plan oluşturuldu.`);
+      }
+      if (conflicts.length > 0) {
+        message.warning(`Çakışan bölgeler atlandı: ${conflicts.join(', ')}`);
+      }
+      if (created === 0 && conflicts.length === 0) {
+        message.error('Plan oluşturulamadı.');
+      }
     } else {
-      await savePlanning(payload);
+      await savePlanning({
+        ...base,
+        region_id: formState.value.region_id,
+        target_regions: [formState.value.region_id],
+      });
       message.success('Plan oluşturuldu.');
     }
 
@@ -349,7 +382,7 @@ onMounted(async () => {
               <Select v-model:value="formState.status" :options="statusOptions" />
             </div>
             <div class="form-field switch-field">
-              <label>Global</label>
+              <label>Tüm bölgeler</label>
               <Switch v-model:checked="formState.is_global" />
             </div>
             <div class="form-field span-2">

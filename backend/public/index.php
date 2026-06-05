@@ -471,7 +471,7 @@ $feedController = new FeedController($authenticator, $feedService, $auditLogRepo
 $mediaController = new MediaController($adminAuthenticator, $mediaRepository, $renderQueue, $storage, $regionRepository, $auditLogRepository);
 $matrixController = new MatrixController($adminAuthenticator, $matrixRepository, $regionRepository, $stationRepository, $feedService, $auditLogRepository);
 $stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository);
-$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository);
+$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
