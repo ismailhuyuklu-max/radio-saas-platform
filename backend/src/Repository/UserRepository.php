@@ -86,6 +86,14 @@ final class UserRepository
         ]);
     }
 
+    public function updatePassword(string $userId, string $passwordHash): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET password_hash = :h, updated_at = now() WHERE id = :id'
+        );
+        $stmt->execute(['id' => $userId, 'h' => $passwordHash]);
+    }
+
     public function disableMfa(string $userId): void
     {
         $stmt = $this->pdo->prepare(

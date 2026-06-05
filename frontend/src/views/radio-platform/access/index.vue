@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import dayjs from 'dayjs';
 
-import { Button, Checkbox, Modal, Switch, message } from 'ant-design-vue';
+import { Button, Checkbox, Input, Modal, Popconfirm, Switch, message } from 'ant-design-vue';
 
 import {
   type AuditLogItem,
@@ -13,6 +13,8 @@ import {
   toggleUserActive,
   updateUserRoles,
 } from '#/api/modules/radioMedia';
+import { adminResetMfa, adminResetPassword } from '#/api/modules/auth';
+import { extractApiError } from '#/utils/api-error';
 
 const CheckboxGroup = Checkbox.Group;
 
@@ -124,6 +126,44 @@ async function saveRoles() {
   }
 }
 
+/* Admin password reset modal */
+const pwOpen = ref(false);
+const pwSaving = ref(false);
+const pwUser = ref<UserAdminItem | null>(null);
+const pwValue = ref('');
+function openResetPassword(u: UserAdminItem) {
+  pwUser.value = u;
+  pwValue.value = '';
+  pwOpen.value = true;
+}
+async function saveResetPassword() {
+  if (!pwUser.value) return;
+  if (pwValue.value.length < 6) {
+    message.warning('Şifre en az 6 karakter olmalı.');
+    return;
+  }
+  pwSaving.value = true;
+  try {
+    await adminResetPassword(pwUser.value.id, pwValue.value);
+    message.success(`${pwUser.value.username} için şifre sıfırlandı.`);
+    pwOpen.value = false;
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'Şifre sıfırlanamadı.');
+  } finally {
+    pwSaving.value = false;
+  }
+}
+
+async function resetUserMfa(u: UserAdminItem) {
+  try {
+    await adminResetMfa(u.id);
+    message.success(`${u.username} için 2FA sıfırlandı.`);
+    await load();
+  } catch (error) {
+    message.error(extractApiError(error) ?? '2FA sıfırlanamadı.');
+  }
+}
+
 async function exportCsv() {
   exporting.value = true;
   try {
@@ -182,7 +222,11 @@ onMounted(load);
                 <Switch :checked="u.is_active" checked-children="Aktif" un-checked-children="Pasif" @change="(c: unknown) => toggleUser(u, c === true)" />
               </td>
               <td class="ta-r">
-                <button class="acc__lnk" type="button" @click="openRoles(u)">Rolleri düzenle</button>
+                <button class="acc__lnk" type="button" @click="openRoles(u)">Roller</button>
+                <button class="acc__lnk" type="button" @click="openResetPassword(u)">Şifre</button>
+                <Popconfirm title="Bu kullanıcının 2FA'sı sıfırlansın mı?" ok-text="Sıfırla" cancel-text="Vazgeç" @confirm="resetUserMfa(u)">
+                  <button class="acc__lnk acc__lnk--warn" type="button">2FA Sıfırla</button>
+                </Popconfirm>
               </td>
             </tr>
             <tr v-if="!users.length">
@@ -205,7 +249,13 @@ onMounted(load);
           <div class="acc__roles">
             <span v-for="r in u.roles" :key="r" class="acc__role" :class="{ 'is-super': r === 'super' }">{{ roleLabel(r) }}</span>
           </div>
-          <button class="acc__lnk" type="button" @click="openRoles(u)">Rolleri düzenle</button>
+          <div class="acc__card-actions">
+            <button class="acc__lnk" type="button" @click="openRoles(u)">Roller</button>
+            <button class="acc__lnk" type="button" @click="openResetPassword(u)">Şifre</button>
+            <Popconfirm title="2FA sıfırlansın mı?" ok-text="Sıfırla" cancel-text="Vazgeç" @confirm="resetUserMfa(u)">
+              <button class="acc__lnk acc__lnk--warn" type="button">2FA Sıfırla</button>
+            </Popconfirm>
+          </div>
         </article>
         <p v-if="!users.length" class="acc__empty">Kullanıcı bulunamadı.</p>
       </div>
@@ -236,6 +286,12 @@ onMounted(load);
       <p class="acc__modal-user">{{ editUser?.real_name }} <span>@{{ editUser?.username }}</span></p>
       <CheckboxGroup v-model:value="editRoles" :options="roleOptions" class="acc__role-checks" />
     </Modal>
+
+    <!-- Admin password reset modal -->
+    <Modal v-model:open="pwOpen" title="Şifre Sıfırla" :confirm-loading="pwSaving" ok-text="Sıfırla" cancel-text="Vazgeç" @ok="saveResetPassword">
+      <p class="acc__modal-user">{{ pwUser?.real_name }} <span>@{{ pwUser?.username }}</span></p>
+      <Input v-model:value="pwValue" type="password" placeholder="Yeni şifre (min 6 karakter)" @press-enter="saveResetPassword" />
+    </Modal>
   </div>
 </template>
 
@@ -257,6 +313,14 @@ onMounted(load);
   margin: 2px 0 0;
   font-size: var(--t-sm);
   color: var(--c-text-3);
+}
+.acc__card-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.acc__lnk--warn {
+  color: var(--c-warn) !important;
 }
 .acc__section {
   display: flex;

@@ -7,6 +7,8 @@ namespace RadioSaaS\Controller;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\AdminSessionRepository;
+use RadioSaaS\Repository\LoginThrottleRepository;
+use RadioSaaS\Service\LoginThrottle;
 use RadioSaaS\Service\TotpService;
 
 final class AuthController
@@ -14,7 +16,8 @@ final class AuthController
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly AdminSessionRepository $sessionRepository,
-        private readonly AuditLogRepository $auditLogRepository
+        private readonly AuditLogRepository $auditLogRepository,
+        private readonly ?LoginThrottleRepository $throttleRepository = null
     ) {
     }
 
@@ -32,14 +35,32 @@ final class AuthController
             ], 400);
         }
 
+        // Brute-force throttle: reject while the account is locked.
+        if ($this->throttleRepository !== null) {
+            $status = $this->throttleRepository->status($username);
+            if (LoginThrottle::isLocked($status['locked_until'], time())) {
+                $retry = LoginThrottle::retryAfter($status['locked_until'], time());
+                header('Retry-After: ' . $retry);
+                $this->respond([
+                    'code' => 1,
+                    'result' => null,
+                    'message' => 'Çok fazla başarısız deneme. ' . ceil($retry / 60) . ' dakika sonra tekrar deneyin.',
+                ], 429);
+            }
+        }
+
         $user = $this->userRepository->findByUsername($username);
         if ($user === null || !($user['is_active'] ?? false) || !password_verify($password, (string) $user['password_hash'])) {
+            $this->throttleRepository?->registerFailure($username);
             $this->respond([
                 'code' => 1,
                 'result' => null,
                 'message' => 'Invalid username or password.',
             ], 401);
         }
+
+        // Password correct — clear the throttle counter.
+        $this->throttleRepository?->reset($username);
 
         // Two-factor: if enabled, defer the session until a valid TOTP code is
         // supplied. Return a short-lived signed challenge instead of a session.
@@ -197,6 +218,52 @@ final class AuthController
             ],
             'message' => 'Success',
         ]);
+    }
+
+    /** Self-service password change (verifies the current password). */
+    public function changePassword(): void
+    {
+        $user = $this->requireUser();
+        $payload = $this->readJsonPayload();
+        $current = (string) ($payload['current_password'] ?? '');
+        $next = (string) ($payload['new_password'] ?? '');
+
+        if (strlen($next) < 6) {
+            $this->respond(['code' => 1, 'result' => null, 'message' => 'Yeni şifre en az 6 karakter olmalı.'], 400);
+        }
+        if (!password_verify($current, (string) $user['password_hash'])) {
+            $this->respond(['code' => 1, 'result' => null, 'message' => 'Mevcut şifre hatalı.'], 400);
+        }
+
+        $this->userRepository->updatePassword((string) $user['id'], password_hash($next, PASSWORD_BCRYPT));
+        // Invalidate every other session after a password change.
+        $token = (string) $this->extractToken();
+        $this->sessionRepository->revokeAllForUserExcept((string) $user['id'], $token);
+        $this->auditLogRepository->log((string) $user['username'], 'change_password', 'user', (string) $user['id'], []);
+
+        $this->respond(['code' => 0, 'result' => ['changed' => true], 'message' => 'Success']);
+    }
+
+    /** List the current user's active sessions. */
+    public function sessions(): void
+    {
+        $user = $this->requireUser();
+        $token = (string) $this->extractToken();
+        $this->respond([
+            'code' => 0,
+            'result' => $this->sessionRepository->listActiveForUser((string) $user['id'], $token),
+            'message' => 'Success',
+        ]);
+    }
+
+    /** Revoke every other session ("log out everywhere else"). */
+    public function revokeOtherSessions(): void
+    {
+        $user = $this->requireUser();
+        $token = (string) $this->extractToken();
+        $count = $this->sessionRepository->revokeAllForUserExcept((string) $user['id'], $token);
+        $this->auditLogRepository->log((string) $user['username'], 'revoke_sessions', 'user', (string) $user['id'], ['count' => $count]);
+        $this->respond(['code' => 0, 'result' => ['revoked' => $count], 'message' => 'Success']);
     }
 
     public function logout(): void

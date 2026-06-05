@@ -3,12 +3,18 @@ import { onMounted, ref } from 'vue';
 
 import { Button, Input, message } from 'ant-design-vue';
 
+import dayjs from 'dayjs';
+
 import {
+  changePassword,
   disableMfa,
   enableMfa,
   getMfaStatus,
+  getSessions,
+  revokeOtherSessions,
   setupMfa,
   type MfaStatus,
+  type SessionInfo,
 } from '#/api/modules/auth';
 import { extractApiError } from '#/utils/api-error';
 
@@ -113,6 +119,58 @@ function finishRecovery() {
   qrDataUrl.value = '';
 }
 
+// --- password change ------------------------------------------------------
+const pw = ref({ current: '', next: '', confirm: '' });
+const pwBusy = ref(false);
+async function submitPassword() {
+  if (pw.value.next.length < 6) {
+    message.warning('Yeni şifre en az 6 karakter olmalı.');
+    return;
+  }
+  if (pw.value.next !== pw.value.confirm) {
+    message.warning('Yeni şifreler eşleşmiyor.');
+    return;
+  }
+  pwBusy.value = true;
+  try {
+    await changePassword(pw.value.current, pw.value.next);
+    message.success('Şifre değiştirildi. Diğer oturumlar kapatıldı.');
+    pw.value = { current: '', next: '', confirm: '' };
+    await loadSessions();
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'Şifre değiştirilemedi.');
+  } finally {
+    pwBusy.value = false;
+  }
+}
+
+// --- sessions -------------------------------------------------------------
+const sessions = ref<SessionInfo[]>([]);
+const sessBusy = ref(false);
+function fmt(ts: string) {
+  return dayjs(ts).format('DD.MM.YYYY HH:mm');
+}
+async function loadSessions() {
+  try {
+    const res = await getSessions();
+    sessions.value = res?.result ?? [];
+  } catch {
+    /* ignore */
+  }
+}
+async function revokeOthers() {
+  sessBusy.value = true;
+  try {
+    const res = await revokeOtherSessions();
+    message.success(`${res.result.revoked} oturum kapatıldı.`);
+    await loadSessions();
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'İşlem başarısız.');
+  } finally {
+    sessBusy.value = false;
+  }
+}
+
 async function copyRecovery() {
   try {
     await navigator.clipboard.writeText(recoveryCodes.value.join('\n'));
@@ -122,7 +180,10 @@ async function copyRecovery() {
   }
 }
 
-onMounted(refresh);
+onMounted(async () => {
+  await refresh();
+  await loadSessions();
+});
 </script>
 
 <template>
@@ -204,6 +265,47 @@ onMounted(refresh);
           <Button danger :loading="busy" @click="turnOff">2FA'yı Kapat</Button>
         </div>
       </div>
+    </article>
+
+    <!-- Password change -->
+    <article class="ui-card sec__card">
+      <div class="sec__row">
+        <div class="sec__icon">🔑</div>
+        <div class="sec__info">
+          <h2>Şifre Değiştir</h2>
+          <p>Yeni şifre belirlediğinizde diğer tüm oturumlar otomatik kapatılır.</p>
+        </div>
+      </div>
+      <div class="sec__pwform">
+        <Input v-model:value="pw.current" type="password" placeholder="Mevcut şifre" />
+        <Input v-model:value="pw.next" type="password" placeholder="Yeni şifre (min 6)" />
+        <Input v-model:value="pw.confirm" type="password" placeholder="Yeni şifre (tekrar)" @press-enter="submitPassword" />
+        <Button type="primary" :loading="pwBusy" @click="submitPassword">Şifreyi Güncelle</Button>
+      </div>
+    </article>
+
+    <!-- Active sessions -->
+    <article class="ui-card sec__card">
+      <div class="sec__row">
+        <div class="sec__icon">💻</div>
+        <div class="sec__info">
+          <h2>Aktif Oturumlar</h2>
+          <p>{{ sessions.length }} açık oturum. Şüpheli erişimde diğerlerini kapatın.</p>
+        </div>
+        <Button :loading="sessBusy" :disabled="sessions.length < 2" @click="revokeOthers">
+          Diğerlerini Kapat
+        </Button>
+      </div>
+      <ul class="sec__sessions">
+        <li v-for="s in sessions" :key="s.id">
+          <span class="sec__sess-dot" :class="{ 'is-current': s.is_current }" />
+          <span class="sec__sess-main">
+            {{ s.is_current ? 'Bu oturum' : 'Oturum' }}
+            <small>açılış {{ fmt(s.created_at) }} · bitiş {{ fmt(s.expires_at) }}</small>
+          </span>
+          <span v-if="s.is_current" class="sec__sess-badge">geçerli</span>
+        </li>
+      </ul>
     </article>
   </div>
 </template>
@@ -368,5 +470,61 @@ onMounted(refresh);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--c-text);
+}
+
+.sec__pwform {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+}
+
+.sec__sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sec__sessions li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 0;
+  border-top: 1px solid var(--c-line);
+}
+.sec__sessions li:first-child {
+  border-top: none;
+}
+.sec__sess-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--c-text-3);
+  flex-shrink: 0;
+}
+.sec__sess-dot.is-current {
+  background: var(--c-ok);
+  box-shadow: 0 0 8px var(--c-ok);
+}
+.sec__sess-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--t-sm);
+  color: var(--c-text);
+  font-weight: 600;
+}
+.sec__sess-main small {
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+  font-weight: 400;
+}
+.sec__sess-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--c-ok);
+  background: rgba(52, 211, 153, 0.12);
+  padding: 2px 9px;
+  border-radius: 999px;
 }
 </style>

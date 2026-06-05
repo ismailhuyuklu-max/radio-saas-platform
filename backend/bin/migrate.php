@@ -95,6 +95,16 @@ $pdo->exec(
         ADD COLUMN IF NOT EXISTS mfa_recovery_codes jsonb NOT NULL DEFAULT '[]'::jsonb"
 );
 
+// Security — login brute-force throttle (idempotent).
+$pdo->exec(
+    'CREATE TABLE IF NOT EXISTS login_throttle (
+        username varchar(64) PRIMARY KEY,
+        fail_count integer NOT NULL DEFAULT 0,
+        locked_until timestamptz NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+    )'
+);
+
 $appEnv = getenv('APP_ENV') ?: 'local';
 $defaultUsername = getenv('ADMIN_USERNAME') ?: 'admin';
 $defaultPassword = getenv('ADMIN_PASSWORD') ?: '123456';

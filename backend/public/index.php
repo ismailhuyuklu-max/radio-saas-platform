@@ -20,6 +20,7 @@ use RadioSaaS\Repository\AdminSessionRepository;
 use RadioSaaS\Repository\ApiTokenRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
 use RadioSaaS\Repository\JobRepository;
+use RadioSaaS\Repository\LoginThrottleRepository;
 use RadioSaaS\Repository\MediaContentRepository;
 use RadioSaaS\Repository\MatrixRepository;
 use RadioSaaS\Repository\RegionRepository;
@@ -464,6 +465,7 @@ $auditLogRepository = new AuditLogRepository($pdo);
 $userRepository = new UserRepository($pdo);
 $adCampaignRepository = new AdCampaignRepository($pdo);
 $adminSessionRepository = new AdminSessionRepository($pdo);
+$loginThrottleRepository = new LoginThrottleRepository($pdo);
 $matrixRepository = new MatrixRepository($pdo, $mediaRepository, $sponsorRepository);
 
 $adminAuthenticator = new AdminAuthenticator($adminSessionRepository, $auditLogRepository);
@@ -471,7 +473,7 @@ $authenticator = new TokenAuthenticator($tokenRepository, $stationRepository);
 $feedService = new MediaFeedService($stationRepository, $mediaRepository, $sponsorRepository, $storage);
 $renderQueue = new RenderQueueService($jobRepository);
 
-$authController = new AuthController($userRepository, $adminSessionRepository, $auditLogRepository);
+$authController = new AuthController($userRepository, $adminSessionRepository, $auditLogRepository, $loginThrottleRepository);
 $feedController = new FeedController($authenticator, $feedService, $auditLogRepository);
 $mediaController = new MediaController($adminAuthenticator, $mediaRepository, $renderQueue, $storage, $regionRepository, $auditLogRepository);
 $matrixController = new MatrixController($adminAuthenticator, $matrixRepository, $regionRepository, $stationRepository, $feedService, $auditLogRepository);
@@ -534,6 +536,21 @@ try {
 
     if ($method === 'GET' && $path === '/api/v1/auth/mfa/status') {
         $authController->mfaStatus();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/password') {
+        $authController->changePassword();
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/auth/sessions') {
+        $authController->sessions();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/auth/sessions/revoke-others') {
+        $authController->revokeOtherSessions();
         return;
     }
 
@@ -669,6 +686,16 @@ try {
 
     if ($method === 'PATCH' && preg_match('#^/api/v1/users/([^/]+)/active$#', $path, $matches)) {
         $accessController->toggleActive($matches[1]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/api/v1/users/([^/]+)/password$#', $path, $matches)) {
+        $accessController->resetPassword($matches[1]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/api/v1/users/([^/]+)/mfa/reset$#', $path, $matches)) {
+        $accessController->resetMfa($matches[1]);
         return;
     }
 

@@ -112,6 +112,39 @@ export async function disableMfa(code: string) {
   });
 }
 
+export async function changePassword(currentPassword: string, newPassword: string) {
+  return requestClient.post<{ code: number; result: { changed: boolean } }>('/auth/password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}
+
+export interface SessionInfo {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  is_current: boolean;
+}
+
+export async function getSessions() {
+  return requestClient.get<{ code: number; result: SessionInfo[] }>('/auth/sessions');
+}
+
+export async function revokeOtherSessions() {
+  return requestClient.post<{ code: number; result: { revoked: number } }>(
+    '/auth/sessions/revoke-others',
+    {},
+  );
+}
+
+export async function adminResetPassword(userId: string, newPassword: string) {
+  return requestClient.post(`/users/${userId}/password`, { new_password: newPassword });
+}
+
+export async function adminResetMfa(userId: string) {
+  return requestClient.post(`/users/${userId}/mfa/reset`, {});
+}
+
 export async function logout() {
   try {
     await requestClient.post('/auth/logout', {});

@@ -37,6 +37,44 @@ final class AdminSessionRepository
         $stmt->execute(['token_hash' => hash('sha256', $rawToken)]);
     }
 
+    /**
+     * Active (non-revoked, unexpired) sessions for a user, newest first.
+     * The session matching $currentRawToken is flagged is_current.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listActiveForUser(string $userId, string $currentRawToken): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, created_at, expires_at, token_hash
+             FROM admin_sessions
+             WHERE user_id = :uid AND revoked_at IS NULL AND expires_at > now()
+             ORDER BY created_at DESC'
+        );
+        $stmt->execute(['uid' => $userId]);
+        $currentHash = hash('sha256', $currentRawToken);
+        $rows = $stmt->fetchAll() ?: [];
+        return array_map(static function (array $r) use ($currentHash): array {
+            return [
+                'id' => (string) $r['id'],
+                'created_at' => (string) $r['created_at'],
+                'expires_at' => (string) $r['expires_at'],
+                'is_current' => hash_equals((string) $r['token_hash'], $currentHash),
+            ];
+        }, $rows);
+    }
+
+    /** Revoke all of a user's sessions except the one matching the raw token. */
+    public function revokeAllForUserExcept(string $userId, string $keepRawToken): int
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE admin_sessions SET revoked_at = now()
+             WHERE user_id = :uid AND revoked_at IS NULL AND token_hash <> :keep'
+        );
+        $stmt->execute(['uid' => $userId, 'keep' => hash('sha256', $keepRawToken)]);
+        return $stmt->rowCount();
+    }
+
     public function findActiveUserByToken(string $rawToken): ?array
     {
         $stmt = $this->pdo->prepare(

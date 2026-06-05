@@ -83,6 +83,41 @@ final class AccessController
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
+    /** Admin sets a new password for a user (super only). */
+    public function resetPassword(string $userId): void
+    {
+        $this->guard('users:manage');
+        $payload = $this->readJsonPayload();
+        $next = (string) ($payload['new_password'] ?? '');
+        if (strlen($next) < 6) {
+            throw new RuntimeException('Password must be at least 6 characters.');
+        }
+        $user = $this->userRepository->findById($userId);
+        if ($user === null) {
+            throw new RuntimeException('User not found.');
+        }
+        $this->userRepository->updatePassword($userId, password_hash($next, PASSWORD_BCRYPT));
+        $this->auditLogRepository->log('admin', 'reset_password', 'user', $userId, []);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['code' => 0, 'result' => ['reset' => true], 'message' => 'Success'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** Admin clears a user's 2FA so they can re-enrol (super only). */
+    public function resetMfa(string $userId): void
+    {
+        $this->guard('users:manage');
+        $user = $this->userRepository->findById($userId);
+        if ($user === null) {
+            throw new RuntimeException('User not found.');
+        }
+        $this->userRepository->disableMfa($userId);
+        $this->auditLogRepository->log('admin', 'reset_mfa', 'user', $userId, []);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['code' => 0, 'result' => ['mfa_reset' => true], 'message' => 'Success'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     public function auditLogs(): void
     {
         $this->guard('audit:view');

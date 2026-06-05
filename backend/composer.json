@@ -24,12 +24,14 @@
       "php tests/RevenueTest.php",
       "php tests/TotpTest.php",
       "php tests/MetricsTest.php",
-      "php tests/ReportTest.php"
+      "php tests/ReportTest.php",
+      "php tests/LoginThrottleTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",
       "php tests/ad_e2e.php",
-      "php tests/mfa_e2e.php"
+      "php tests/mfa_e2e.php",
+      "php tests/security_e2e.php"
     ]
   }
 }
