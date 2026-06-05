@@ -1,16 +1,20 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
-import * as echarts from 'echarts';
-import type {
-  ECElementEvent,
-  EChartsOption,
-  EChartsType,
-} from 'echarts';
+import { init, registerMap, use, type ComposeOption } from 'echarts/core';
+import { MapChart, type MapSeriesOption } from 'echarts/charts';
+import { TooltipComponent, type TooltipComponentOption } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 
 import { REGION_LABELS, type RegionCode } from '#/api/modules/radioMedia';
 
 import rawTurkeySvg from '../assets/turkiye-svg-haritasi.svg?raw';
+
+use([MapChart, TooltipComponent, CanvasRenderer]);
+
+type ECOption = ComposeOption<MapSeriesOption | TooltipComponentOption>;
+type ECInstance = ReturnType<typeof init>;
+type MapClickEvent = { name?: string };
 
 export interface TurkeyRegionState {
   dominantTone: 'success' | 'warning' | 'danger';
@@ -30,7 +34,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{ (event: 'select-region', regionCode: RegionCode): void }>();
 
 const containerRef = ref<HTMLDivElement | null>(null);
-const chart = shallowRef<EChartsType | null>(null);
+const chart = shallowRef<ECInstance | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 let lastHovered: RegionCode | null = null;
 
@@ -78,7 +82,7 @@ const preparedSvg = (() => {
   return new XMLSerializer().serializeToString(root);
 })();
 
-echarts.registerMap('turkiye', { svg: preparedSvg });
+registerMap('turkiye', { svg: preparedSvg });
 
 const activeTone = computed<Tone>(
   () => props.regionStates?.[props.selectedRegionCode]?.dominantTone ?? 'danger',
@@ -106,7 +110,7 @@ function buildData(active: RegionCode) {
   });
 }
 
-function buildOption(active: RegionCode): EChartsOption {
+function buildOption(active: RegionCode): ECOption {
   return {
     backgroundColor: 'transparent',
     tooltip: {
@@ -190,18 +194,18 @@ onMounted(() => {
     return;
   }
 
-  const instance = echarts.init(containerRef.value, undefined, { renderer: 'canvas' });
+  const instance = init(containerRef.value, undefined, { renderer: 'canvas' });
   chart.value = instance;
   instance.setOption(buildOption(props.selectedRegionCode));
 
-  instance.on('click', (event: ECElementEvent) => {
+  instance.on('click', (event: MapClickEvent) => {
     const region = provinceRegion[event.name ?? ''];
     if (region) {
       emit('select-region', region);
     }
   });
 
-  instance.on('mouseover', (event: ECElementEvent) => {
+  instance.on('mouseover', (event: MapClickEvent) => {
     const region = provinceRegion[event.name ?? ''];
     if (region && region !== lastHovered) {
       lastHovered = region;
@@ -231,6 +235,11 @@ onBeforeUnmount(() => {
 <template>
   <div class="turkey-map-shell" :class="[`tone-${activeTone}`]">
     <div ref="containerRef" class="turkey-echart" />
+    <div class="map-legend" aria-hidden="true">
+      <span class="map-legend__item"><i class="map-legend__dot is-success" />Canlı</span>
+      <span class="map-legend__item"><i class="map-legend__dot is-warning" />Uyarı</span>
+      <span class="map-legend__item"><i class="map-legend__dot is-danger" />Kritik</span>
+    </div>
   </div>
 </template>
 
@@ -274,12 +283,93 @@ onBeforeUnmount(() => {
 }
 
 .turkey-map-shell::before {
-  background: radial-gradient(58% 50% at 50% 48%, rgba(var(--accent), 0.13), transparent 72%);
+  background: radial-gradient(58% 50% at 50% 48%, rgba(var(--accent), 0.15), transparent 72%);
   transition: background 320ms ease;
+  /* Selected region's status colour gently "breathes" behind the map. */
+  animation: shellBreathe 3.6s ease-in-out infinite;
 }
 
 .turkey-map-shell::after {
   background: radial-gradient(132% 120% at 50% 50%, transparent 56%, rgba(2, 6, 23, 0.5) 100%);
+}
+
+@keyframes shellBreathe {
+  0%,
+  100% {
+    opacity: 0.66;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.map-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(8, 14, 26, 0.66);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.map-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.map-legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.map-legend__dot.is-success {
+  background: #10b981;
+  color: rgba(16, 185, 129, 0.7);
+}
+
+.map-legend__dot.is-warning {
+  background: #f59e0b;
+  color: rgba(245, 158, 11, 0.7);
+}
+
+.map-legend__dot.is-danger {
+  background: #f43f5e;
+  color: rgba(244, 63, 94, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turkey-map-shell::before {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+@media (max-width: 1100px) {
+  .map-legend {
+    left: 10px;
+    bottom: 10px;
+    gap: 8px;
+    padding: 5px 9px;
+  }
+
+  .map-legend__item {
+    font-size: 10px;
+  }
 }
 
 .turkey-echart {
