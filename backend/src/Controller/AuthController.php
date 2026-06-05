@@ -35,23 +35,28 @@ final class AuthController
             ], 400);
         }
 
-        // Brute-force throttle: reject while the account is locked.
+        // Brute-force throttle: lock by username AND by client IP. The IP lock
+        // blunts password-spraying across many usernames from one source.
+        $ipKey = 'ip:' . $this->clientIp();
         if ($this->throttleRepository !== null) {
-            $status = $this->throttleRepository->status($username);
-            if (LoginThrottle::isLocked($status['locked_until'], time())) {
-                $retry = LoginThrottle::retryAfter($status['locked_until'], time());
-                header('Retry-After: ' . $retry);
-                $this->respond([
-                    'code' => 1,
-                    'result' => null,
-                    'message' => 'Çok fazla başarısız deneme. ' . ceil($retry / 60) . ' dakika sonra tekrar deneyin.',
-                ], 429);
+            foreach ([$username, $ipKey] as $key) {
+                $status = $this->throttleRepository->status($key);
+                if (LoginThrottle::isLocked($status['locked_until'], time())) {
+                    $retry = LoginThrottle::retryAfter($status['locked_until'], time());
+                    header('Retry-After: ' . $retry);
+                    $this->respond([
+                        'code' => 1,
+                        'result' => null,
+                        'message' => 'Çok fazla başarısız deneme. ' . ceil($retry / 60) . ' dakika sonra tekrar deneyin.',
+                    ], 429);
+                }
             }
         }
 
         $user = $this->userRepository->findByUsername($username);
         if ($user === null || !($user['is_active'] ?? false) || !password_verify($password, (string) $user['password_hash'])) {
             $this->throttleRepository?->registerFailure($username);
+            $this->throttleRepository?->registerFailure($ipKey);
             $this->respond([
                 'code' => 1,
                 'result' => null,
@@ -59,8 +64,9 @@ final class AuthController
             ], 401);
         }
 
-        // Password correct — clear the throttle counter.
+        // Password correct — clear both throttle counters.
         $this->throttleRepository?->reset($username);
+        $this->throttleRepository?->reset($ipKey);
 
         // Two-factor: if enabled, defer the session until a valid TOTP code is
         // supplied. Return a short-lived signed challenge instead of a session.
@@ -347,9 +353,33 @@ final class AuthController
         return $user;
     }
 
+    private function clientIp(): string
+    {
+        $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if ($fwd !== '') {
+            // First hop is the original client when set by a trusted proxy (nginx).
+            $first = trim(explode(',', $fwd)[0]);
+            if ($first !== '') {
+                return substr($first, 0, 45);
+            }
+        }
+        return substr((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
+    }
+
     private function challengeSecret(): string
     {
-        return getenv('APP_KEY') ?: (getenv('DB_PASSWORD') ?: 'aircast-mfa-challenge');
+        $key = (string) (getenv('APP_KEY') ?: '');
+        $isProd = (getenv('APP_ENV') ?: 'local') === 'production';
+
+        // Fail closed in production: the MFA challenge HMAC must use a strong,
+        // dedicated key — never the DB password or a hard-coded fallback.
+        if ($isProd && strlen($key) < 32) {
+            throw new \RuntimeException(
+                'APP_KEY (en az 32 karakter) production ortaminda MFA challenge imzasi icin zorunludur.'
+            );
+        }
+
+        return $key !== '' ? $key : 'local-dev-only-mfa-challenge-secret-change-me';
     }
 
     private function signChallenge(string $userId, int $ttlSeconds = 300): string

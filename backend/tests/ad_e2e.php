@@ -125,7 +125,9 @@ try {
     if ($campaignId !== null) {
         $pdo->prepare('DELETE FROM ad_campaigns WHERE id = :id')->execute(['id' => $campaignId]);
     }
-    $pdo->prepare('DELETE FROM admin_sessions WHERE user_id IN (:a, :b)')->execute(['a' => $adminId, 'b' => $viewerId]);
+    // Only revoke the token we created — never wipe the seeded admin's sessions.
+    $pdo->prepare('DELETE FROM admin_sessions WHERE token_hash = :h')->execute(['h' => hash('sha256', $superToken)]);
+    $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :id')->execute(['id' => $viewerId]);
     $pdo->prepare('DELETE FROM users WHERE id = :id')->execute(['id' => $viewerId]);
 }
 

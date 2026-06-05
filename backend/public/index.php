@@ -59,8 +59,19 @@ if ($appEnv === 'production') {
     if ((getenv('DB_PASSWORD') ?: 'radio_saas_password') === 'radio_saas_password') {
         $weakDefaults[] = 'DB_PASSWORD';
     }
+    if ((getenv('APP_KEY') ?: '') === '' || strlen((string) getenv('APP_KEY')) < 32) {
+        $weakDefaults[] = 'APP_KEY';
+    }
     if ($weakDefaults !== []) {
-        error_log('[SECURITY] Production ortaminda varsayilan sirlar kullaniliyor: ' . implode(', ', $weakDefaults));
+        // Fail closed: never serve production with default/weak secrets.
+        error_log('[SECURITY] Production ortaminda zayif/varsayilan sirlar: ' . implode(', ', $weakDefaults));
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(
+            ['error' => 'Insecure configuration: set strong secrets (' . implode(', ', $weakDefaults) . ').'],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
+        return;
     }
 }
 
@@ -726,7 +737,11 @@ try {
     $debug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOL);
     $status = 500;
 
-    if ($exception instanceof RuntimeException) {
+    // Preferred: typed HTTP exceptions carry their own status code.
+    if ($exception instanceof \RadioSaaS\Exception\HttpException) {
+        $status = $exception->getStatusCode();
+    } elseif ($exception instanceof RuntimeException) {
+        // Backward-compatible fallback for legacy string-based exceptions.
         $message = strtolower($exception->getMessage());
         if (str_contains($message, 'token')) {
             $status = 401;

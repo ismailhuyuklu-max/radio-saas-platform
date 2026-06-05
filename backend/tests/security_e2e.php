@@ -60,9 +60,12 @@ try {
     // even correct password is blocked while locked
     [$c] = call('POST', $base . '/auth/login', ['username' => $rl['username'], 'password' => 'Correct1!'], null);
     check($c === 429, 'correct password blocked while locked → 429');
+    // Clear both the username and the IP throttle (the failed attempts above also
+    // locked this client IP — that is the new IP-based protection at work).
     $pdo->prepare('DELETE FROM login_throttle WHERE username = :u')->execute(['u' => $rl['username']]);
+    $pdo->prepare("DELETE FROM login_throttle WHERE username LIKE 'ip:%'")->execute();
     [$c] = call('POST', $base . '/auth/login', ['username' => $rl['username'], 'password' => 'Correct1!'], null);
-    check($c === 200, 'login succeeds after throttle cleared');
+    check($c === 200, 'login succeeds after throttle cleared (username + IP)');
 
     // 2. PASSWORD CHANGE (self)
     $pc = mkUser($pdo, 'OldPass1!');
@@ -124,7 +127,9 @@ try {
         $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :id')->execute(['id' => $id]);
         $pdo->prepare('DELETE FROM users WHERE id = :id')->execute(['id' => $id]);
     }
-    $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :id')->execute(['id' => $adminId]);
+    // Only revoke the token we created — never wipe the seeded admin's sessions.
+    $pdo->prepare('DELETE FROM admin_sessions WHERE token_hash = :h')->execute(['h' => hash('sha256', $superToken)]);
+    $pdo->prepare('DELETE FROM login_throttle WHERE username LIKE :p')->execute(['p' => 'ip:%']);
 }
 
 echo "Security E2E: {$passed} passed, {$failed} failed\n";

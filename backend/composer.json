@@ -25,7 +25,8 @@
       "php tests/TotpTest.php",
       "php tests/MetricsTest.php",
       "php tests/ReportTest.php",
-      "php tests/LoginThrottleTest.php"
+      "php tests/LoginThrottleTest.php",
+      "php tests/HttpExceptionTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",

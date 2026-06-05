@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace RadioSaaS\Service;
 
+use RadioSaaS\Exception\ForbiddenException;
+use RadioSaaS\Exception\UnauthorizedException;
 use RadioSaaS\Repository\AdminSessionRepository;
 use RadioSaaS\Repository\AuditLogRepository;
-use RuntimeException;
 
 final class AdminAuthenticator
 {
@@ -25,12 +26,12 @@ final class AdminAuthenticator
     public function authenticate(?string $rawToken, array $requiredRoles = ['super', 'radio_manager']): array
     {
         if ($rawToken === null || $rawToken === '') {
-            throw new RuntimeException('Admin token is required.');
+            throw new UnauthorizedException('Admin token is required.');
         }
 
         $user = $this->sessionRepository->findActiveUserByToken($rawToken);
         if ($user === null) {
-            throw new RuntimeException('Invalid or expired admin token.');
+            throw new UnauthorizedException('Invalid or expired admin token.');
         }
 
         $userRoles = (array) ($user['roles'] ?? []);
@@ -44,7 +45,7 @@ final class AdminAuthenticator
                 ['required_roles' => array_values($requiredRoles), 'user_roles' => array_values($userRoles)]
             );
 
-            throw new RuntimeException('User is not authorized for this operation.');
+            throw new ForbiddenException('User is not authorized for this operation.');
         }
 
         return $user;

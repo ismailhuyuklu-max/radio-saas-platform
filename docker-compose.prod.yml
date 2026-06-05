@@ -68,6 +68,7 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:-local}
+      APP_KEY: ${APP_KEY:-}
       APP_DEBUG: ${APP_DEBUG:-0}
       DB_HOST: postgres
       DB_PORT: 5432
@@ -132,6 +133,7 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:-local}
+      APP_KEY: ${APP_KEY:-}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-radio_saas}
