@@ -90,6 +90,7 @@ final class AuthController
 
         $token = $this->sessionRepository->create((string) $user['id']);
         $this->issueSessionCookie($token);
+        $this->issueCsrfCookie();
 
         $this->respond([
             'code' => 0,
@@ -136,6 +137,7 @@ final class AuthController
 
         $token = $this->sessionRepository->create($userId);
         $this->issueSessionCookie($token);
+        $this->issueCsrfCookie();
 
         $this->respond([
             'code' => 0,
@@ -279,6 +281,7 @@ final class AuthController
             $this->sessionRepository->revokeByToken($token);
         }
         $this->clearSessionCookie();
+        $this->clearCsrfCookie();
 
         $this->respond([
             'code' => 0,
@@ -447,6 +450,31 @@ final class AuthController
     private function clearSessionCookie(): void
     {
         $this->writeSessionCookie('', time() - 3600);
+    }
+
+    /** Non-HttpOnly CSRF token for the double-submit pattern (JS must read it). */
+    private function issueCsrfCookie(int $ttlSeconds = 28800): void
+    {
+        $this->writeCsrfCookie(bin2hex(random_bytes(16)), time() + $ttlSeconds);
+    }
+
+    private function clearCsrfCookie(): void
+    {
+        $this->writeCsrfCookie('', time() - 3600);
+    }
+
+    private function writeCsrfCookie(string $value, int $expires): void
+    {
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ($_SERVER['REQUEST_SCHEME'] ?? 'http');
+        $secure = $proto === 'https' || (getenv('APP_ENV') ?: 'local') === 'production';
+
+        setcookie('radio_csrf', $value, [
+            'expires' => $expires,
+            'path' => '/',
+            'httponly' => false, // readable by JS to echo back as X-CSRF-Token
+            'samesite' => 'Lax',
+            'secure' => $secure,
+        ]);
     }
 
     private function writeSessionCookie(string $value, int $expires): void

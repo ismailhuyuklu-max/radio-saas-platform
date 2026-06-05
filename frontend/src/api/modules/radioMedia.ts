@@ -1,4 +1,4 @@
-import { notifyUnauthorized } from '@vben/request';
+import { notifyUnauthorized, readCsrfToken } from '@vben/request';
 
 import { requestClient } from '#/api/request';
 
@@ -333,6 +333,12 @@ async function sendApiRequest<T>(method: 'PATCH' | 'DELETE', path: string, data?
   const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  // CSRF double-submit for state-changing requests (cookie-auth).
+  const csrf = readCsrfToken();
+  if (csrf) {
+    headers['X-CSRF-Token'] = csrf;
   }
 
   let body: BodyInit | undefined;

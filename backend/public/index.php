@@ -498,9 +498,29 @@ $reportController = new ReportController($adminAuthenticator, $adCampaignReposit
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
+// Detect cookie-based auth BEFORE promoting the cookie to a Bearer header.
+$authViaCookie = empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session']);
+
+// CSRF (double-submit): cookie-authenticated state-changing requests must echo
+// the radio_csrf cookie back in X-CSRF-Token. Bearer-token API clients are
+// exempt (no ambient cookie). Login / MFA-verify establish the session, so they
+// are exempt too.
+$csrfExemptPaths = ['/api/v1/auth/login', '/api/v1/auth/mfa/verify'];
+$isMutating = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+if ($authViaCookie && $isMutating && !in_array($path, $csrfExemptPaths, true)) {
+    $headerToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $cookieToken = $_COOKIE['radio_csrf'] ?? '';
+    if ($headerToken === '' || $cookieToken === '' || !hash_equals($cookieToken, $headerToken)) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'CSRF token missing or invalid.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return;
+    }
+}
+
 // Allow HttpOnly cookie auth: promote the session cookie to a Bearer header so
 // every endpoint that reads Authorization works without the token living in JS.
-if (empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session'])) {
+if ($authViaCookie) {
     $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $_COOKIE['radio_session'];
 }
 

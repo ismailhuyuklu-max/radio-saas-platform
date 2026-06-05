@@ -80,15 +80,20 @@ function httpJsonRequest(string $method, string $url, array $payload = [], array
     ];
 }
 
-function extractSessionCookie(array $response): string
+function extractCookie(array $response, string $name): string
 {
     foreach ($response['headers'] ?? [] as $header) {
-        if (preg_match('/^Set-Cookie:\s*radio_session=([^;]+)/i', $header, $m)) {
+        if (preg_match('/^Set-Cookie:\s*' . preg_quote($name, '/') . '=([^;]+)/i', $header, $m)) {
             return trim($m[1]);
         }
     }
 
     return '';
+}
+
+function extractSessionCookie(array $response): string
+{
+    return extractCookie($response, 'radio_session');
 }
 
 try {
@@ -132,7 +137,13 @@ try {
     // subsequent requests with it (accepted via the cookie->Bearer promotion).
     $sessionToken = extractSessionCookie($loginResponse);
     assertTrue($sessionToken !== '', 'Login did not set the HttpOnly session cookie.');
-    $authorizationHeaders = ['Cookie: radio_session=' . $sessionToken];
+    // Cookie-auth mutations now require the CSRF double-submit token.
+    $csrfToken = extractCookie($loginResponse, 'radio_csrf');
+    assertTrue($csrfToken !== '', 'Login did not set the CSRF cookie.');
+    $authorizationHeaders = [
+        'Cookie: radio_session=' . $sessionToken . '; radio_csrf=' . $csrfToken,
+        'X-CSRF-Token: ' . $csrfToken,
+    ];
     $stationResponse = httpJsonRequest('POST', $gatewayBase . '/stations', [
         'name' => 'Smoke Test Station',
         'slug' => 'smoke-station-' . bin2hex(random_bytes(4)),

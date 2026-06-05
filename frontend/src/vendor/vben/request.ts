@@ -31,6 +31,12 @@ export function notifyUnauthorized() {
   unauthorizedHandler?.();
 }
 
+/** Reads the (non-HttpOnly) CSRF token the backend sets at login. */
+export function readCsrfToken(): string {
+  const match = document.cookie.match(/(?:^|;\s*)radio_csrf=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
 function toQueryString(params?: Record<string, unknown>) {
   if (!params) {
     return '';
@@ -113,6 +119,14 @@ export class RequestClient {
       } else {
         requestConfig.body = JSON.stringify(data);
         requestConfig.headers['Content-Type'] = 'application/json';
+      }
+    }
+
+    // CSRF: double-submit the token on state-changing requests.
+    if (method !== 'GET' && method !== 'HEAD') {
+      const csrf = readCsrfToken();
+      if (csrf) {
+        requestConfig.headers['X-CSRF-Token'] = csrf;
       }
     }
 
