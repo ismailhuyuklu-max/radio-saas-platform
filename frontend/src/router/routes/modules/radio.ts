@@ -10,15 +10,26 @@ const routes: RouteRecordRaw[] = [
       title: 'Aircast Pro',
       authCode: 'radio:platform:view',
     },
-    redirect: '/radio-platform/matrix',
+    redirect: '/radio-platform/dashboard',
     children: [
+      {
+        path: '/radio-platform/dashboard',
+        name: 'RadioPlatformDashboard',
+        component: () => import('#/views/radio-platform/dashboard/index.vue'),
+        meta: {
+          icon: 'lucide:layout-dashboard',
+          title: 'Genel Bakış',
+          keepAlive: true,
+          authCode: 'radio:matrix:view',
+        },
+      },
       {
         path: '/radio-platform/matrix',
         name: 'RadioPlatformMatrix',
         component: () => import('#/views/radio-platform/matrix/index.vue'),
         meta: {
           icon: 'lucide:grid-2x2',
-          title: 'Aircast Pro',
+          title: 'Bölgesel Durum',
           keepAlive: true,
           authCode: 'radio:matrix:view',
         },

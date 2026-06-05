@@ -1,8 +1,13 @@
 import { createApp } from 'vue';
 
 import Antd from 'ant-design-vue';
+import dayjs from 'dayjs';
+import 'dayjs/locale/tr';
 import 'ant-design-vue/dist/reset.css';
 import './design/main.less';
+
+// Turkish dates across the app (dayjs powers ant-design-vue date pickers too).
+dayjs.locale('tr');
 
 import { onUnauthorized } from '@vben/request';
 

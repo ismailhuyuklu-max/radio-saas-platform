@@ -18,12 +18,13 @@ const drawerOpen = ref(false);
 const navGroups: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Genel',
-    items: [{ path: '/radio-platform/matrix', label: 'Genel Bakış', icon: 'grid' }],
+    items: [{ path: '/radio-platform/dashboard', label: 'Genel Bakış', icon: 'grid' }],
   },
   {
     title: 'Yayın Yönetimi',
     items: [
       { path: '/radio-platform/planning', label: 'Planlama', icon: 'calendar' },
+      { path: '/radio-platform/matrix', label: 'Bölgesel Durum', icon: 'map' },
       { path: '/radio-platform/stations', label: 'İstasyonlar', icon: 'tower' },
       { path: '/radio-platform/sponsors', label: 'Sponsorlar', icon: 'megaphone' },
     ],
@@ -37,6 +38,7 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
 // Single-path line icons (24x24, stroked) — no icon dependency.
 const ICONS: Record<string, string> = {
   grid: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   calendar: 'M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4',
   tower: 'M12 13v8 M8 9a5 5 0 0 1 8 0 M5 6a9 9 0 0 1 14 0 M12 12a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
   megaphone: 'M4 10v4h3l7 4V6L7 10z M17 9a4 4 0 0 1 0 6',

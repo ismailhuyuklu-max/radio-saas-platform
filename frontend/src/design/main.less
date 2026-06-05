@@ -207,3 +207,73 @@ select {
   background: rgba(225, 29, 72, 0.34);
   color: #fff;
 }
+
+/* =========================================================================
+   Design system tokens (mobile-first redesign) — used by the new shell,
+   dashboard and migrated screens. Restrained, corporate, WCAG-minded.
+   ========================================================================= */
+:root {
+  /* Spacing scale (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* Radius scale */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+
+  /* Elevation */
+  --sh-1: 0 1px 2px rgba(2, 6, 23, 0.4);
+  --sh-2: 0 10px 24px rgba(2, 6, 23, 0.34);
+  --sh-3: 0 24px 60px rgba(2, 6, 23, 0.46);
+
+  /* Surfaces & lines */
+  --c-bg: #0a1120;
+  --c-surface: #0f1729;
+  --c-surface-2: #131d33;
+  --c-line: rgba(148, 163, 184, 0.14);
+  --c-line-strong: rgba(148, 163, 184, 0.22);
+
+  /* Text (WCAG AA on dark surfaces) */
+  --c-text: #f1f5f9;
+  --c-text-2: #aab4c4;
+  --c-text-3: #7c899c;
+
+  /* Brand + status (max 5) */
+  --c-brand: #e11d48;
+  --c-ok: #34d399;
+  --c-warn: #fbbf24;
+  --c-bad: #fb7185;
+  --c-info: #60a5fa;
+
+  /* Type scale */
+  --t-display: clamp(24px, 4vw, 32px);
+  --t-h1: 22px;
+  --t-h2: 18px;
+  --t-h3: 15px;
+  --t-body: 14px;
+  --t-sm: 13px;
+  --t-xs: 11px;
+}
+
+/* Shared surface card — consistent radius / padding / border / shadow. */
+.ui-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+}
+
+/* Visible keyboard focus for accessibility. */
+:where(button, a, [tabindex], input, select, textarea):focus-visible {
+  outline: 2px solid var(--c-info);
+  outline-offset: 2px;
+  border-radius: 6px;
+}

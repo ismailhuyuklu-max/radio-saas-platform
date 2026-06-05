@@ -24,7 +24,7 @@ async function handleSubmit() {
     const response = await login({ username: username.value.trim(), password: password.value });
     if (response?.code === 0 && response.result) {
       message.success('Giriş başarılı.');
-      const redirect = (route.query.redirect as string) || '/radio-platform/matrix';
+      const redirect = (route.query.redirect as string) || '/radio-platform/dashboard';
       await router.replace(redirect);
       return;
     }
