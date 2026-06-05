@@ -357,34 +357,80 @@ onMounted(() => {
 
 <style>
 .turkey-map-shell {
+  /* Status colour for the selected region glow + ambiance (default: danger/rose). */
+  --accent: 244, 63, 94;
   position: relative;
   overflow: hidden;
   border-radius: 28px;
-  border: 1px solid rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  isolation: isolate;
+  /* Premium opaque "ocean" base — wins over any inherited tone-* flood. */
   background:
-    radial-gradient(circle at top, rgba(225, 29, 72, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(18, 27, 46, 0.98), rgba(9, 13, 22, 0.99));
-  box-shadow: 0 30px 70px rgba(2, 6, 23, 0.42);
+    radial-gradient(120% 82% at 50% -12%, rgba(56, 189, 248, 0.07), transparent 55%),
+    radial-gradient(90% 70% at 50% 116%, rgba(2, 6, 23, 0.55), transparent 60%),
+    linear-gradient(180deg, #0d1628 0%, #0a1120 55%, #070c17 100%) !important;
+  box-shadow:
+    0 34px 80px rgba(2, 6, 23, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.turkey-map-shell.tone-success {
+  --accent: 16, 185, 129;
+}
+
+.turkey-map-shell.tone-warning {
+  --accent: 245, 158, 11;
+}
+
+.turkey-map-shell.tone-danger {
+  --accent: 244, 63, 94;
+}
+
+/* Soft tone ambiance + edge vignette, behind the map silhouette. */
+.turkey-map-shell::before,
+.turkey-map-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.turkey-map-shell::before {
+  background: radial-gradient(58% 50% at 50% 46%, rgba(var(--accent), 0.12), transparent 72%);
+  transition: background 320ms ease;
+}
+
+.turkey-map-shell::after {
+  background: radial-gradient(132% 120% at 50% 50%, transparent 56%, rgba(2, 6, 23, 0.55) 100%);
 }
 
 .turkey-map-stage {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-height: 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 6px 8px 8px;
+  padding: 10px 12px 14px;
   box-sizing: border-box;
   line-height: 0;
 }
 
 .turkey-map-stage svg {
   display: block;
-  width: 104%;
+  width: 102%;
   height: auto;
   max-width: 100%;
-  transform: translateY(-1px) scale(1.03);
+  overflow: visible;
+  transform: translateY(-1px) scale(1.02);
   transform-origin: top center;
+}
+
+/* Float the whole Turkey silhouette above the ocean for depth. */
+.turkey-map-shell svg #turkiye {
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] {
@@ -398,23 +444,25 @@ onMounted(() => {
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] path {
-  fill: #1e293b;
-  stroke: #334155;
-  stroke-width: 1.15;
+  fill: #1b2740;
+  stroke: rgba(148, 163, 184, 0.20);
+  stroke-width: 0.85;
+  stroke-linejoin: round;
   transition:
-    fill 180ms ease,
-    stroke 180ms ease,
-    filter 180ms ease,
-    opacity 180ms ease;
+    fill 200ms ease,
+    stroke 200ms ease,
+    filter 200ms ease,
+    opacity 200ms ease;
 }
 
 .turkey-map-shell svg #turkiye > g[data-region]:hover {
-  transform: scale(1.012);
+  transform: scale(1.015);
 }
 
 .turkey-map-shell svg #turkiye > g[data-region]:hover path {
-  stroke: rgba(255, 255, 255, 0.92);
-  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.5));
+  fill: #27375a;
+  stroke: rgba(255, 255, 255, 0.82);
+  filter: drop-shadow(0 0 9px rgba(var(--accent), 0.55));
 }
 
 .turkey-map-shell[data-active-region='marmara'] svg #turkiye > g[data-region='marmara'] path,
@@ -424,32 +472,32 @@ onMounted(() => {
 .turkey-map-shell[data-active-region='ic-anadolu'] svg #turkiye > g[data-region='ic-anadolu'] path,
 .turkey-map-shell[data-active-region='dogu-anadolu'] svg #turkiye > g[data-region='dogu-anadolu'] path,
 .turkey-map-shell[data-active-region='guneydogu-anadolu'] svg #turkiye > g[data-region='guneydogu-anadolu'] path {
-  fill: rgba(248, 250, 252, 0.08);
-  stroke: rgba(248, 250, 252, 0.98);
-  stroke-width: 1.3;
+  fill: rgba(var(--accent), 0.16);
+  stroke: rgba(var(--accent), 0.96);
+  stroke-width: 1.15;
   filter:
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.72))
-    drop-shadow(0 0 28px rgba(255, 255, 255, 0.24));
+    drop-shadow(0 0 9px rgba(var(--accent), 0.7))
+    drop-shadow(0 0 24px rgba(var(--accent), 0.3));
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] text {
-  fill: #f8fafc;
-  stroke: rgba(9, 13, 22, 0.9);
-  stroke-width: 3px;
+  fill: #e8eef7;
+  stroke: rgba(6, 11, 22, 0.92);
+  stroke-width: 2.6px;
   paint-order: stroke fill;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 12.5px;
-  font-weight: 900;
-  letter-spacing: 0.005em;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.004em;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   pointer-events: none;
-  opacity: 0.9;
+  opacity: 0.8;
   transition:
-    opacity 0.4s ease-in-out,
-    filter 0.4s ease-in-out,
-    transform 0.4s ease-in-out;
+    opacity 0.35s ease-in-out,
+    filter 0.35s ease-in-out,
+    transform 0.35s ease-in-out;
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] text.is-visible {
@@ -457,8 +505,9 @@ onMounted(() => {
 }
 
 .turkey-map-shell svg #turkiye > g[data-region] text.is-active-region {
+  fill: #ffffff;
   opacity: 1;
-  stroke-width: 3.25px;
+  stroke-width: 2.9px;
 }
 
 @media (max-width: 1100px) {
@@ -467,8 +516,8 @@ onMounted(() => {
   }
 
   .turkey-map-shell svg #turkiye > g[data-region] text {
-    font-size: 10.25px;
-    stroke-width: 2.75px;
+    font-size: 10px;
+    stroke-width: 2.4px;
   }
 }
 </style>
