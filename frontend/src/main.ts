@@ -1,6 +1,5 @@
 import { createApp } from 'vue';
 
-import Antd from 'ant-design-vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/tr';
 import 'ant-design-vue/dist/reset.css';
@@ -26,4 +25,7 @@ onUnauthorized(() => {
   }
 });
 
-createApp(App).use(router).use(Antd).mount('#app');
+// NOTE: ant-design-vue is NOT registered globally (app.use(Antd)) on purpose —
+// that pulls the entire library (~475KB gzip). Each screen imports only the
+// components it uses, so Vite tree-shakes the bundle.
+createApp(App).use(router).mount('#app');
