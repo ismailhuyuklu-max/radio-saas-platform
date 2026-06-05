@@ -79,6 +79,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/kanban',
+        name: 'RadioPlatformKanban',
+        component: () => import('#/views/radio-platform/kanban/index.vue'),
+        meta: {
+          icon: 'lucide:kanban',
+          title: 'Haber Akışı',
+          keepAlive: true,
+          authCode: 'radio:planning:view',
+        },
+      },
+      {
         path: '/radio-platform/planning',
         name: 'RadioPlatformPlanning',
         component: () => import('#/views/radio-platform/planning/index.vue'),
