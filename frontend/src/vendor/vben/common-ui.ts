@@ -1,8 +1,15 @@
 import { defineComponent, h, reactive, ref, type Component } from 'vue';
 
-import { Checkbox, Form, Input, InputNumber, Radio, Select } from 'ant-design-vue';
+import { Checkbox, DatePicker, Form, Input, InputNumber, Radio, Select } from 'ant-design-vue';
 
-type FormComponentName = 'Input' | 'RadioGroup' | 'CheckboxGroup' | 'InputNumber' | 'Select';
+type FormComponentName =
+  | 'Input'
+  | 'RadioGroup'
+  | 'CheckboxGroup'
+  | 'InputNumber'
+  | 'Select'
+  | 'DatePicker'
+  | 'RangePicker';
 
 interface FormSchemaItem {
   component: FormComponentName;
@@ -27,6 +34,8 @@ const componentMap: Record<FormComponentName, Component> = {
   CheckboxGroup: Checkbox.Group,
   InputNumber,
   Select,
+  DatePicker,
+  RangePicker: DatePicker.RangePicker,
 };
 
 export const Page = defineComponent({

@@ -1,5 +1,6 @@
 ﻿<script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, h } from "vue";
+import dayjs, { type Dayjs } from "dayjs";
 
 import { Page } from "@vben/common-ui";
 
@@ -45,6 +46,8 @@ interface SponsorRow {
   asset_duration_ms: number;
   priority: number;
   status: "active" | "draft";
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
 interface SponsorFormValues {
@@ -53,6 +56,7 @@ interface SponsorFormValues {
   target_regions?: RegionCode[];
   target_parts?: PartCode[];
   priority?: number;
+  campaign_range?: [Dayjs | null, Dayjs | null] | null;
 }
 
 const regionOptions: Array<{ label: string; value: RegionCode }> = [
@@ -87,6 +91,8 @@ function mapSponsor(s: SponsorListItem): SponsorRow {
     asset_duration_ms: s.asset_duration_ms,
     priority: s.priority,
     status: s.is_active ? "active" : "draft",
+    starts_at: s.starts_at ?? null,
+    ends_at: s.ends_at ?? null,
   };
 }
 
@@ -182,6 +188,15 @@ const [BasicForm, formApi] = useVbenForm({
         style: "width: 100%",
       },
     },
+    {
+      component: "RangePicker",
+      fieldName: "campaign_range",
+      label: "Kampanya Tarihleri (opsiyonel)",
+      componentProps: {
+        style: "width: 100%",
+        allowEmpty: [true, true],
+      },
+    },
   ],
   handleSubmit: handleSubmitSponsor,
 });
@@ -217,6 +232,17 @@ const columns: ColumnsType<SponsorRow> = [
           h(Tag, { color: "gold" }, () => PART_LABELS[part] ?? part),
         ),
       ]);
+    },
+  },
+  {
+    title: "Kampanya",
+    key: "campaign",
+    customRender: ({ record }) => {
+      if (!record.starts_at && !record.ends_at) {
+        return h(Tag, { color: "default" }, () => "Süresiz");
+      }
+      const fmt = (d?: string | null) => (d ? dayjs(d).format("DD.MM.YYYY") : "—");
+      return h(Tag, { color: "purple" }, () => `${fmt(record.starts_at)} → ${fmt(record.ends_at)}`);
     },
   },
   {
@@ -326,6 +352,10 @@ function editSponsor(row: SponsorRow) {
     target_regions: row.target_regions,
     target_parts: row.target_parts,
     priority: row.priority,
+    campaign_range:
+      row.starts_at || row.ends_at
+        ? [row.starts_at ? dayjs(row.starts_at) : null, row.ends_at ? dayjs(row.ends_at) : null]
+        : null,
   });
   void focusSponsorEditor();
 }
@@ -424,6 +454,9 @@ async function handleSubmitSponsor(values: SponsorFormValues) {
     const targetRegions = values.target_regions || [];
     const targetParts = values.target_parts || [];
     const priority = values.priority ?? 10;
+    const range = values.campaign_range;
+    const startsAt = range?.[0] ? range[0].toISOString() : null;
+    const endsAt = range?.[1] ? range[1].toISOString() : null;
 
     if (!name) {
       message.warning("Reklam adı zorunludur.");
@@ -440,6 +473,8 @@ async function handleSubmitSponsor(values: SponsorFormValues) {
       asset_mime: selectedAsset.value.mime,
       asset_duration_ms: selectedDuration.value,
       priority,
+      starts_at: startsAt,
+      ends_at: endsAt,
     };
 
     if (uploadMode.value === "local") {

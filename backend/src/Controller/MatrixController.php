@@ -134,6 +134,8 @@ final class MatrixController
                 'asset_duration_ms' => (int) ($r['asset_duration_ms'] ?? 0),
                 'priority' => (int) ($r['priority'] ?? 100),
                 'is_active' => filter_var($r['is_active'] ?? true, FILTER_VALIDATE_BOOL),
+                'starts_at' => $r['starts_at'] ?? null,
+                'ends_at' => $r['ends_at'] ?? null,
             ];
         }, $rows);
 

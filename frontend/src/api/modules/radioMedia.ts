@@ -100,6 +100,8 @@ export interface SponsorPayload {
   target_regions: RegionCode[];
   target_parts: PartCode[];
   priority?: number;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
 export interface GenerateTokenResponse {
@@ -169,6 +171,8 @@ export interface SponsorListItem {
   asset_duration_ms: number;
   priority: number;
   is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
 export interface MatrixTimeSlot {
@@ -622,6 +626,12 @@ export function saveSponsor(payload: SponsorPayload) {
   }
   if (typeof payload.priority === 'number') {
     formData.append('priority', String(payload.priority));
+  }
+  if (payload.starts_at) {
+    formData.append('starts_at', payload.starts_at);
+  }
+  if (payload.ends_at) {
+    formData.append('ends_at', payload.ends_at);
   }
 
   return requestClient.post<SaveSponsorResponse>('/sponsors/assign', formData);
