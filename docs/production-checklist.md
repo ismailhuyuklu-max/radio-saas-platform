@@ -119,6 +119,8 @@ Additional hardening already enforced in code:
 
 - **Upload validation**: `POST /media/upload` and `POST /sponsors/upload` detect the MIME type **server-side** (`finfo`) and reject anything outside the audio/video allowlist (`audio/mpeg`, `audio/wav`, `audio/mp4`, `audio/aac`, `audio/ogg`, `video/mp4`). The client-supplied `Content-Type` is never trusted.
 - **Demo mode** (`LOCAL_DEMO_MODE`) is for local development only and is hard-disabled whenever `APP_ENV=production`.
+- **Security headers**: the nginx gateway sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin` on both SPA and API responses (clickjacking / MIME-sniffing protection).
+- **Render pipeline regression test**: `media/ffmpeg/test_render.sh` guards the FFmpeg sponsor-render logic. Run with `docker compose -f docker-compose.prod.yml exec -T worker bash /var/media-tools/ffmpeg/test_render.sh`.
 
 Still operator-owned (set for your environment):
 
