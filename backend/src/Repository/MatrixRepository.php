@@ -48,9 +48,9 @@ final class MatrixRepository
         return $matrix;
     }
 
-    public function listSponsors(): array
+    public function listSponsors(mixed $limit = null, mixed $offset = null): array
     {
-        return $this->sponsorRepository->listAll();
+        return $this->sponsorRepository->listAll($limit, $offset);
     }
 
     public function deleteSponsor(string $id): void

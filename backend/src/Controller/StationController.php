@@ -31,6 +31,8 @@ final class StationController
             'region' => $_GET['region'] ?? null,
             'status' => $_GET['status'] ?? null,
             'is_active' => isset($_GET['is_active']) ? filter_var($_GET['is_active'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) : null,
+            'limit' => $_GET['limit'] ?? null,
+            'offset' => $_GET['offset'] ?? null,
         ];
 
         header('Content-Type: application/json; charset=utf-8');

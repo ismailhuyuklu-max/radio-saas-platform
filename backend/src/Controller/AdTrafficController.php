@@ -23,7 +23,7 @@ final class AdTrafficController
     {
         $this->guard('ad:view');
         $today = date('Y-m-d');
-        $campaigns = $this->campaignRepository->listAll();
+        $campaigns = $this->campaignRepository->listAll($_GET['limit'] ?? null, $_GET['offset'] ?? null);
         $actuals = $this->campaignRepository->airingTotals();
 
         $enriched = array_map(static function (array $campaign) use ($today, $actuals): array {

@@ -50,13 +50,14 @@ final class SponsorAdRepository
         return $stmt->fetch() ?: null;
     }
 
-    public function listAll(): array
+    public function listAll(mixed $limit = null, mixed $offset = null): array
     {
+        [$lim, $off] = \RadioSaaS\Service\Pagination::clamp($limit, $offset);
         $stmt = $this->pdo->query(
             'SELECT sa.*, r.code AS region_code, r.name AS region_name
              FROM sponsors_ads sa
              INNER JOIN regions r ON r.id = sa.region_id
-             ORDER BY sa.created_at DESC'
+             ORDER BY sa.created_at DESC LIMIT ' . $lim . ' OFFSET ' . $off
         );
 
         return $stmt->fetchAll() ?: [];

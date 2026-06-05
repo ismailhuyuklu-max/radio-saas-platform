@@ -106,7 +106,12 @@ final class StationRepository
             $params['is_active'] = $filters['is_active'] ? 'true' : 'false';
         }
 
-        $sql .= ' ORDER BY s.created_at DESC';
+        [$limit, $offset] = \RadioSaaS\Service\Pagination::clamp(
+            $filters['limit'] ?? null,
+            $filters['offset'] ?? null
+        );
+        // $limit/$offset are clamped to ints by Pagination::clamp — safe to inline.
+        $sql .= ' ORDER BY s.created_at DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

@@ -39,6 +39,20 @@ final class AuditLogRepository
         ]);
     }
 
+    /**
+     * Delete audit rows older than $days. Returns the number of rows removed.
+     * Prevents unbounded audit_logs growth (run from a scheduled job).
+     */
+    public function pruneOlderThan(int $days): int
+    {
+        $days = max(1, $days);
+        $stmt = $this->pdo->prepare(
+            "DELETE FROM audit_logs WHERE created_at < now() - (:days || ' days')::interval"
+        );
+        $stmt->execute(['days' => $days]);
+        return $stmt->rowCount();
+    }
+
     public function listLogs(array $filters = [], int $limit = 100): array
     {
         $sql = <<<'SQL'

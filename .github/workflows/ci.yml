@@ -50,6 +50,7 @@ jobs:
           php tests/ReportTest.php
           php tests/LoginThrottleTest.php
           php tests/HttpExceptionTest.php
+          php tests/PaginationTest.php
 
   e2e:
     name: E2E (Playwright)

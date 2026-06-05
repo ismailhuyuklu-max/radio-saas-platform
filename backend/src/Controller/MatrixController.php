@@ -114,7 +114,7 @@ final class MatrixController
     {
         $this->guard('sponsors:view');
 
-        $rows = $this->matrixRepository->listSponsors();
+        $rows = $this->matrixRepository->listSponsors($_GET['limit'] ?? null, $_GET['offset'] ?? null);
         $out = array_map(static function (array $r): array {
             $placement = (string) ($r['placement'] ?? 'pre_roll');
 

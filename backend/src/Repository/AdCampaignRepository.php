@@ -16,9 +16,12 @@ final class AdCampaignRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listAll(): array
+    public function listAll(mixed $limit = null, mixed $offset = null): array
     {
-        $rows = $this->pdo->query('SELECT * FROM ad_campaigns ORDER BY created_at DESC')->fetchAll() ?: [];
+        [$lim, $off] = \RadioSaaS\Service\Pagination::clamp($limit, $offset);
+        $rows = $this->pdo->query(
+            'SELECT * FROM ad_campaigns ORDER BY created_at DESC LIMIT ' . $lim . ' OFFSET ' . $off
+        )->fetchAll() ?: [];
         return array_map([$this, 'hydrate'], $rows);
     }
 
