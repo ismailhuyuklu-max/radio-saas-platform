@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformOperations',
         component: () => import('#/views/radio-platform/operations/index.vue'),
         meta: {
+          perm: 'matrix:view',
           icon: 'lucide:activity',
           title: 'Yayın Merkezi',
           keepAlive: true,
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformDashboard',
         component: () => import('#/views/radio-platform/dashboard/index.vue'),
         meta: {
+          perm: 'matrix:view',
           icon: 'lucide:layout-dashboard',
           title: 'Genel Bakış',
           keepAlive: true,
@@ -39,6 +41,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformMatrix',
         component: () => import('#/views/radio-platform/matrix/index.vue'),
         meta: {
+          perm: 'matrix:view',
           icon: 'lucide:grid-2x2',
           title: 'Bölgesel Durum',
           keepAlive: true,
@@ -50,6 +53,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformSponsors',
         component: () => import('#/views/radio-platform/sponsors/index.vue'),
         meta: {
+          perm: 'sponsors:view',
           icon: 'mdi:badge-account-horizontal-outline',
           title: 'Sponsors',
           keepAlive: true,
@@ -61,6 +65,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformStations',
         component: () => import('#/views/radio-platform/stations/index.vue'),
         meta: {
+          perm: 'stations:view',
           icon: 'mdi:radio-tower',
           title: 'Stations',
           keepAlive: true,
@@ -72,6 +77,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformTimeline',
         component: () => import('#/views/radio-platform/timeline/index.vue'),
         meta: {
+          perm: 'plans:view',
           icon: 'lucide:gantt-chart',
           title: 'Zaman Çizelgesi',
           keepAlive: true,
@@ -83,6 +89,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformKanban',
         component: () => import('#/views/radio-platform/kanban/index.vue'),
         meta: {
+          perm: 'plans:view',
           icon: 'lucide:kanban',
           title: 'Haber Akışı',
           keepAlive: true,
@@ -94,6 +101,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformPlanning',
         component: () => import('#/views/radio-platform/planning/index.vue'),
         meta: {
+          perm: 'plans:view',
           icon: 'lucide:calendar-range',
           title: 'Planlama',
           keepAlive: true,
@@ -105,6 +113,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformAdTraffic',
         component: () => import('#/views/radio-platform/ad-traffic/index.vue'),
         meta: {
+          perm: 'ad:view',
           icon: 'lucide:trending-up',
           // Revenue should be fresh on each visit, so do not keep-alive this view.
           title: 'Reklam Trafik',
@@ -116,6 +125,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformReports',
         component: () => import('#/views/radio-platform/reports/index.vue'),
         meta: {
+          perm: 'reports:view',
           icon: 'lucide:file-down',
           title: 'Raporlar',
           authCode: 'radio:sponsors:view',
@@ -126,6 +136,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformNoc',
         component: () => import('#/views/radio-platform/noc/index.vue'),
         meta: {
+          perm: 'monitoring:view',
           icon: 'lucide:server',
           title: 'Sistem İzleme',
           authCode: 'radio:platform:view',
@@ -146,6 +157,7 @@ const routes: RouteRecordRaw[] = [
         name: 'RadioPlatformAccess',
         component: () => import('#/views/radio-platform/access/index.vue'),
         meta: {
+          perm: 'users:manage',
           icon: 'lucide:shield-check',
           title: 'Yetki',
           keepAlive: true,

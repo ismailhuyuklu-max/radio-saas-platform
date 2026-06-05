@@ -3,11 +3,13 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { getStoredUser, logout } from '#/api/modules/auth';
+import { allows } from '#/utils/rbac';
 
 interface NavItem {
   path: string;
   label: string;
   icon: string;
+  perm?: string;
 }
 
 const route = useRoute();
@@ -15,41 +17,54 @@ const router = useRouter();
 
 const drawerOpen = ref(false);
 
-const navGroups: Array<{ title: string; items: NavItem[] }> = [
+const allNavGroups: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Genel',
     items: [
-      { path: '/radio-platform/operations', label: 'Yayın Merkezi', icon: 'activity' },
-      { path: '/radio-platform/dashboard', label: 'Genel Bakış', icon: 'grid' },
+      { path: '/radio-platform/operations', label: 'Yayın Merkezi', icon: 'activity', perm: 'matrix:view' },
+      { path: '/radio-platform/dashboard', label: 'Genel Bakış', icon: 'grid', perm: 'matrix:view' },
     ],
   },
   {
     title: 'Yayın Yönetimi',
     items: [
-      { path: '/radio-platform/timeline', label: 'Zaman Çizelgesi', icon: 'gantt' },
-      { path: '/radio-platform/kanban', label: 'Haber Akışı', icon: 'kanban' },
-      { path: '/radio-platform/planning', label: 'Planlama', icon: 'calendar' },
-      { path: '/radio-platform/matrix', label: 'Bölgesel Durum', icon: 'map' },
-      { path: '/radio-platform/stations', label: 'İstasyonlar', icon: 'tower' },
-      { path: '/radio-platform/sponsors', label: 'Sponsorlar', icon: 'megaphone' },
+      { path: '/radio-platform/timeline', label: 'Zaman Çizelgesi', icon: 'gantt', perm: 'plans:view' },
+      { path: '/radio-platform/kanban', label: 'Haber Akışı', icon: 'kanban', perm: 'plans:view' },
+      { path: '/radio-platform/planning', label: 'Planlama', icon: 'calendar', perm: 'plans:view' },
+      { path: '/radio-platform/matrix', label: 'Bölgesel Durum', icon: 'map', perm: 'matrix:view' },
+      { path: '/radio-platform/stations', label: 'İstasyonlar', icon: 'tower', perm: 'stations:view' },
+      { path: '/radio-platform/sponsors', label: 'Sponsorlar', icon: 'megaphone', perm: 'sponsors:view' },
     ],
   },
   {
     title: 'Ticari',
     items: [
-      { path: '/radio-platform/ad-traffic', label: 'Reklam Trafik', icon: 'trending' },
-      { path: '/radio-platform/reports', label: 'Raporlar', icon: 'report' },
+      { path: '/radio-platform/ad-traffic', label: 'Reklam Trafik', icon: 'trending', perm: 'ad:view' },
+      { path: '/radio-platform/reports', label: 'Raporlar', icon: 'report', perm: 'reports:view' },
     ],
   },
   {
     title: 'Sistem',
     items: [
-      { path: '/radio-platform/noc', label: 'Sistem İzleme', icon: 'server' },
+      { path: '/radio-platform/noc', label: 'Sistem İzleme', icon: 'server', perm: 'monitoring:view' },
+      // Security is self-service for every authenticated user (own 2FA).
       { path: '/radio-platform/security', label: 'Güvenlik', icon: 'key' },
-      { path: '/radio-platform/access', label: 'Yetki & Erişim', icon: 'shield' },
+      { path: '/radio-platform/access', label: 'Yetki & Erişim', icon: 'shield', perm: 'users:manage' },
     ],
   },
 ];
+
+// Hide nav items the current roles cannot use (backend still enforces).
+const navGroups = computed(() => {
+  void route.fullPath; // recompute on navigation (e.g. after login/role change)
+  const roles = getStoredUser()?.roles ?? [];
+  return allNavGroups
+    .map((group) => ({
+      title: group.title,
+      items: group.items.filter((item) => !item.perm || allows(roles, item.perm)),
+    }))
+    .filter((group) => group.items.length > 0);
+});
 
 // Single-path line icons (24x24, stroked) — no icon dependency.
 const ICONS: Record<string, string> = {
@@ -68,7 +83,7 @@ const ICONS: Record<string, string> = {
   report: 'M6 3h9l5 5v13H6z M14 3v6h6 M12 12v6 M9 15l3 3 3-3',
 };
 
-const allItems = computed(() => navGroups.flatMap((group) => group.items));
+const allItems = computed(() => navGroups.value.flatMap((group) => group.items));
 
 const currentItem = computed(() =>
   allItems.value.find((item) => route.path.startsWith(item.path)),
