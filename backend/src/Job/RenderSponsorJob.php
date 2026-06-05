@@ -61,19 +61,44 @@ final class RenderSponsorJob
 
                 $this->downloadObject((string) $media['source_bucket'], (string) $media['source_key'], $mainInput);
 
+                // Download sponsor assets defensively: a missing/broken sponsor
+                // asset must NOT take the content off air — skip it and continue.
+                $introOk = false;
                 if ($introSponsor !== null) {
-                    $this->downloadObject((string) $introSponsor['asset_bucket'], (string) $introSponsor['asset_key'], $introInput);
+                    try {
+                        $this->downloadObject((string) $introSponsor['asset_bucket'], (string) $introSponsor['asset_key'], $introInput);
+                        $introOk = true;
+                    } catch (\Throwable $e) {
+                        error_log('[render] intro sponsor asset unavailable, skipping: ' . $e->getMessage());
+                    }
+                }
+
+                $outroOk = false;
+                if ($outroSponsor !== null) {
+                    try {
+                        $this->downloadObject((string) $outroSponsor['asset_bucket'], (string) $outroSponsor['asset_key'], $outroInput);
+                        $outroOk = true;
+                    } catch (\Throwable $e) {
+                        error_log('[render] outro sponsor asset unavailable, skipping: ' . $e->getMessage());
+                    }
+                }
+
+                // No usable sponsor → publish the content as-is (passthrough).
+                if (!$introOk && !$outroOk) {
+                    $this->mediaRepository->markRendered((string) $media['id'], (string) $media['source_bucket'], (string) $media['source_key'], (string) $media['checksum_sha256']);
+                    $this->jobRepository->complete((string) $job['id']);
+                    return;
+                }
+
+                if ($introOk) {
                     $introOutput = $tmpDir . DIRECTORY_SEPARATOR . 'intro-render.' . $this->guessExtension((string) $media['source_mime']);
                     $this->runRenderScript($script, $mainInput, $introInput, $introOutput, 'pre_roll');
                     $currentInput = $introOutput;
                 }
 
-                if ($outroSponsor !== null) {
-                    $this->downloadObject((string) $outroSponsor['asset_bucket'], (string) $outroSponsor['asset_key'], $outroInput);
+                if ($outroOk) {
                     $this->runRenderScript($script, $currentInput, $outroInput, $finalOutput, 'post_roll');
                     $currentInput = $finalOutput;
-                } elseif ($introSponsor !== null) {
-                    $finalOutput = $currentInput;
                 }
 
                 if (!is_file($currentInput)) {
