@@ -44,8 +44,8 @@ if [[ -n "$has_video" ]]; then
     -filter_complex "
       [0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p[v0];
       [1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p[v1];
-      [0:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aresample=48000[a0];
-      [1:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aresample=48000[a1];
+      [0:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a0];
+      [1:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a1];
       [v0][v1]xfade=transition=fade:duration=${CROSSFADE_SECONDS}:offset=${XFADE_OFFSET}[v];
       [a0][a1]acrossfade=d=${CROSSFADE_SECONDS}:c1=tri:c2=tri[a]
     " \
@@ -63,12 +63,12 @@ else
     -i "$FIRST_INPUT" \
     -i "$SECOND_INPUT" \
     -filter_complex "
-      [0:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aresample=48000[a0];
-      [1:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aresample=48000[a1];
+      [0:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a0];
+      [1:a]loudnorm=I=${TARGET_LUFS}:LRA=${TARGET_LRA}:TP=${TARGET_TP},aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a1];
       [a0][a1]acrossfade=d=${CROSSFADE_SECONDS}:c1=tri:c2=tri[a]
     " \
     -map "[a]" \
-    -c:a aac \
+    -c:a libmp3lame \
     -b:a 192k \
     "$OUTPUT_FILE"
 fi
