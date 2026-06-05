@@ -41,6 +41,7 @@ const navGroups: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Sistem',
     items: [
+      { path: '/radio-platform/noc', label: 'Sistem İzleme', icon: 'server' },
       { path: '/radio-platform/security', label: 'Güvenlik', icon: 'key' },
       { path: '/radio-platform/access', label: 'Yetki & Erişim', icon: 'shield' },
     ],
@@ -60,6 +61,7 @@ const ICONS: Record<string, string> = {
   megaphone: 'M4 10v4h3l7 4V6L7 10z M17 9a4 4 0 0 1 0 6',
   shield: 'M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z',
   key: 'M14 7a4 4 0 1 0-3.8 5.3L7 15.5V18h2.5l.5-.5.7-.7.8-.8a4 4 0 0 0 2.5-9z M16 8.5h.01',
+  server: 'M4 5h16v5H4z M4 14h16v5H4z M7 7.5h.01 M7 16.5h.01',
 };
 
 const allItems = computed(() => navGroups.flatMap((group) => group.items));

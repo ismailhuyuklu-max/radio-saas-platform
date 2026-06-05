@@ -22,7 +22,8 @@
     "test": [
       "php tests/RbacTest.php",
       "php tests/RevenueTest.php",
-      "php tests/TotpTest.php"
+      "php tests/TotpTest.php",
+      "php tests/MetricsTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",

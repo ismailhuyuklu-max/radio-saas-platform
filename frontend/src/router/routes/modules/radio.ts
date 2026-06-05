@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/noc',
+        name: 'RadioPlatformNoc',
+        component: () => import('#/views/radio-platform/noc/index.vue'),
+        meta: {
+          icon: 'lucide:server',
+          title: 'Sistem İzleme',
+          authCode: 'radio:platform:view',
+        },
+      },
+      {
         path: '/radio-platform/security',
         name: 'RadioPlatformSecurity',
         component: () => import('#/views/radio-platform/security/index.vue'),

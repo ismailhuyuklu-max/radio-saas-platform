@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCompact, formatCurrency, formatNumber, formatPercent } from './format';
+import { formatBytes, formatCompact, formatCurrency, formatNumber, formatPercent } from './format';
 
 describe('formatNumber', () => {
   it('groups thousands with tr separators', () => {
@@ -34,5 +34,14 @@ describe('formatCompact', () => {
 describe('formatPercent', () => {
   it('prefixes with %', () => {
     expect(formatPercent(42.5)).toBe('%42,5');
+  });
+});
+
+describe('formatBytes', () => {
+  it('formats bytes with binary units', () => {
+    expect(formatBytes(0)).toBe('0 B');
+    expect(formatBytes(1024)).toBe('1 KB');
+    expect(formatBytes(1024 * 1024)).toBe('1 MB');
+    expect(formatBytes(1.5 * 1024 * 1024 * 1024)).toBe('1,5 GB');
   });
 });

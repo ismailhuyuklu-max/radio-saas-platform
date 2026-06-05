@@ -848,6 +848,52 @@ export function deleteAdCampaign(id: string) {
   return sendApiRequest<{ deleted: boolean; campaign_id: string }>('DELETE', `/ad-campaigns/${id}`);
 }
 
+// --- Faz 5+6: NOC monitoring -------------------------------------------------
+
+export type ServiceStatus = 'up' | 'degraded' | 'down';
+
+export interface ServiceHealth {
+  key: string;
+  label: string;
+  status: ServiceStatus;
+  detail: string;
+  latency_ms: number | null;
+  meta?: Record<string, number>;
+}
+
+export interface HealthResponse {
+  overall: ServiceStatus;
+  services: ServiceHealth[];
+  checked_at: string;
+}
+
+export interface MetricGauge {
+  used_pct: number | null;
+  tone: string;
+}
+
+export interface MetricsResponse {
+  cpu: { usage_pct: number | null; cores: number; tone: string };
+  memory: { used_pct: number | null; total_kb: number; used_kb: number; tone: string };
+  disk: {
+    used_pct: number;
+    total_bytes: number;
+    used_bytes: number;
+    free_bytes: number;
+    tone: string;
+  };
+  load: { '1m': number; '5m': number; '15m': number };
+  sampled_at: string;
+}
+
+export function getHealth() {
+  return requestClient.get<HealthResponse>('/monitoring/health');
+}
+
+export function getMetrics() {
+  return requestClient.get<MetricsResponse>('/monitoring/metrics');
+}
+
 export function getUsers() {
   return requestClient.get<UserAdminItem[]>('/users');
 }

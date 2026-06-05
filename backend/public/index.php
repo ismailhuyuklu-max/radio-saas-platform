@@ -8,6 +8,7 @@ use RadioSaaS\Controller\AccessController;
 use RadioSaaS\Controller\AdTrafficController;
 use RadioSaaS\Controller\MatrixController;
 use RadioSaaS\Controller\MediaController;
+use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Infrastructure\MinioStorage;
@@ -477,6 +478,7 @@ $stationController = new StationController($adminAuthenticator, $stationReposito
 $planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
+$monitoringController = new MonitoringController($adminAuthenticator, $pdo);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -615,6 +617,16 @@ try {
 
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/token$#', $path, $matches)) {
         $stationController->generateToken($matches[1]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/monitoring/health') {
+        $monitoringController->health();
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/monitoring/metrics') {
+        $monitoringController->metrics();
         return;
     }
 

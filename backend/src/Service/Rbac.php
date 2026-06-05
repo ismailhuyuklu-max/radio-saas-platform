@@ -65,6 +65,7 @@ final class Rbac
         'sponsors:write' => self::MANAGERS,
         'ad:write' => self::MANAGERS,
         'audit:view' => self::MANAGERS,
+        'monitoring:view' => self::MANAGERS,
 
         // User / role administration — super only.
         'users:manage' => self::ADMINS,
