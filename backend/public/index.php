@@ -36,11 +36,13 @@ use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\PartnerApiKeyRepository;
+use RadioSaaS\Repository\RefreshTokenRepository;
 use RadioSaaS\Repository\StreamTokenRepository;
 use RadioSaaS\Repository\SupportTicketRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\ApiKeyService;
+use RadioSaaS\Service\JwtService;
 use RadioSaaS\Service\RadioCredentialService;
 use RadioSaaS\Service\StreamTokenService;
 use RadioSaaS\Service\MediaFeedService;
@@ -501,7 +503,16 @@ $authenticator = new TokenAuthenticator($tokenRepository, $stationRepository);
 $feedService = new MediaFeedService($stationRepository, $mediaRepository, $sponsorRepository, $storage);
 $renderQueue = new RenderQueueService($jobRepository);
 
-$authController = new AuthController($userRepository, $adminSessionRepository, $auditLogRepository, $loginThrottleRepository);
+$jwtService = new JwtService((string) (getenv('APP_KEY') ?: ''));
+$refreshTokenRepository = new RefreshTokenRepository($pdo);
+$authController = new AuthController(
+    $userRepository,
+    $adminSessionRepository,
+    $auditLogRepository,
+    $loginThrottleRepository,
+    $jwtService,
+    $refreshTokenRepository
+);
 $feedController = new FeedController($authenticator, $feedService, $auditLogRepository);
 $mediaController = new MediaController($adminAuthenticator, $mediaRepository, $renderQueue, $storage, $regionRepository, $auditLogRepository);
 $matrixController = new MatrixController($adminAuthenticator, $matrixRepository, $regionRepository, $stationRepository, $feedService, $auditLogRepository);
@@ -535,7 +546,12 @@ $authViaCookie = empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio
 // the radio_csrf cookie back in X-CSRF-Token. Bearer-token API clients are
 // exempt (no ambient cookie). Login / MFA-verify establish the session, so they
 // are exempt too.
-$csrfExemptPaths = ['/api/v1/auth/login', '/api/v1/auth/mfa/verify'];
+$csrfExemptPaths = [
+    '/api/v1/auth/login',
+    '/api/v1/auth/mfa/verify',
+    '/api/v1/auth/token',
+    '/api/v1/auth/refresh',
+];
 $isMutating = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
 if ($authViaCookie && $isMutating && !in_array($path, $csrfExemptPaths, true)) {
     $headerToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
@@ -552,6 +568,25 @@ if ($authViaCookie && $isMutating && !in_array($path, $csrfExemptPaths, true)) {
 // every endpoint that reads Authorization works without the token living in JS.
 if ($authViaCookie) {
     $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $_COOKIE['radio_session'];
+}
+
+// Faz 25 — Bearer JWT bridge. If the caller passes a JWT in Authorization,
+// verify it and mint a short-lived session so the existing
+// AdminAuthenticator (which expects a session id) works unchanged. JWTs are
+// recognised by their dotted three-segment format starting with eyJ (HS256
+// header b64). Random hex session ids never match this prefix.
+$incomingAuth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (is_string($incomingAuth) && preg_match('/Bearer\s+(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/', $incomingAuth, $jwtMatches)) {
+    try {
+        $payload = $jwtService->verifyAccess($jwtMatches[1]);
+        $uid = (string) ($payload['sub'] ?? '');
+        if ($uid !== '') {
+            $session = $adminSessionRepository->create($uid);
+            $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $session;
+        }
+    } catch (Throwable) {
+        // Invalid JWT → leave Authorization untouched; controllers will 401.
+    }
 }
 
 // Faz 19 — Programmatic API key. If the caller passes X-API-Key, verify it
@@ -591,6 +626,17 @@ try {
 
     if ($method === 'POST' && $path === '/api/v1/auth/login') {
         $authController->login();
+        return;
+    }
+
+    // Faz 25: token-only auth (no cookies). Mirrors /auth/login but returns
+    // a JWT access + opaque refresh pair for server-side / mobile clients.
+    if ($method === 'POST' && $path === '/api/v1/auth/token') {
+        $authController->token();
+        return;
+    }
+    if ($method === 'POST' && $path === '/api/v1/auth/refresh') {
+        $authController->refreshToken();
         return;
     }
 

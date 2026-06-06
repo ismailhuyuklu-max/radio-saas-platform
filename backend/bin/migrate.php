@@ -443,6 +443,22 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs (ip_address, c
  */
 $pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS national_access boolean NOT NULL DEFAULT false');
 
+/**
+ * Faz 25 — JWT access tokens + opaque refresh tokens. Hashed at rest like the
+ * API keys. Master prompt: 'JWT, Refresh Token' güvenlik gereksinimi.
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS auth_refresh_tokens (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash varchar(128) NOT NULL UNIQUE,
+        expires_at timestamptz NOT NULL,
+        revoked_at timestamptz NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_refresh_user ON auth_refresh_tokens (user_id, revoked_at)');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');

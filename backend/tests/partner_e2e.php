@@ -217,6 +217,33 @@ try {
     check($code === 200 && ($body['result']['userId'] ?? '') === $partnerUserId,
         'rotated password logs in');
 
+    // Faz 25: token-only auth flow — JWT access + opaque refresh.
+    [$code, $body] = api('POST', "{$base}/auth/token", null, [
+        'username' => $username,
+        'password' => $rotatedPassword,
+    ]);
+    check($code === 200, "POST /auth/token → 200 (got {$code})");
+    $access = (string) ($body['result']['access'] ?? '');
+    $refresh = (string) ($body['result']['refresh'] ?? '');
+    check(str_starts_with($access, 'eyJ'), 'access token is a JWT (eyJ prefix)');
+    check(strlen($refresh) >= 32, 'refresh token is a long opaque value');
+
+    // The JWT can be used as a Bearer token for any portal endpoint.
+    [$code, $body] = api('GET', "{$base}/portal/me", $access);
+    check($code === 200, "JWT Bearer on /portal/me → 200 (got {$code})");
+
+    // Refresh rotates the pair; old refresh is revoked.
+    [$code, $body] = api('POST', "{$base}/auth/refresh", null, ['refresh' => $refresh]);
+    check($code === 200, "POST /auth/refresh → 200 (got {$code})");
+    $access2 = (string) ($body['result']['access'] ?? '');
+    $refresh2 = (string) ($body['result']['refresh'] ?? '');
+    check($access2 !== '' && $access2 !== $access, 'refresh yields a new access token');
+    check($refresh2 !== '' && $refresh2 !== $refresh, 'refresh yields a new refresh token');
+
+    // Old refresh is now revoked.
+    [$code] = api('POST', "{$base}/auth/refresh", null, ['refresh' => $refresh]);
+    check($code === 401, "old refresh rejected → 401 (got {$code})");
+
     // 8. Faz 16: Support module — partner opens a ticket, admin replies,
     //    partner sees the admin reply. Tenant isolation guaranteed.
     $newPartnerToken = $sessions->create($partnerUserId);

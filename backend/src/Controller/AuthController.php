@@ -8,6 +8,8 @@ use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\AdminSessionRepository;
 use RadioSaaS\Repository\LoginThrottleRepository;
+use RadioSaaS\Repository\RefreshTokenRepository;
+use RadioSaaS\Service\JwtService;
 use RadioSaaS\Service\LoginThrottle;
 use RadioSaaS\Service\TotpService;
 
@@ -17,8 +19,124 @@ final class AuthController
         private readonly UserRepository $userRepository,
         private readonly AdminSessionRepository $sessionRepository,
         private readonly AuditLogRepository $auditLogRepository,
-        private readonly ?LoginThrottleRepository $throttleRepository = null
+        private readonly ?LoginThrottleRepository $throttleRepository = null,
+        private readonly ?JwtService $jwtService = null,
+        private readonly ?RefreshTokenRepository $refreshRepository = null
     ) {
+    }
+
+    /**
+     * Faz 25 — token-only login (no cookie). Validates username/password,
+     * returns a short-lived JWT access + an opaque refresh token. Intended
+     * for partner-side server integrations + future mobile clients.
+     */
+    public function token(): void
+    {
+        if ($this->jwtService === null || $this->refreshRepository === null) {
+            $this->respond(['code' => 1, 'message' => 'JWT desteği aktif değil.'], 500);
+            return;
+        }
+        $payload = $this->readJsonPayload();
+        $username = trim((string) ($payload['username'] ?? ''));
+        $password = (string) ($payload['password'] ?? '');
+        if ($username === '' || $password === '') {
+            $this->respond(['code' => 1, 'message' => 'Username and password are required.'], 400);
+            return;
+        }
+        $user = $this->userRepository->findByUsername($username);
+        if ($user === null || !($user['is_active'] ?? false)
+            || !password_verify($password, (string) $user['password_hash'])) {
+            $this->respond(['code' => 1, 'message' => 'Invalid username or password.'], 401);
+            return;
+        }
+        $access = $this->jwtService->issueAccess(
+            (string) $user['id'],
+            (array) ($user['roles'] ?? []),
+            isset($user['station_id']) ? (string) $user['station_id'] : null
+        );
+        $refresh = $this->jwtService->issueRefresh();
+        $this->refreshRepository->insert(
+            (string) $user['id'],
+            hash('sha256', $refresh),
+            JwtService::REFRESH_TTL_SECONDS
+        );
+        $this->auditLogRepository->log(
+            (string) $user['username'],
+            'token_issue',
+            'user',
+            (string) $user['id'],
+            ['flow' => 'password']
+        );
+        $this->respond([
+            'code' => 0,
+            'result' => [
+                'access' => $access,
+                'access_expires_in' => JwtService::ACCESS_TTL_SECONDS,
+                'refresh' => $refresh,
+                'refresh_expires_in' => JwtService::REFRESH_TTL_SECONDS,
+                'token_type' => 'Bearer',
+            ],
+        ]);
+    }
+
+    /**
+     * Faz 25 — refresh the access JWT. Rotates the refresh token (one-time
+     * use) and revokes the presented one so a stolen refresh can't outlive
+     * a single exchange.
+     */
+    public function refreshToken(): void
+    {
+        if ($this->jwtService === null || $this->refreshRepository === null) {
+            $this->respond(['code' => 1, 'message' => 'JWT desteği aktif değil.'], 500);
+            return;
+        }
+        $payload = $this->readJsonPayload();
+        $refresh = (string) ($payload['refresh'] ?? '');
+        if ($refresh === '') {
+            $this->respond(['code' => 1, 'message' => 'refresh gerekli.'], 400);
+            return;
+        }
+        $hash = hash('sha256', $refresh);
+        $row = $this->refreshRepository->findValid($hash);
+        if ($row === null) {
+            $this->respond(['code' => 1, 'message' => 'Refresh geçersiz veya süresi doldu.'], 401);
+            return;
+        }
+        $user = $this->userRepository->findById((string) $row['user_id']);
+        if ($user === null || !($user['is_active'] ?? false)) {
+            $this->respond(['code' => 1, 'message' => 'Kullanıcı aktif değil.'], 403);
+            return;
+        }
+        // Rotation: revoke the presented refresh, issue a fresh pair.
+        $this->refreshRepository->revoke($hash);
+        $access = $this->jwtService->issueAccess(
+            (string) $user['id'],
+            (array) ($user['roles'] ?? []),
+            isset($user['station_id']) ? (string) $user['station_id'] : null
+        );
+        $newRefresh = $this->jwtService->issueRefresh();
+        $this->refreshRepository->insert(
+            (string) $user['id'],
+            hash('sha256', $newRefresh),
+            JwtService::REFRESH_TTL_SECONDS
+        );
+        $this->auditLogRepository->log(
+            (string) $user['username'],
+            'token_refresh',
+            'user',
+            (string) $user['id'],
+            []
+        );
+        $this->respond([
+            'code' => 0,
+            'result' => [
+                'access' => $access,
+                'access_expires_in' => JwtService::ACCESS_TTL_SECONDS,
+                'refresh' => $newRefresh,
+                'refresh_expires_in' => JwtService::REFRESH_TTL_SECONDS,
+                'token_type' => 'Bearer',
+            ],
+        ]);
     }
 
     public function login(): void
