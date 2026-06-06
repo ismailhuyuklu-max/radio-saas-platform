@@ -25,3 +25,4 @@ Thumbs.db
 
 # Docker / runtime data
 media_work/
+docs/doc-sessions.json
