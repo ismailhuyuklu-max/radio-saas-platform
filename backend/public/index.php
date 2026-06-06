@@ -13,6 +13,7 @@ use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
 use RadioSaaS\Controller\PartnerAdminController;
+use RadioSaaS\Controller\SignedFeedController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Controller\TrafficMetaController;
 use RadioSaaS\Infrastructure\MinioStorage;
@@ -31,9 +32,11 @@ use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
+use RadioSaaS\Repository\StreamTokenRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\RadioCredentialService;
+use RadioSaaS\Service\StreamTokenService;
 use RadioSaaS\Service\MediaFeedService;
 use RadioSaaS\Service\RenderQueueService;
 use RadioSaaS\Service\TokenAuthenticator;
@@ -500,7 +503,10 @@ $stationController = new StationController($adminAuthenticator, $stationReposito
 $planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository, $provinceRepository, $stationGroupRepository);
 $trafficMetaController = new TrafficMetaController($adminAuthenticator, $provinceRepository, $stationGroupRepository, $stationRepository);
 $radioCredentialService = new RadioCredentialService($userRepository, $stationRepository);
-$partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService);
+$streamTokenRepository = new StreamTokenRepository($pdo);
+$streamTokenService = new StreamTokenService($streamTokenRepository);
+$partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
+$signedFeedController = new SignedFeedController($streamTokenRepository, $streamTokenService, $stationRepository, $feedService, $auditLogRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -761,6 +767,10 @@ try {
         $partnerAdminController->updateProfile($matches[1]);
         return;
     }
+    if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/rotate-tokens$#', $path, $matches)) {
+        $partnerAdminController->rotateTokens($matches[1]);
+        return;
+    }
 
     if ($method === 'GET' && preg_match('#^/api/v1/reports/breakdown/([a-z-]+)$#', $path, $matches)) {
         $reportController->breakdown($matches[1]);
@@ -854,6 +864,18 @@ try {
 
     if ($method === 'GET' && preg_match('#^/api/v1/streams/([^/]+)/([^/]+)$#', $path, $matches)) {
         $feedController->stream($matches[1], $matches[2]);
+        return;
+    }
+
+    // Signed-URL feed for partner radios. Token IS the authentication —
+    // no session/cookie needed; verified against station_stream_tokens.
+    //   /stream/radio/{stationId}/{token}/{purpose}.{json|xml|m3u|pls}
+    if ($method === 'GET' && preg_match(
+        '#^/api/v1/stream/radio/([^/]+)/([a-f0-9]{32,96})/([a-z]+)\.(json|xml|m3u|pls)$#',
+        $path,
+        $matches
+    )) {
+        $signedFeedController->show($matches[1], $matches[2], $matches[3], $matches[4]);
         return;
     }
 

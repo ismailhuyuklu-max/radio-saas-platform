@@ -349,6 +349,30 @@ $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_stations_user_id ON stations (
 $pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS station_id uuid NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_users_station ON users (station_id) WHERE station_id IS NOT NULL');
 
+/**
+ * Faz 13 — Signed-URL style stream tokens. Each station has 8 purpose-keyed
+ * tokens (news/sports/economy/weather/sponsor/ad/special/emergency).
+ * Rotation revokes the old row (revoked_at) and inserts a new one so any
+ * cached partner link stops working immediately.
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS station_stream_tokens (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        station_id uuid NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+        purpose varchar(32) NOT NULL,
+        token varchar(96) NOT NULL UNIQUE,
+        ip_restriction varchar(64) NULL,
+        domain_restriction varchar(255) NULL,
+        expires_at timestamptz NULL,
+        revoked_at timestamptz NULL,
+        last_used_at timestamptz NULL,
+        use_count integer NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_stream_tokens_station ON station_stream_tokens (station_id, purpose) WHERE revoked_at IS NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_stream_tokens_token ON station_stream_tokens (token) WHERE revoked_at IS NULL');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');

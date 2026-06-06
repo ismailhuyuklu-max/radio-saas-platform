@@ -8,6 +8,7 @@ use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\RadioCredentialService;
+use RadioSaaS\Service\StreamTokenService;
 use RuntimeException;
 
 /**
@@ -21,8 +22,27 @@ final class PartnerAdminController
         private readonly AdminAuthenticator $authenticator,
         private readonly StationRepository $stationRepository,
         private readonly AuditLogRepository $auditLogRepository,
-        private readonly RadioCredentialService $credentialService
+        private readonly RadioCredentialService $credentialService,
+        private readonly StreamTokenService $streamTokenService
     ) {
+    }
+
+    /**
+     * Rotate all 8 purpose-keyed stream tokens for a station. Any cached
+     * partner URL stops working the moment this returns.
+     */
+    public function rotateTokens(string $stationId): void
+    {
+        $this->guard('partner:provision');
+        $tokens = $this->streamTokenService->rotate($stationId);
+        $this->auditLogRepository->log('admin', 'partner_token_rotate', 'station', $stationId, [
+            'purposes' => array_keys($tokens),
+        ]);
+        $this->respond([
+            'code' => 0,
+            'result' => ['tokens' => $tokens],
+            'message' => 'Rotated',
+        ]);
     }
 
     public function provision(string $stationId): void
