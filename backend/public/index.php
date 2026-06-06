@@ -736,6 +736,11 @@ try {
         return;
     }
 
+    if ($method === 'GET' && preg_match('#^/api/v1/reports/breakdown/([a-z-]+)$#', $path, $matches)) {
+        $reportController->breakdown($matches[1]);
+        return;
+    }
+
     if ($method === 'GET' && preg_match('#^/api/v1/reports/([a-z-]+)$#', $path, $matches)) {
         $reportController->export($matches[1]);
         return;

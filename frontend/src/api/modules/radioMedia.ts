@@ -718,6 +718,35 @@ export function getPlanRange(filters: { start: string; end: string; region?: Reg
   return requestClient.get<PlanRangeResponse>('/plans/range', { params });
 }
 
+// --- Faz 6: reporting breakdowns (il / müşteri) -----------------------------
+
+export interface ProvinceBreakdownRow {
+  province: string;
+  region_code: string;
+  region_name: string;
+  plan_count: number;
+  campaign_count: number;
+}
+export interface CustomerBreakdownRow {
+  advertiser_name: string;
+  status: string;
+  budget: number;
+  planned_spots: number;
+  aired_spots: number;
+  impressions: number;
+}
+
+export function getProvinceBreakdown() {
+  return requestClient.get<{ type: string; rows: ProvinceBreakdownRow[]; count: number }>(
+    '/reports/breakdown/province',
+  );
+}
+export function getCustomerBreakdown() {
+  return requestClient.get<{ type: string; rows: CustomerBreakdownRow[]; count: number }>(
+    '/reports/breakdown/customer',
+  );
+}
+
 export interface BulkPlanPayload {
   target_regions?: string[];
   target_provinces?: string[];

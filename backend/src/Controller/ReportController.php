@@ -70,8 +70,69 @@ final class ReportController
             'revenue' => $this->revenueDataset(),
             'broadcast' => $this->broadcastDataset(),
             'stations' => $this->stationsDataset(),
+            'province' => $this->provinceDataset(),
+            'customer' => $this->customerDataset(),
             default => throw new RuntimeException('Unknown report type.'),
         };
+    }
+
+    /**
+     * On-screen JSON breakdowns (il / müşteri) for the reports dashboard —
+     * the same data the file exports use, served as JSON for charts/tables.
+     */
+    public function breakdown(string $type): void
+    {
+        $this->guard('reports:view');
+        $rows = match ($type) {
+            'province' => $this->planRepository->provinceBreakdown(),
+            'customer' => $this->campaignRepository->customerBreakdown(),
+            default => throw new RuntimeException('Unknown breakdown type.'),
+        };
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'type' => $type,
+            'rows' => $rows,
+            'count' => count($rows),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function provinceDataset(): array
+    {
+        $rows = [];
+        foreach ($this->planRepository->provinceBreakdown() as $r) {
+            $rows[] = [
+                $r['province'],
+                $r['region_name'],
+                $r['plan_count'],
+                $r['campaign_count'],
+            ];
+        }
+        return [
+            'İl Kırılımı Raporu',
+            ['İl', 'Bölge', 'Plan Sayısı', 'Kampanya Sayısı'],
+            $rows,
+        ];
+    }
+
+    private function customerDataset(): array
+    {
+        $rows = [];
+        foreach ($this->campaignRepository->customerBreakdown() as $r) {
+            $rows[] = [
+                $r['advertiser_name'],
+                $r['status'],
+                $r['budget'],
+                $r['planned_spots'],
+                $r['aired_spots'],
+                $r['impressions'],
+            ];
+        }
+        return [
+            'Müşteri Kırılımı Raporu',
+            ['Reklamveren', 'Durum', 'Bütçe', 'Planlanan Spot', 'Yayınlanan Spot', 'Gösterim'],
+            $rows,
+        ];
     }
 
     private function revenueDataset(): array

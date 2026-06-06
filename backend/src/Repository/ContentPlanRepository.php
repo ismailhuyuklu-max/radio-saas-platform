@@ -98,6 +98,38 @@ final class ContentPlanRepository
         return $stmt->fetchAll() ?: [];
     }
 
+    /**
+     * Plan volume broken down by province (il), with the owning region and the
+     * number of distinct campaigns touching each il. Region-wide plans (no
+     * province) bucket under '(Bölge geneli)'. Powers the il report.
+     *
+     * @return list<array{province:string,region_code:string,region_name:string,plan_count:int,campaign_count:int}>
+     */
+    public function provinceBreakdown(): array
+    {
+        $sql = <<<'SQL'
+            SELECT
+                COALESCE(NULLIF(p.province, ''), '(Bölge geneli)') AS province,
+                r.code AS region_code,
+                r.name AS region_name,
+                COUNT(*) AS plan_count,
+                COUNT(DISTINCT p.campaign_id) FILTER (WHERE p.campaign_id IS NOT NULL) AS campaign_count
+            FROM content_plans p
+            INNER JOIN regions r ON r.id = p.region_id
+            GROUP BY COALESCE(NULLIF(p.province, ''), '(Bölge geneli)'), r.code, r.name
+            ORDER BY plan_count DESC, province ASC
+        SQL;
+
+        $rows = $this->pdo->query($sql)->fetchAll() ?: [];
+        return array_map(static fn (array $r): array => [
+            'province' => (string) $r['province'],
+            'region_code' => (string) $r['region_code'],
+            'region_name' => (string) $r['region_name'],
+            'plan_count' => (int) $r['plan_count'],
+            'campaign_count' => (int) $r['campaign_count'],
+        ], $rows);
+    }
+
     public function listCalendar(array $filters = []): array
     {
         $slots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];

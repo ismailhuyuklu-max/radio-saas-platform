@@ -23,6 +23,7 @@ import {
   savePlanning,
   updatePlanning,
 } from '#/api/modules/radioMedia';
+import VirtualList from '#/components/ui/VirtualList.vue';
 import { extractApiError } from '#/utils/api-error';
 
 const SLOTS = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
@@ -568,23 +569,25 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- LIST -->
+    <!-- LIST (virtualized for 1000+ rows) -->
     <div v-else class="pln__list ui-card">
-      <div v-if="listPlans.length" class="pln__list-rows">
-        <button
-          v-for="item in listPlans"
-          :key="item.id"
-          type="button"
-          class="pln__lrow"
-          @click="openEdit(item)"
-        >
-          <span class="pln__ldate">{{ dayjs(item.plan_date).format('DD MMM') }}</span>
-          <span class="pln__lslot">{{ item.slot_time.slice(0, 5) }}</span>
-          <span class="pln__ltitle">{{ item.content_title }}</span>
-          <span class="pln__lregion">{{ item.region_name }}</span>
-          <span class="pln__chip" :class="`is-${statusTone(item.status)}`">{{ statusLabel(item.status) }}</span>
-        </button>
-      </div>
+      <VirtualList
+        v-if="listPlans.length"
+        :items="listPlans"
+        :row-height="48"
+        :height="560"
+        key-field="id"
+      >
+        <template #default="{ item }">
+          <button type="button" class="pln__lrow" @click="openEdit(item)">
+            <span class="pln__ldate">{{ dayjs(item.plan_date).format('DD MMM') }}</span>
+            <span class="pln__lslot">{{ item.slot_time.slice(0, 5) }}</span>
+            <span class="pln__ltitle">{{ item.content_title }}</span>
+            <span class="pln__lregion">{{ item.region_name }}</span>
+            <span class="pln__chip" :class="`is-${statusTone(item.status)}`">{{ statusLabel(item.status) }}</span>
+          </button>
+        </template>
+      </VirtualList>
       <p v-else class="pln__wday-empty">Bu dönem için plan yok.</p>
     </div>
 
@@ -1016,15 +1019,13 @@ onMounted(() => {
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
+  height: 100%;
   text-align: left;
   border: none;
   background: transparent;
-  border-top: 1px solid var(--c-line);
-  padding: 11px 10px;
+  border-bottom: 1px solid var(--c-line);
+  padding: 0 10px;
   cursor: pointer;
-}
-.pln__lrow:first-child {
-  border-top: none;
 }
 .pln__lrow:hover {
   background: var(--c-surface-2);

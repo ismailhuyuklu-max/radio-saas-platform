@@ -190,6 +190,30 @@ try {
             check(($t['missed'] ?? -1) === 0, 'traffic.missed is 0 for future-dated spot');
             check(isset($body['traffic_summary']['planned']), 'traffic_summary present');
         }
+
+        // --- Faz 6: reporting breakdowns (il / müşteri) --------------------
+        [$code, $body] = api('GET', $base . '/reports/breakdown/province', $token);
+        check($code === 200, "GET /reports/breakdown/province → 200 (got {$code})");
+        $provinceRows = $body['rows'] ?? [];
+        $hasIzmir = false;
+        foreach ($provinceRows as $r) {
+            if (($r['province'] ?? '') === 'İzmir') {
+                $hasIzmir = true;
+            }
+        }
+        check($hasIzmir, 'province breakdown includes İzmir (campaign plan)');
+
+        [$code, $body] = api('GET', $base . '/reports/breakdown/customer', $token);
+        check($code === 200, "GET /reports/breakdown/customer → 200 (got {$code})");
+        $custRows = $body['rows'] ?? [];
+        $hasCustomer = false;
+        foreach ($custRows as $r) {
+            if (($r['advertiser_name'] ?? '') === 'E2E Trafik Reklamvereni') {
+                $hasCustomer = true;
+                check(($r['planned_spots'] ?? 0) >= 1, 'customer breakdown counts planned spots');
+            }
+        }
+        check($hasCustomer, 'customer breakdown includes the test advertiser');
     } else {
         echo "  SKIP: no ad_campaigns row to link (campaign test skipped)\n";
     }

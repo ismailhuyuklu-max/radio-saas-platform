@@ -147,6 +147,44 @@ final class AdCampaignRepository
     }
 
     /**
+     * Per-customer (advertiser) breakdown: planned spots from content_plans,
+     * aired spots/impressions from ad_airings, and contracted budget. Powers
+     * the müşteri report.
+     *
+     * @return list<array{advertiser_name:string,status:string,budget:float,planned_spots:int,aired_spots:int,impressions:int}>
+     */
+    public function customerBreakdown(): array
+    {
+        $sql = <<<'SQL'
+            SELECT
+                c.advertiser_name,
+                c.status,
+                c.budget,
+                COUNT(DISTINCT cp.id) AS planned_spots,
+                COALESCE(a.aired_spots, 0) AS aired_spots,
+                COALESCE(a.impressions, 0) AS impressions
+            FROM ad_campaigns c
+            LEFT JOIN content_plans cp ON cp.campaign_id = c.id
+            LEFT JOIN (
+                SELECT campaign_id, COUNT(*) AS aired_spots, COALESCE(SUM(impressions), 0) AS impressions
+                FROM ad_airings GROUP BY campaign_id
+            ) a ON a.campaign_id = c.id
+            GROUP BY c.id, c.advertiser_name, c.status, c.budget, a.aired_spots, a.impressions
+            ORDER BY c.advertiser_name ASC
+        SQL;
+
+        $rows = $this->pdo->query($sql)->fetchAll() ?: [];
+        return array_map(static fn (array $r): array => [
+            'advertiser_name' => (string) $r['advertiser_name'],
+            'status' => (string) $r['status'],
+            'budget' => (float) $r['budget'],
+            'planned_spots' => (int) $r['planned_spots'],
+            'aired_spots' => (int) $r['aired_spots'],
+            'impressions' => (int) $r['impressions'],
+        ], $rows);
+    }
+
+    /**
      * Derive the Tamamlanan / Kalan / Kaçırılan traffic columns for one
      * campaign from its scheduled (planned/past_due) and actual (aired) totals.
      *
