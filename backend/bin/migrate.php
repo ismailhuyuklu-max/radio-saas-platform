@@ -263,4 +263,75 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ad_airings_campaign ON ad_airings (ca
 $pdo->exec('ALTER TABLE media_contents ADD COLUMN IF NOT EXISTS slot_time time NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_media_region_part_slot ON media_contents (region_id, part_code, slot_time, render_state)');
 
+/**
+ * Faz 2 — traffic data model: provinces (81 il), province/campaign-keyed plans,
+ * and radio groups (all idempotent).
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS provinces (
+        name varchar(64) PRIMARY KEY,
+        region_code varchar(32) NOT NULL,
+        plate integer NULL
+    )"
+);
+
+$provinceData = [
+    // [name, region_code, plate]
+    ['İstanbul', 'marmara', 34], ['Balıkesir', 'marmara', 10], ['Bursa', 'marmara', 16],
+    ['Çanakkale', 'marmara', 17], ['Edirne', 'marmara', 22], ['Kırklareli', 'marmara', 39],
+    ['Kocaeli', 'marmara', 41], ['Sakarya', 'marmara', 54], ['Tekirdağ', 'marmara', 59],
+    ['Yalova', 'marmara', 77], ['Bilecik', 'marmara', 11],
+    ['İzmir', 'ege', 35], ['Aydın', 'ege', 9], ['Denizli', 'ege', 20], ['Muğla', 'ege', 48],
+    ['Manisa', 'ege', 45], ['Afyonkarahisar', 'ege', 3], ['Kütahya', 'ege', 43], ['Uşak', 'ege', 64],
+    ['Antalya', 'akdeniz', 7], ['Adana', 'akdeniz', 1], ['Mersin', 'akdeniz', 33],
+    ['Hatay', 'akdeniz', 31], ['Isparta', 'akdeniz', 32], ['Burdur', 'akdeniz', 15],
+    ['Osmaniye', 'akdeniz', 80], ['Kahramanmaraş', 'akdeniz', 46],
+    ['Ankara', 'ic-anadolu', 6], ['Konya', 'ic-anadolu', 42], ['Kayseri', 'ic-anadolu', 38],
+    ['Eskişehir', 'ic-anadolu', 26], ['Sivas', 'ic-anadolu', 58], ['Yozgat', 'ic-anadolu', 66],
+    ['Aksaray', 'ic-anadolu', 68], ['Karaman', 'ic-anadolu', 70], ['Kırıkkale', 'ic-anadolu', 71],
+    ['Kırşehir', 'ic-anadolu', 40], ['Nevşehir', 'ic-anadolu', 50], ['Niğde', 'ic-anadolu', 51],
+    ['Çankırı', 'ic-anadolu', 18],
+    ['Samsun', 'karadeniz', 55], ['Trabzon', 'karadeniz', 61], ['Ordu', 'karadeniz', 52],
+    ['Giresun', 'karadeniz', 28], ['Rize', 'karadeniz', 53], ['Artvin', 'karadeniz', 8],
+    ['Gümüşhane', 'karadeniz', 29], ['Bayburt', 'karadeniz', 69], ['Bartın', 'karadeniz', 74],
+    ['Bolu', 'karadeniz', 14], ['Çorum', 'karadeniz', 19], ['Düzce', 'karadeniz', 81],
+    ['Karabük', 'karadeniz', 78], ['Kastamonu', 'karadeniz', 37], ['Sinop', 'karadeniz', 57],
+    ['Tokat', 'karadeniz', 60], ['Amasya', 'karadeniz', 5], ['Zonguldak', 'karadeniz', 67],
+    ['Erzurum', 'dogu-anadolu', 25], ['Erzincan', 'dogu-anadolu', 24], ['Ağrı', 'dogu-anadolu', 4],
+    ['Ardahan', 'dogu-anadolu', 75], ['Bingöl', 'dogu-anadolu', 12], ['Bitlis', 'dogu-anadolu', 13],
+    ['Elazığ', 'dogu-anadolu', 23], ['Hakkâri', 'dogu-anadolu', 30], ['Iğdır', 'dogu-anadolu', 76],
+    ['Kars', 'dogu-anadolu', 36], ['Malatya', 'dogu-anadolu', 44], ['Muş', 'dogu-anadolu', 49],
+    ['Tunceli', 'dogu-anadolu', 62], ['Van', 'dogu-anadolu', 65],
+    ['Gaziantep', 'guneydogu-anadolu', 27], ['Diyarbakır', 'guneydogu-anadolu', 21],
+    ['Şanlıurfa', 'guneydogu-anadolu', 63], ['Mardin', 'guneydogu-anadolu', 47],
+    ['Batman', 'guneydogu-anadolu', 72], ['Siirt', 'guneydogu-anadolu', 56],
+    ['Şırnak', 'guneydogu-anadolu', 73], ['Adıyaman', 'guneydogu-anadolu', 2],
+    ['Kilis', 'guneydogu-anadolu', 79],
+];
+$provinceStmt = $pdo->prepare(
+    'INSERT INTO provinces (name, region_code, plate) VALUES (:n, :r, :p)
+     ON CONFLICT (name) DO UPDATE SET region_code = EXCLUDED.region_code, plate = EXCLUDED.plate'
+);
+foreach ($provinceData as [$pn, $pr, $pp]) {
+    $provinceStmt->execute(['n' => $pn, 'r' => $pr, 'p' => $pp]);
+}
+
+// Radio groups (Radyo Grubu targeting).
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS station_groups (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name varchar(128) NOT NULL UNIQUE,
+        description varchar(255) NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS group_id uuid NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_stations_group ON stations (group_id)');
+
+// Province- and campaign-keyed plans.
+$pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
+$pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_content_plans_province ON content_plans (region_id, province, plan_date, slot_time)');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_content_plans_campaign ON content_plans (campaign_id)');
+
 echo "Migrations complete.\n";

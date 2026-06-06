@@ -36,7 +36,8 @@
       "php tests/ad_e2e.php",
       "php tests/mfa_e2e.php",
       "php tests/security_e2e.php",
-      "php tests/csrf_e2e.php"
+      "php tests/csrf_e2e.php",
+      "php tests/traffic_e2e.php"
     ]
   }
 }

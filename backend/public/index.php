@@ -13,6 +13,7 @@ use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
 use RadioSaaS\Controller\StationController;
+use RadioSaaS\Controller\TrafficMetaController;
 use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Infrastructure\PdoFactory;
 use RadioSaaS\Repository\AuditLogRepository;
@@ -24,8 +25,10 @@ use RadioSaaS\Repository\JobRepository;
 use RadioSaaS\Repository\LoginThrottleRepository;
 use RadioSaaS\Repository\MediaContentRepository;
 use RadioSaaS\Repository\MatrixRepository;
+use RadioSaaS\Repository\ProvinceRepository;
 use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Repository\SponsorAdRepository;
+use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
@@ -473,6 +476,8 @@ $sponsorRepository = new SponsorAdRepository($pdo);
 $jobRepository = new JobRepository($pdo);
 $regionRepository = new RegionRepository($pdo);
 $planRepository = new ContentPlanRepository($pdo);
+$provinceRepository = new ProvinceRepository($pdo);
+$stationGroupRepository = new StationGroupRepository($pdo);
 $auditLogRepository = new AuditLogRepository($pdo);
 $userRepository = new UserRepository($pdo);
 $adCampaignRepository = new AdCampaignRepository($pdo);
@@ -490,7 +495,8 @@ $feedController = new FeedController($authenticator, $feedService, $auditLogRepo
 $mediaController = new MediaController($adminAuthenticator, $mediaRepository, $renderQueue, $storage, $regionRepository, $auditLogRepository);
 $matrixController = new MatrixController($adminAuthenticator, $matrixRepository, $regionRepository, $stationRepository, $feedService, $auditLogRepository);
 $stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository);
-$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository);
+$planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository, $provinceRepository, $stationGroupRepository);
+$trafficMetaController = new TrafficMetaController($adminAuthenticator, $provinceRepository, $stationGroupRepository, $stationRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -604,6 +610,37 @@ try {
 
     if ($method === 'POST' && $path === '/api/v1/plans/bulk') {
         $planningController->bulkStore();
+        return;
+    }
+
+    // Traffic-center targeting metadata: provinces, radio groups, station list.
+    if ($method === 'GET' && $path === '/api/v1/traffic/provinces') {
+        $trafficMetaController->provinces();
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/traffic/stations') {
+        $trafficMetaController->stations();
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/api/v1/traffic/groups') {
+        $trafficMetaController->groups();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/traffic/groups') {
+        $trafficMetaController->createGroup();
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/api/v1/traffic/groups/([^/]+)/members$#', $path, $matches)) {
+        $trafficMetaController->updateGroupMembers($matches[1]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/api/v1/traffic/groups/([^/]+)$#', $path, $matches)) {
+        $trafficMetaController->deleteGroup($matches[1]);
         return;
     }
 

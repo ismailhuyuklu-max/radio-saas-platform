@@ -6,7 +6,9 @@ namespace RadioSaaS\Controller;
 
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
+use RadioSaaS\Repository\ProvinceRepository;
 use RadioSaaS\Repository\RegionRepository;
+use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\TrafficPlanner;
@@ -19,7 +21,9 @@ final class PlanningController
         private readonly ContentPlanRepository $planRepository,
         private readonly AuditLogRepository $auditLogRepository,
         private readonly RegionRepository $regionRepository,
-        private readonly ?StationRepository $stationRepository = null
+        private readonly ?StationRepository $stationRepository = null,
+        private readonly ?ProvinceRepository $provinceRepository = null,
+        private readonly ?StationGroupRepository $stationGroupRepository = null
     ) {
     }
 
@@ -34,36 +38,83 @@ final class PlanningController
         $payload = $this->readJsonPayload();
 
         $regionCodes = $this->asArray($payload['target_regions'] ?? []);
+        $provinceNames = $this->asArray($payload['target_provinces'] ?? []);
         $stationIds = $this->asArray($payload['station_ids'] ?? []);
+        $groupIds = $this->asArray($payload['group_ids'] ?? []);
         $slots = $this->asArray($payload['slots'] ?? []);
         $startDate = (string) ($payload['start_date'] ?? date('Y-m-d'));
         $repeatDays = (int) ($payload['repeat_days'] ?? 1);
+        $campaignId = trim((string) ($payload['campaign_id'] ?? ''));
+        $campaignId = $campaignId === '' ? null : $campaignId;
 
         if ($slots === []) {
             throw new RuntimeException('En az bir yayın kuşağı (slot) gerekli.');
         }
 
-        // Build targets: region-scope (station_id null) + station-scope.
+        // Build targets across four scopes. Each target carries an optional
+        // province (il-level) so the conflict engine keys per-il, and an
+        // optional station_id (station-level, conflict check skipped).
         $targets = [];
+
+        // Tüm Türkiye / Bölge scope — region-wide, no province.
         foreach ($regionCodes as $code) {
             $rid = $this->resolveRegionId((string) $code);
             if ($rid !== null) {
-                $targets[] = ['region_id' => $rid, 'region_code' => (string) $code, 'station_id' => null];
+                $targets[] = [
+                    'region_id' => $rid,
+                    'region_code' => (string) $code,
+                    'province' => null,
+                    'station_id' => null,
+                ];
             }
         }
-        foreach ($stationIds as $sid) {
-            $station = $this->stationRepository?->findById((string) $sid);
+
+        // İl scope — resolve each province to its region, key plan to that il.
+        foreach ($provinceNames as $name) {
+            $name = (string) $name;
+            $regionCode = $this->provinceRepository?->regionForProvince($name);
+            if ($regionCode === null) {
+                continue;
+            }
+            $rid = $this->resolveRegionId($regionCode);
+            if ($rid !== null) {
+                $targets[] = [
+                    'region_id' => $rid,
+                    'region_code' => $regionCode,
+                    'province' => $name,
+                    'station_id' => null,
+                ];
+            }
+        }
+
+        // Radyo Grubu scope — expand each group into its member stations.
+        $expandedStationIds = $stationIds;
+        foreach ($groupIds as $gid) {
+            $members = $this->stationGroupRepository?->memberStationIds((string) $gid) ?? [];
+            $expandedStationIds = array_merge($expandedStationIds, $members);
+        }
+
+        // Radyo scope — station-specific plans.
+        $seenStations = [];
+        foreach ($expandedStationIds as $sid) {
+            $sid = (string) $sid;
+            if (isset($seenStations[$sid])) {
+                continue;
+            }
+            $seenStations[$sid] = true;
+            $station = $this->stationRepository?->findById($sid);
             if ($station !== null) {
                 $targets[] = [
                     'region_id' => (string) $station['region_id'],
                     'region_code' => (string) ($station['region_code'] ?? ''),
-                    'station_id' => (string) $sid,
+                    'province' => $station['city_name'] ?? null,
+                    'station_id' => $sid,
                 ];
             }
         }
 
         if ($targets === []) {
-            throw new RuntimeException('Geçerli bir hedef (bölge/istasyon) seçilmedi.');
+            throw new RuntimeException('Geçerli bir hedef (bölge/il/grup/istasyon) seçilmedi.');
         }
 
         $dates = TrafficPlanner::expandDates($startDate, $repeatDays);
@@ -76,6 +127,8 @@ final class PlanningController
             $plan = [
                 'region_id' => (string) $spec['region_id'],
                 'station_id' => $spec['station_id'] ?? null,
+                'province' => $spec['province'] ?? null,
+                'campaign_id' => $campaignId,
                 'part_code' => (string) ($spec['part_code'] ?? 'news'),
                 'slot_time' => (string) ($spec['slot_time'] ?? '08:00'),
                 'plan_date' => (string) $spec['plan_date'],
@@ -87,12 +140,13 @@ final class PlanningController
                 'target_parts' => [$spec['part_code'] ?? 'news'],
                 'created_by' => 'admin',
             ];
-            // Region-level plans must not double-book a slot; station-level plans
-            // are per-station so the region conflict check is skipped for them.
+            // Station-level plans are per-station so the region/il conflict check
+            // is skipped; region- and il-level plans must not double-book a slot.
             if ($plan['station_id'] === null && $this->planRepository->hasConflict($plan)) {
                 $skipped++;
                 if (count($conflicts) < 25) {
-                    $conflicts[] = $plan['slot_time'] . ' · ' . ($spec['region_code'] ?? '') . ' · ' . $plan['plan_date'];
+                    $label = ($spec['province'] ?? null) ?: ($spec['region_code'] ?? '');
+                    $conflicts[] = $plan['slot_time'] . ' · ' . $label . ' · ' . $plan['plan_date'];
                 }
                 continue;
             }

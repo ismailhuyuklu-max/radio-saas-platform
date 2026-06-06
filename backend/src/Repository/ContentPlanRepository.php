@@ -99,6 +99,8 @@ final class ContentPlanRepository
                 'UPDATE content_plans
                  SET region_id = :region_id,
                      station_id = :station_id,
+                     province = :province,
+                     campaign_id = :campaign_id,
                      part_code = :part_code,
                      slot_time = :slot_time,
                      plan_date = :plan_date,
@@ -121,9 +123,9 @@ final class ContentPlanRepository
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO content_plans
-                (region_id, station_id, part_code, slot_time, plan_date, content_title, content_kind, status, is_global, target_regions, target_parts, notes, created_by)
+                (region_id, station_id, province, campaign_id, part_code, slot_time, plan_date, content_title, content_kind, status, is_global, target_regions, target_parts, notes, created_by)
              VALUES
-                (:region_id, :station_id, :part_code, :slot_time, :plan_date, :content_title, :content_kind, :status, :is_global, CAST(:target_regions AS jsonb), CAST(:target_parts AS jsonb), :notes, :created_by)
+                (:region_id, :station_id, :province, :campaign_id, :part_code, :slot_time, :plan_date, :content_title, :content_kind, :status, :is_global, CAST(:target_regions AS jsonb), CAST(:target_parts AS jsonb), :notes, :created_by)
              RETURNING id'
         );
         $insertParams = $this->bindPlanParams($payload);
@@ -159,10 +161,19 @@ final class ContentPlanRepository
 
     public function hasConflict(array $payload, ?string $ignoreId = null): bool
     {
+        // Conflict scope is keyed on region + province + date + slot + part so a
+        // city-level plan (province set) only collides with other plans for the
+        // same il, while a region-wide plan (province null) collides region-wide.
+        $province = $payload['province'] ?? null;
+        if (is_string($province) && trim($province) === '') {
+            $province = null;
+        }
+
         $sql = <<<'SQL'
             SELECT COUNT(*) AS count
             FROM content_plans
             WHERE region_id = :region_id
+              AND COALESCE(province, '') = :province
               AND plan_date = :plan_date
               AND slot_time = :slot_time
               AND part_code = :part_code
@@ -170,6 +181,7 @@ final class ContentPlanRepository
 
         $params = [
             'region_id' => $payload['region_id'],
+            'province' => $province ?? '',
             'plan_date' => $payload['plan_date'] ?? date('Y-m-d'),
             'slot_time' => substr((string) ($payload['slot_time'] ?? '08:00'), 0, 5),
             'part_code' => $payload['part_code'],
@@ -194,10 +206,21 @@ final class ContentPlanRepository
             $slotTime = '08:00';
         }
 
+        $province = $payload['province'] ?? null;
+        if (is_string($province) && trim($province) === '') {
+            $province = null;
+        }
+        $campaignId = $payload['campaign_id'] ?? null;
+        if (is_string($campaignId) && trim($campaignId) === '') {
+            $campaignId = null;
+        }
+
         return [
             'id' => $payload['id'] ?? null,
             'region_id' => $payload['region_id'],
             'station_id' => $payload['station_id'] ?? null,
+            'province' => $province,
+            'campaign_id' => $campaignId,
             'part_code' => $payload['part_code'],
             'slot_time' => $slotTime,
             'plan_date' => $payload['plan_date'] ?? date('Y-m-d'),
