@@ -3,6 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('#/api/modules/auth', () => ({
   logout: vi.fn().mockResolvedValue(undefined),
+  getMfaStatus: vi.fn().mockResolvedValue({ result: { enabled: false, pending: false } }),
+  setupMfa: vi.fn().mockResolvedValue({ result: { secret: 'JBSWY3DPEHPK3PXP', otpauth_uri: 'otpauth://' } }),
+  enableMfa: vi.fn().mockResolvedValue({ result: { enabled: true, recovery_codes: ['aaa', 'bbb'] } }),
+  disableMfa: vi.fn().mockResolvedValue({ result: { enabled: false } }),
+  changePassword: vi.fn().mockResolvedValue({ result: { changed: true } }),
 }));
 
 vi.mock('#/api/modules/support', async (importOriginal) => {

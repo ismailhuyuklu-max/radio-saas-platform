@@ -4,7 +4,15 @@ import dayjs from 'dayjs';
 
 import { message } from 'ant-design-vue';
 
-import { logout } from '#/api/modules/auth';
+import {
+  changePassword,
+  disableMfa,
+  enableMfa,
+  getMfaStatus,
+  logout,
+  setupMfa,
+  type MfaStatus,
+} from '#/api/modules/auth';
 import {
   type PortalActivity,
   type PortalCard,
@@ -42,7 +50,7 @@ import {
   revokePartnerApiKey,
 } from '#/api/modules/apikeys';
 
-type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support' | 'apikeys';
+type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support' | 'apikeys' | 'security';
 
 const loading = ref(true);
 const card = ref<PortalCard | null>(null);
@@ -206,6 +214,87 @@ function clearOneTimeApiKey() {
   oneTimeApiKey.value = null;
 }
 
+// --- Faz 28: Partner self-service MFA + password ----------------------
+const mfaStatus = ref<MfaStatus | null>(null);
+const mfaSetupResult = ref<{ secret: string; otpauth_uri: string } | null>(null);
+const mfaCode = ref('');
+const mfaBusy = ref(false);
+const mfaRecoveryCodes = ref<string[]>([]);
+const pwCurrent = ref('');
+const pwNew = ref('');
+const pwBusy = ref(false);
+
+async function loadMfaStatus() {
+  try {
+    const res = await getMfaStatus();
+    mfaStatus.value = res?.result ?? null;
+  } catch {
+    mfaStatus.value = null;
+  }
+}
+async function startMfaSetup() {
+  mfaBusy.value = true;
+  try {
+    const res = await setupMfa();
+    mfaSetupResult.value = res?.result ?? null;
+  } catch {
+    message.error('MFA başlatılamadı.');
+  } finally {
+    mfaBusy.value = false;
+  }
+}
+async function confirmMfa() {
+  if (!mfaCode.value.trim()) return;
+  mfaBusy.value = true;
+  try {
+    const res = await enableMfa(mfaCode.value.trim());
+    mfaRecoveryCodes.value = res?.result?.recovery_codes ?? [];
+    mfaSetupResult.value = null;
+    mfaCode.value = '';
+    await loadMfaStatus();
+    message.success('MFA etkinleştirildi.');
+  } catch {
+    message.error('Kod doğrulanamadı.');
+  } finally {
+    mfaBusy.value = false;
+  }
+}
+async function turnOffMfa() {
+  if (!mfaCode.value.trim()) {
+    message.warning('Mevcut MFA kodunuzu girin.');
+    return;
+  }
+  mfaBusy.value = true;
+  try {
+    await disableMfa(mfaCode.value.trim());
+    mfaCode.value = '';
+    mfaRecoveryCodes.value = [];
+    await loadMfaStatus();
+    message.success('MFA kapatıldı.');
+  } catch {
+    message.error('MFA kapatılamadı.');
+  } finally {
+    mfaBusy.value = false;
+  }
+}
+async function submitPasswordChange() {
+  if (!pwCurrent.value || !pwNew.value) {
+    message.warning('Mevcut ve yeni şifre gerekli.');
+    return;
+  }
+  pwBusy.value = true;
+  try {
+    await changePassword(pwCurrent.value, pwNew.value);
+    pwCurrent.value = '';
+    pwNew.value = '';
+    message.success('Şifre güncellendi.');
+  } catch {
+    message.error('Şifre değiştirilemedi.');
+  } finally {
+    pwBusy.value = false;
+  }
+}
+
 async function copy(text: string, key: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -242,6 +331,7 @@ async function signOut() {
 onMounted(async () => {
   await load();
   await loadApiKeys();
+  await loadMfaStatus();
 });
 </script>
 
@@ -319,6 +409,12 @@ onMounted(async () => {
         :class="{ 'is-active': tab === 'apikeys' }"
         @click="tab = 'apikeys'"
       >🔑 API Anahtarları</button>
+      <button
+        type="button"
+        class="prt__tab"
+        :class="{ 'is-active': tab === 'security' }"
+        @click="tab = 'security'"
+      >🔒 Güvenlik</button>
     </nav>
 
     <!-- LINKS -->
@@ -556,7 +652,7 @@ onMounted(async () => {
     </section>
 
     <!-- API KEYS -->
-    <section v-else class="prt__section">
+    <section v-else-if="tab === 'apikeys'" class="prt__section">
       <p class="prt__hint">
         Programatik erişim için API anahtarları. Anahtarı sunucu-tarafı entegrasyonunuzda
         <code>X-API-Key</code> başlığı olarak gönderin. Anahtar yalnızca oluşturma anında
@@ -597,6 +693,100 @@ onMounted(async () => {
         </div>
       </div>
       <p v-else class="prt__empty">Aktif API anahtarınız yok.</p>
+    </section>
+
+    <!-- SECURITY (MFA + password) -->
+    <section v-else class="prt__section">
+      <p class="prt__hint">
+        Hesap güvenliği: iki faktörlü kimlik doğrulama (TOTP) ve şifre değişimi.
+      </p>
+
+      <div class="prt__new-key ui-card" style="flex-direction: column; align-items: stretch">
+        <h3 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--c-text)">
+          🔐 İki Faktörlü Kimlik Doğrulama (MFA)
+          <span v-if="mfaStatus?.enabled" class="prt__chip is-running" style="margin-left: 8px">Aktif</span>
+          <span v-else class="prt__chip is-draft" style="margin-left: 8px">Kapalı</span>
+        </h3>
+
+        <template v-if="!mfaStatus?.enabled">
+          <p class="prt__hint">
+            Google Authenticator / Authy gibi bir TOTP uygulamasıyla telefonunuza bağlayın.
+          </p>
+          <button
+            v-if="!mfaSetupResult"
+            type="button"
+            class="prt__primary"
+            :disabled="mfaBusy"
+            @click="startMfaSetup"
+          >+ MFA Kur</button>
+          <template v-else>
+            <p class="prt__hint">
+              <strong>Manuel anahtar:</strong>
+              <code style="user-select: all">{{ mfaSetupResult.secret }}</code>
+            </p>
+            <p class="prt__hint">
+              <strong>otpauth URI:</strong>
+              <code style="user-select: all">{{ mfaSetupResult.otpauth_uri }}</code>
+            </p>
+            <label>
+              <span>Uygulamanızın gösterdiği 6 haneli kodu girin</span>
+              <input
+                v-model="mfaCode"
+                class="prt__input"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="123456"
+              >
+            </label>
+            <button type="button" class="prt__primary" :disabled="mfaBusy" @click="confirmMfa">
+              MFA'yı Etkinleştir
+            </button>
+          </template>
+        </template>
+
+        <template v-else>
+          <p class="prt__hint">
+            MFA aktif. Kapatmak için uygulamanızın anlık kodunu girin.
+          </p>
+          <label>
+            <span>Anlık MFA Kodu</span>
+            <input
+              v-model="mfaCode"
+              class="prt__input"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="123456"
+            >
+          </label>
+          <button type="button" class="prt__revoke" :disabled="mfaBusy" @click="turnOffMfa">
+            MFA'yı Kapat
+          </button>
+        </template>
+
+        <div v-if="mfaRecoveryCodes.length" class="prt__creds-once">
+          <p class="prt__warn">
+            ⚠ Kurtarma kodları yalnızca bir kez gösterilir. Güvenli bir yere kaydedin.
+          </p>
+          <code v-for="c in mfaRecoveryCodes" :key="c" class="prt__key">{{ c }}</code>
+        </div>
+      </div>
+
+      <div class="prt__new-key ui-card" style="flex-direction: column; align-items: stretch">
+        <h3 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--c-text)">
+          🔑 Şifre Değiştir
+        </h3>
+        <label>
+          <span>Mevcut Şifre</span>
+          <input v-model="pwCurrent" class="prt__input" type="password" autocomplete="current-password">
+        </label>
+        <label>
+          <span>Yeni Şifre</span>
+          <input v-model="pwNew" class="prt__input" type="password" autocomplete="new-password">
+        </label>
+        <button type="button" class="prt__primary" :disabled="pwBusy" @click="submitPasswordChange">
+          Şifreyi Güncelle
+        </button>
+      </div>
     </section>
 
     <p v-if="loading" class="prt__loading">Yükleniyor…</p>
