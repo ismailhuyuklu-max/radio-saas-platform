@@ -613,6 +613,12 @@ try {
         return;
     }
 
+    // Calendar range feed (weekly / monthly / list views).
+    if ($method === 'GET' && $path === '/api/v1/plans/range') {
+        $planningController->range();
+        return;
+    }
+
     // Smart placement (read-only suggestions) + timeline bulk operations.
     if ($method === 'GET' && $path === '/api/v1/plans/suggest') {
         $planningController->suggest();

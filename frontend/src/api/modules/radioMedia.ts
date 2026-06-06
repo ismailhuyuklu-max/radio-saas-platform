@@ -704,6 +704,20 @@ export function savePlanning(payload: PlanningSavePayload) {
   return requestClient.post('/plans', payload);
 }
 
+// --- Faz 5: calendar range feed (weekly / monthly / list) -------------------
+
+export interface PlanRangeResponse {
+  plans: ContentPlanItem[];
+  counts: Record<string, number>;
+  range: { start: string; end: string };
+}
+
+export function getPlanRange(filters: { start: string; end: string; region?: RegionCode }) {
+  const params: Record<string, string> = { start: filters.start, end: filters.end };
+  if (filters.region) params.region = filters.region;
+  return requestClient.get<PlanRangeResponse>('/plans/range', { params });
+}
+
 export interface BulkPlanPayload {
   target_regions?: string[];
   target_provinces?: string[];

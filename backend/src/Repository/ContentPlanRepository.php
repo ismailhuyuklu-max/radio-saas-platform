@@ -53,6 +53,51 @@ final class ContentPlanRepository
         return $stmt->fetchAll() ?: [];
     }
 
+    /**
+     * Plans within an inclusive [start, end] date window, optionally filtered by
+     * region. Powers the weekly/monthly/list calendar views. The window is
+     * capped at 92 days to bound the result set.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listRange(string $start, string $end, ?string $region = null): array
+    {
+        // Guard ordering + clamp the window so a bad range can't scan the table.
+        if ($end < $start) {
+            [$start, $end] = [$end, $start];
+        }
+        $maxEnd = date('Y-m-d', strtotime($start . ' +92 days'));
+        if ($end > $maxEnd) {
+            $end = $maxEnd;
+        }
+
+        $sql = <<<'SQL'
+            SELECT
+                p.*,
+                r.code AS region_code,
+                r.name AS region_name,
+                s.slug AS station_slug,
+                s.name AS station_name,
+                s.city_name AS station_city_name
+            FROM content_plans p
+            INNER JOIN regions r ON r.id = p.region_id
+            LEFT JOIN stations s ON s.id = p.station_id
+            WHERE p.plan_date BETWEEN :start AND :end
+        SQL;
+
+        $params = ['start' => $start, 'end' => $end];
+        if ($region !== null && $region !== '') {
+            $sql .= ' AND r.code = :region';
+            $params['region'] = $region;
+        }
+        $sql .= ' ORDER BY p.plan_date ASC, p.slot_time ASC';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function listCalendar(array $filters = []): array
     {
         $slots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];

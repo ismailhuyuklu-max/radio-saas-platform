@@ -131,6 +131,16 @@ try {
     [$code, $body] = api('POST', $base . '/plans/bulk', $token, $payloadIl2);
     check(($body['result']['created'] ?? 0) === 1, 'Ankara plan created (different il, no false conflict)');
 
+    // --- Faz 5: calendar range feed ----------------------------------------
+    [$code, $body] = api(
+        'GET',
+        $base . '/plans/range?start=' . $planDate . '&end=' . $planDate . '&region=marmara',
+        $token
+    );
+    check($code === 200, "GET /plans/range → 200 (got {$code})");
+    check(($body['counts'][$planDate] ?? 0) >= 1, 'range feed returns per-day counts for the marmara İstanbul plan');
+    check(is_array($body['plans'] ?? null), 'range feed returns plans array');
+
     // --- Campaign link ------------------------------------------------------
     // Create a dedicated campaign so planned/aired/missed are fully controlled
     // (reusing a demo campaign would carry pre-seeded airings).

@@ -178,6 +178,34 @@ final class PlanningController
     }
 
     /**
+     * Calendar range feed for the weekly/monthly/list views: returns plans for
+     * [start, end] plus per-day counts so the client can render a heatmap.
+     */
+    public function range(): void
+    {
+        $this->guard('plans:view');
+        $start = (string) ($_GET['start'] ?? date('Y-m-d'));
+        $end = (string) ($_GET['end'] ?? date('Y-m-d', strtotime($start . ' +6 days')));
+        $region = $_GET['region'] ?? null;
+
+        $plans = $this->planRepository->listRange($start, $end, $region !== null ? (string) $region : null);
+
+        // Per-day counts for the heatmap.
+        $byDate = [];
+        foreach ($plans as $plan) {
+            $d = substr((string) ($plan['plan_date'] ?? ''), 0, 10);
+            $byDate[$d] = ($byDate[$d] ?? 0) + 1;
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'plans' => $plans,
+            'counts' => $byDate,
+            'range' => ['start' => $start, 'end' => $end],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
      * Smart placement: read a region/day's plans and propose sponsor reads, ad
      * spacing fixes and prime-gap fills. Read-only (no DB writes).
      */

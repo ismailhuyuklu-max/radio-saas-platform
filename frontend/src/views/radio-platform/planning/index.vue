@@ -15,6 +15,7 @@ import {
   bulkDeletePlans,
   bulkMovePlans,
   getPlanning,
+  getPlanRange,
   getPlanSuggestions,
   getStations,
   REGION_LABELS,
@@ -86,6 +87,122 @@ async function loadStations() {
   } catch {
     stations.value = [];
   }
+}
+
+/* ---- Faz 5: calendar views (day / week / month / list) ---- */
+type ViewMode = 'day' | 'week' | 'month' | 'list';
+const viewMode = ref<ViewMode>('day');
+const viewOptions: Array<{ key: ViewMode; label: string }> = [
+  { key: 'day', label: 'Günlük' },
+  { key: 'week', label: 'Haftalık' },
+  { key: 'month', label: 'Aylık' },
+  { key: 'list', label: 'Liste' },
+];
+const rangePlans = ref<ContentPlanItem[]>([]);
+const rangeCounts = ref<Record<string, number>>({});
+
+// The [start, end] window the current non-day view needs.
+const rangeWindow = computed<{ start: Dayjs; end: Dayjs }>(() => {
+  if (viewMode.value === 'week') {
+    const start = selectedDate.value.startOf('week');
+    return { start, end: start.add(6, 'day') };
+  }
+  if (viewMode.value === 'month') {
+    const start = selectedDate.value.startOf('month').startOf('week');
+    const monthEnd = selectedDate.value.endOf('month').endOf('week');
+    return { start, end: monthEnd };
+  }
+  // list → the current month
+  return { start: selectedDate.value.startOf('month'), end: selectedDate.value.endOf('month') };
+});
+
+async function loadRange() {
+  const { start, end } = rangeWindow.value;
+  try {
+    const res = await getPlanRange({
+      start: start.format('YYYY-MM-DD'),
+      end: end.format('YYYY-MM-DD'),
+      region: regionFilter.value,
+    });
+    rangePlans.value = res?.plans ?? [];
+    rangeCounts.value = res?.counts ?? {};
+  } catch (error) {
+    console.error(error);
+    rangePlans.value = [];
+    rangeCounts.value = {};
+  }
+}
+
+async function reload() {
+  if (viewMode.value === 'day') await load();
+  else await loadRange();
+}
+
+function setView(mode: ViewMode) {
+  viewMode.value = mode;
+  selectMode.value = false;
+  selected.value = new Set();
+  void reload();
+}
+
+const WEEKDAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+// Week view: 7 day columns each holding its plans (sorted by slot).
+const weekDays = computed(() => {
+  const { start } = rangeWindow.value;
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = start.add(i, 'day');
+    const key = d.format('YYYY-MM-DD');
+    const items = rangePlans.value
+      .filter((p) => (p.plan_date ?? '').slice(0, 10) === key)
+      .sort((a, b) => a.slot_time.localeCompare(b.slot_time));
+    return { date: d, key, label: WEEKDAYS[i], items, isToday: d.isSame(dayjs(), 'day') };
+  });
+});
+
+// Month view: a grid of week-rows × 7 day cells with plan counts.
+const monthWeeks = computed(() => {
+  const { start, end } = rangeWindow.value;
+  const weeks: Array<Array<{ date: Dayjs; key: string; count: number; inMonth: boolean; isToday: boolean }>> = [];
+  let cursor = start;
+  while (cursor.isBefore(end) || cursor.isSame(end, 'day')) {
+    const week = Array.from({ length: 7 }, (_, i) => {
+      const d = cursor.add(i, 'day');
+      const key = d.format('YYYY-MM-DD');
+      return {
+        date: d,
+        key,
+        count: rangeCounts.value[key] ?? 0,
+        inMonth: d.isSame(selectedDate.value, 'month'),
+        isToday: d.isSame(dayjs(), 'day'),
+      };
+    });
+    weeks.push(week);
+    cursor = cursor.add(7, 'day');
+  }
+  return weeks;
+});
+
+// List view: a flat, date-sorted list.
+const listPlans = computed(() =>
+  [...rangePlans.value].sort(
+    (a, b) =>
+      (a.plan_date ?? '').localeCompare(b.plan_date ?? '') ||
+      a.slot_time.localeCompare(b.slot_time),
+  ),
+);
+
+function heatLevel(count: number): number {
+  if (count === 0) return 0;
+  if (count <= 2) return 1;
+  if (count <= 5) return 2;
+  if (count <= 9) return 3;
+  return 4;
+}
+
+function jumpToDay(d: Dayjs) {
+  selectedDate.value = d;
+  setView('day');
 }
 
 /* ---- Plan modal ---- */
@@ -185,7 +302,7 @@ async function submit() {
       message.success('Plan oluşturuldu.');
     }
     modalOpen.value = false;
-    await load();
+    await reload();
   } catch (error) {
     console.error(error);
     message.error(extractApiError(error) ?? 'Plan kaydedilemedi.');
@@ -236,7 +353,7 @@ async function runBulkMove(shift: number, copy = false, targetDate?: string) {
     const verb = copy ? 'kopyalandı' : 'taşındı';
     message.success(`${r?.written ?? 0} plan ${verb}${r?.skipped ? `, ${r.skipped} çakışma atlandı` : ''}.`);
     clearSelection();
-    await load();
+    await reload();
   } catch (error) {
     message.error(extractApiError(error) ?? 'İşlem başarısız.');
   } finally {
@@ -256,7 +373,7 @@ async function runBulkDelete() {
     const res = await bulkDeletePlans([...selected.value]);
     message.success(`${res?.result?.deleted ?? 0} plan silindi.`);
     clearSelection();
-    await load();
+    await reload();
   } catch (error) {
     message.error(extractApiError(error) ?? 'Silme başarısız.');
   } finally {
@@ -305,7 +422,7 @@ async function applySuggestion(s: PlacementResult['suggestions'][number]) {
     if (suggestResult.value) {
       suggestResult.value.suggestions = suggestResult.value.suggestions.filter((x) => x !== s);
     }
-    await load();
+    await reload();
   } catch (error) {
     message.error(extractApiError(error) ?? 'Öneri uygulanamadı.');
   }
@@ -348,11 +465,24 @@ onMounted(() => {
     </div>
 
     <div class="pln__filters ui-card">
-      <DatePicker v-model:value="selectedDate" class="pln__date" :allow-clear="false" @change="load" />
-      <Select v-model:value="regionFilter" allow-clear placeholder="Tüm bölgeler" :options="regionOptions" class="pln__f" @change="load" />
+      <DatePicker v-model:value="selectedDate" class="pln__date" :allow-clear="false" @change="reload" />
+      <Select v-model:value="regionFilter" allow-clear placeholder="Tüm bölgeler" :options="regionOptions" class="pln__f" @change="reload" />
+      <div class="pln__views">
+        <button
+          v-for="opt in viewOptions"
+          :key="opt.key"
+          type="button"
+          class="pln__view"
+          :class="{ 'is-active': viewMode === opt.key }"
+          @click="setView(opt.key)"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
     </div>
 
-    <div class="pln__grid">
+    <!-- DAILY -->
+    <div v-if="viewMode === 'day'" class="pln__grid">
       <article v-for="slot in slotsView" :key="slot.slot_time" class="pln__slot ui-card">
         <div class="pln__slot-head">
           <span class="pln__slot-time">{{ slot.slot_time }}</span>
@@ -380,6 +510,82 @@ onMounted(() => {
         </ul>
         <button v-else class="pln__add-slot" type="button" @click="openCreate(slot.slot_time)">+ Plan ekle</button>
       </article>
+    </div>
+
+    <!-- WEEKLY -->
+    <div v-else-if="viewMode === 'week'" class="pln__week">
+      <article
+        v-for="day in weekDays"
+        :key="day.key"
+        class="pln__wday ui-card"
+        :class="{ 'is-today': day.isToday }"
+      >
+        <header class="pln__wday-head" @click="jumpToDay(day.date)">
+          <span class="pln__wday-name">{{ day.label }}</span>
+          <span class="pln__wday-num">{{ day.date.format('DD MMM') }}</span>
+          <span class="pln__chip is-muted">{{ day.items.length }}</span>
+        </header>
+        <ul v-if="day.items.length" class="pln__wday-items">
+          <li
+            v-for="item in day.items"
+            :key="item.id"
+            class="pln__wchip"
+            :title="`${item.slot_time.slice(0, 5)} · ${item.content_title}`"
+            @click="openEdit(item)"
+          >
+            <b>{{ item.slot_time.slice(0, 5) }}</b> {{ item.content_title }}
+          </li>
+        </ul>
+        <p v-else class="pln__wday-empty">—</p>
+      </article>
+    </div>
+
+    <!-- MONTHLY -->
+    <div v-else-if="viewMode === 'month'" class="pln__month ui-card">
+      <div class="pln__mhead">
+        <span v-for="d in WEEKDAYS" :key="d">{{ d }}</span>
+      </div>
+      <div v-for="(week, wi) in monthWeeks" :key="wi" class="pln__mrow">
+        <button
+          v-for="cell in week"
+          :key="cell.key"
+          type="button"
+          class="pln__mcell"
+          :class="[
+            `heat-${heatLevel(cell.count)}`,
+            { 'is-out': !cell.inMonth, 'is-today': cell.isToday },
+          ]"
+          @click="jumpToDay(cell.date)"
+        >
+          <span class="pln__mnum">{{ cell.date.format('D') }}</span>
+          <span v-if="cell.count" class="pln__mcount">{{ cell.count }}</span>
+        </button>
+      </div>
+      <div class="pln__legend">
+        <span>Az</span>
+        <i class="heat-1" /><i class="heat-2" /><i class="heat-3" /><i class="heat-4" />
+        <span>Çok</span>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div v-else class="pln__list ui-card">
+      <div v-if="listPlans.length" class="pln__list-rows">
+        <button
+          v-for="item in listPlans"
+          :key="item.id"
+          type="button"
+          class="pln__lrow"
+          @click="openEdit(item)"
+        >
+          <span class="pln__ldate">{{ dayjs(item.plan_date).format('DD MMM') }}</span>
+          <span class="pln__lslot">{{ item.slot_time.slice(0, 5) }}</span>
+          <span class="pln__ltitle">{{ item.content_title }}</span>
+          <span class="pln__lregion">{{ item.region_name }}</span>
+          <span class="pln__chip" :class="`is-${statusTone(item.status)}`">{{ statusLabel(item.status) }}</span>
+        </button>
+      </div>
+      <p v-else class="pln__wday-empty">Bu dönem için plan yok.</p>
     </div>
 
     <!-- Plan modal -->
@@ -611,6 +817,242 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+/* View-mode segmented control */
+.pln__views {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+}
+.pln__view {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.pln__view.is-active {
+  background: var(--c-brand);
+  color: #fff;
+}
+
+/* Weekly view */
+.pln__week {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+}
+.pln__wday {
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.pln__wday.is-today {
+  border-color: var(--c-brand);
+}
+.pln__wday-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.pln__wday-name {
+  font-weight: 800;
+  color: var(--c-text);
+}
+.pln__wday-num {
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+  margin-right: auto;
+}
+.pln__wday-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pln__wchip {
+  font-size: var(--t-xs);
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+  color: var(--c-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pln__wchip b {
+  color: var(--c-info);
+}
+.pln__wchip:hover {
+  border-color: var(--c-line-strong);
+}
+.pln__wday-empty {
+  margin: 0;
+  color: var(--c-text-3);
+  text-align: center;
+  font-size: var(--t-sm);
+}
+
+/* Monthly heatmap */
+.pln__month {
+  padding: var(--sp-3);
+}
+.pln__mhead,
+.pln__mrow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.pln__mhead {
+  margin-bottom: 6px;
+}
+.pln__mhead span {
+  text-align: center;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--c-text-3);
+}
+.pln__mrow {
+  margin-bottom: 4px;
+}
+.pln__mcell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface-2);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 5px;
+  transition: transform 120ms ease;
+}
+.pln__mcell:hover {
+  transform: scale(1.04);
+  border-color: var(--c-line-strong);
+}
+.pln__mcell.is-out {
+  opacity: 0.38;
+}
+.pln__mcell.is-today {
+  border-color: var(--c-brand);
+}
+.pln__mnum {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--c-text-2);
+}
+.pln__mcount {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+.pln__mcell.heat-1 {
+  background: rgba(96, 165, 250, 0.14);
+}
+.pln__mcell.heat-2 {
+  background: rgba(96, 165, 250, 0.26);
+}
+.pln__mcell.heat-3 {
+  background: rgba(225, 29, 72, 0.28);
+}
+.pln__mcell.heat-4 {
+  background: rgba(225, 29, 72, 0.46);
+}
+.pln__legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--sp-3);
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+}
+.pln__legend i {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+}
+.pln__legend .heat-1 {
+  background: rgba(96, 165, 250, 0.14);
+}
+.pln__legend .heat-2 {
+  background: rgba(96, 165, 250, 0.26);
+}
+.pln__legend .heat-3 {
+  background: rgba(225, 29, 72, 0.28);
+}
+.pln__legend .heat-4 {
+  background: rgba(225, 29, 72, 0.46);
+}
+
+/* List view */
+.pln__list {
+  padding: var(--sp-2);
+}
+.pln__list-rows {
+  display: flex;
+  flex-direction: column;
+}
+.pln__lrow {
+  display: grid;
+  grid-template-columns: 64px 50px 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-top: 1px solid var(--c-line);
+  padding: 11px 10px;
+  cursor: pointer;
+}
+.pln__lrow:first-child {
+  border-top: none;
+}
+.pln__lrow:hover {
+  background: var(--c-surface-2);
+}
+.pln__ldate {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--c-text-3);
+}
+.pln__lslot {
+  font-size: var(--t-sm);
+  font-weight: 800;
+  color: var(--c-info);
+  font-variant-numeric: tabular-nums;
+}
+.pln__ltitle {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pln__lregion {
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+}
+
 /* Bulk toolbar */
 .pln__bulkbar {
   display: flex;
@@ -749,6 +1191,10 @@ onMounted(() => {
 @media (min-width: 768px) {
   .pln__grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .pln__week {
+    grid-template-columns: repeat(7, 1fr);
+    align-items: start;
   }
 }
 @media (min-width: 1280px) {
