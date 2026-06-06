@@ -52,11 +52,18 @@ const partOptions = PART_LIST.map((p) => ({ label: PART_LABELS[p], value: p }));
 const modalOpen = ref(false);
 const editingId = ref<string | null>(null);
 const saving = ref(false);
-const form = ref<{ name: string; region_code: RegionCode; city_name: string; is_active: boolean }>({
+const form = ref<{
+  name: string;
+  region_code: RegionCode;
+  city_name: string;
+  is_active: boolean;
+  national_access: boolean;
+}>({
   name: '',
   region_code: 'marmara',
   city_name: '',
   is_active: true,
+  national_access: false,
 });
 
 // ---- Solea link modal ----
@@ -118,7 +125,7 @@ async function loadStations() {
 
 function openCreate() {
   editingId.value = null;
-  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true };
+  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false };
   modalOpen.value = true;
 }
 function openEdit(s: StationItem) {
@@ -128,6 +135,7 @@ function openEdit(s: StationItem) {
     region_code: s.region_code,
     city_name: s.city_name ?? '',
     is_active: s.is_active ?? s.status === 'active',
+    national_access: s.national_access ?? false,
   };
   modalOpen.value = true;
 }
@@ -145,6 +153,7 @@ async function saveStation() {
       city_name: form.value.city_name.trim(),
       is_active: form.value.is_active,
       status: (form.value.is_active ? 'active' : 'paused') as StationStatus,
+      national_access: form.value.national_access,
     };
     if (editingId.value) {
       await updateStation(editingId.value, payload);
@@ -426,6 +435,15 @@ onMounted(loadStations);
         <label class="stn__form-row">
           <span>Yayında</span>
           <Switch v-model:checked="form.is_active" />
+        </label>
+        <label class="stn__form-row">
+          <span>
+            🌍 Ulusal Erişim
+            <em class="stn__hint" style="display: block; font-weight: 400">
+              Tüm bölgelerin içeriklerini görür (örn. ulusal yayın ağları).
+            </em>
+          </span>
+          <Switch v-model:checked="form.national_access" />
         </label>
       </div>
     </Modal>

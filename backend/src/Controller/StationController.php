@@ -133,7 +133,7 @@ final class StationController
             throw new RuntimeException('Station name and region are required.');
         }
 
-        $station = $this->stationRepository->update($stationId, [
+        $updateRow = [
             'region_id' => $regionId,
             'name' => $name,
             'slug' => $this->slugify($payload['slug'] ?? $existing['slug'] ?? $name),
@@ -141,7 +141,11 @@ final class StationController
             'is_active' => $this->readBool($payload['is_active'] ?? $existing['is_active'] ?? null, true),
             'city_name' => $cityName !== '' ? $cityName : $name,
             'stream_token' => $payload['stream_token'] ?? ($existing['stream_token'] ?? null),
-        ]);
+        ];
+        if (array_key_exists('national_access', $payload)) {
+            $updateRow['national_access'] = $this->readBool($payload['national_access'], false);
+        }
+        $station = $this->stationRepository->update($stationId, $updateRow);
         $this->auditLogRepository->log('admin', 'update', 'station', $stationId, $station ?? []);
 
         $this->respond([

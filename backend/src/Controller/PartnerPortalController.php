@@ -107,7 +107,9 @@ final class PartnerPortalController
     public function feeds(): void
     {
         $ctx = $this->context();
-        $region = $ctx['station']['region_code'] ?? null;
+        // Faz 22: ulusal yetkili radyolar tüm bölge planlarını görür.
+        $national = (bool) ($ctx['station']['national_access'] ?? false);
+        $region = $national ? null : ($ctx['station']['region_code'] ?? null);
         $plans = $this->planRepository->listPlans([
             'date' => $_GET['date'] ?? date('Y-m-d'),
             'region' => $region,
@@ -124,17 +126,23 @@ final class PartnerPortalController
 
     /**
      * GET /portal/media — recent renderable media for the partner's region,
-     * for the indirme merkezi (Download Center).
+     * for the indirme merkezi (Download Center). National-access partners
+     * (Faz 22) get the cross-region library.
      */
     public function media(): void
     {
         $ctx = $this->context();
-        $regionId = (string) ($ctx['station']['region_id'] ?? '');
-        if ($regionId === '') {
-            $this->respond(['code' => 0, 'result' => ['items' => []], 'message' => 'OK']);
-            return;
+        $national = (bool) ($ctx['station']['national_access'] ?? false);
+        if ($national) {
+            $items = $this->mediaRepository->listLibrary(60);
+        } else {
+            $regionId = (string) ($ctx['station']['region_id'] ?? '');
+            if ($regionId === '') {
+                $this->respond(['code' => 0, 'result' => ['items' => []], 'message' => 'OK']);
+                return;
+            }
+            $items = $this->mediaRepository->listByRegion($regionId, 60);
         }
-        $items = $this->mediaRepository->listByRegion($regionId, 60);
         $this->respond(['code' => 0, 'result' => ['items' => $items], 'message' => 'OK']);
     }
 

@@ -437,6 +437,12 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_api_keys_station ON partner_api_keys 
 $pdo->exec('ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address varchar(64) NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs (ip_address, created_at DESC)');
 
+/**
+ * Faz 22 — Ulusal yetkili radyolar. Master prompt: "Ulusal yetkili radyolar
+ * tüm Türkiye içeriklerini görebilir". Default false: bölge kilidi devam.
+ */
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS national_access boolean NOT NULL DEFAULT false');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');

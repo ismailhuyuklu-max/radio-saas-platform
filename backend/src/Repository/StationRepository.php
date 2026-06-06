@@ -144,6 +144,10 @@ final class StationRepository
 
     public function update(string $stationId, array $row): ?array
     {
+        // national_access defaults to whatever's already in the row when the
+        // caller doesn't supply it, so partial updates don't accidentally
+        // demote a national partner to region-only.
+        $existing = $this->findById($stationId);
         $stmt = $this->pdo->prepare(
             'UPDATE stations
              SET name = :name,
@@ -153,9 +157,13 @@ final class StationRepository
                  is_active = :is_active,
                  city_name = :city_name,
                  stream_token = :stream_token,
+                 national_access = :national_access,
                  updated_at = now()
              WHERE id = :id'
         );
+        $national = array_key_exists('national_access', $row)
+            ? ($row['national_access'] ? 'true' : 'false')
+            : ((bool) ($existing['national_access'] ?? false) ? 'true' : 'false');
         $stmt->execute([
             'id' => $stationId,
             'region_id' => $row['region_id'],
@@ -165,6 +173,7 @@ final class StationRepository
             'is_active' => array_key_exists('is_active', $row) ? ($row['is_active'] ? 'true' : 'false') : 'true',
             'city_name' => $row['city_name'] ?? $row['name'],
             'stream_token' => $row['stream_token'] ?? null,
+            'national_access' => $national,
         ]);
 
         return $this->findById($stationId);

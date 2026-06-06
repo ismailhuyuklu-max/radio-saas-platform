@@ -75,6 +75,8 @@ export interface StationItem {
   stream_token?: string;
   /** Bound partner-radio user id (Faz 12+). Falsy when not provisioned yet. */
   user_id?: string | null;
+  /** Faz 22: national-access partner sees content across every region. */
+  national_access?: boolean;
 }
 
 export interface StationSavePayload {
@@ -86,6 +88,8 @@ export interface StationSavePayload {
   status?: StationStatus;
   is_active?: boolean;
   stream_token?: string;
+  /** Faz 22: ulusal yetkili radyo bayrağı. */
+  national_access?: boolean;
 }
 
 export interface SponsorPayload {
