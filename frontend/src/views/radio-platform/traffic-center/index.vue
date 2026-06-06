@@ -2,15 +2,19 @@
 import { computed, onMounted, ref } from 'vue';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { DatePicker, message } from 'ant-design-vue';
+import { DatePicker, Modal, Popconfirm, message } from 'ant-design-vue';
 
 import {
   REGION_LABELS,
   REGION_LIST,
   bulkPlan,
+  createStationGroup,
+  deleteStationGroup,
+  getStationGroups,
   getStations,
   type BulkPlanResult,
   type RegionCode,
+  type StationGroup,
   type StationItem,
 } from '#/api/modules/radioMedia';
 import {
@@ -22,7 +26,7 @@ import {
   type QuickTemplate,
 } from '#/utils/traffic';
 
-type Scope = 'all' | 'region' | 'province' | 'station';
+type Scope = 'all' | 'region' | 'province' | 'group' | 'station';
 interface SlotRow {
   slot_time: string;
   part_code: string;
@@ -34,8 +38,10 @@ const scope = ref<Scope>('all');
 const selectedRegions = ref<RegionCode[]>([...REGION_LIST]);
 const selectedProvinces = ref<string[]>([]);
 const selectedStations = ref<string[]>([]);
+const selectedGroups = ref<string[]>([]);
 const provinceSearch = ref('');
 const stations = ref<StationItem[]>([]);
+const groups = ref<StationGroup[]>([]);
 
 const slots = ref<SlotRow[]>([
   { slot_time: '08:00', part_code: 'news', content_title: 'Sabah Haber Bülteni', status: 'published' },
@@ -51,6 +57,7 @@ const SCOPES: Array<{ key: Scope; label: string; icon: string }> = [
   { key: 'all', label: 'Tüm Türkiye', icon: '🇹🇷' },
   { key: 'region', label: 'Bölge', icon: '🗺️' },
   { key: 'province', label: 'İl', icon: '📍' },
+  { key: 'group', label: 'Radyo Grubu', icon: '🎙️' },
   { key: 'station', label: 'Radyo', icon: '📻' },
 ];
 
@@ -73,10 +80,24 @@ const resolvedProvinces = computed<string[]>(() =>
 const resolvedStationIds = computed<string[]>(() =>
   scope.value === 'station' ? selectedStations.value : [],
 );
+const resolvedGroupIds = computed<string[]>(() =>
+  scope.value === 'group' ? selectedGroups.value : [],
+);
+
+// Distinct stations a group selection expands into (for the live estimate).
+const groupStationCount = computed(() => {
+  const ids = new Set<string>();
+  for (const gid of selectedGroups.value) {
+    const g = groups.value.find((x) => x.id === gid);
+    g?.station_ids?.forEach((sid) => ids.add(sid));
+  }
+  return ids.size;
+});
 
 const targetCount = computed(() => {
   if (scope.value === 'station') return resolvedStationIds.value.length;
   if (scope.value === 'province') return resolvedProvinces.value.length;
+  if (scope.value === 'group') return groupStationCount.value;
   return resolvedRegions.value.length;
 });
 const estimate = computed(() => targetCount.value * slots.value.length * Math.max(1, repeatDays.value));
@@ -97,6 +118,71 @@ function toggleStation(id: string) {
   const i = selectedStations.value.indexOf(id);
   if (i >= 0) selectedStations.value.splice(i, 1);
   else selectedStations.value.push(id);
+}
+function toggleGroup(id: string) {
+  const i = selectedGroups.value.indexOf(id);
+  if (i >= 0) selectedGroups.value.splice(i, 1);
+  else selectedGroups.value.push(id);
+}
+
+// --- Radio group management ------------------------------------------------
+const groupModalOpen = ref(false);
+const newGroupName = ref('');
+const newGroupStations = ref<string[]>([]);
+const savingGroup = ref(false);
+
+async function loadGroups() {
+  try {
+    const res = await getStationGroups();
+    groups.value = res?.groups ?? [];
+  } catch {
+    groups.value = [];
+  }
+}
+function openGroupManager() {
+  newGroupName.value = '';
+  newGroupStations.value = [];
+  groupModalOpen.value = true;
+}
+function toggleNewGroupStation(id: string) {
+  const i = newGroupStations.value.indexOf(id);
+  if (i >= 0) newGroupStations.value.splice(i, 1);
+  else newGroupStations.value.push(id);
+}
+async function saveGroup() {
+  if (!newGroupName.value.trim()) {
+    message.warning('Grup adı gerekli.');
+    return;
+  }
+  if (!newGroupStations.value.length) {
+    message.warning('En az bir radyo seçin.');
+    return;
+  }
+  savingGroup.value = true;
+  try {
+    await createStationGroup({
+      name: newGroupName.value.trim(),
+      station_ids: [...newGroupStations.value],
+    });
+    message.success('Grup oluşturuldu.');
+    newGroupName.value = '';
+    newGroupStations.value = [];
+    await loadGroups();
+  } catch {
+    message.error('Grup oluşturulamadı.');
+  } finally {
+    savingGroup.value = false;
+  }
+}
+async function removeGroup(id: string) {
+  try {
+    await deleteStationGroup(id);
+    selectedGroups.value = selectedGroups.value.filter((g) => g !== id);
+    message.success('Grup silindi.');
+    await loadGroups();
+  } catch {
+    message.error('Grup silinemedi.');
+  }
 }
 
 function applyTemplate(t: QuickTemplate) {
@@ -126,6 +212,7 @@ async function submit() {
       target_regions: resolvedRegions.value,
       target_provinces: resolvedProvinces.value,
       station_ids: resolvedStationIds.value,
+      group_ids: resolvedGroupIds.value,
       slots: slots.value,
       start_date: startDate.value.format('YYYY-MM-DD'),
       repeat_days: repeatDays.value,
@@ -146,6 +233,7 @@ onMounted(async () => {
   } catch {
     /* ignore */
   }
+  await loadGroups();
 });
 </script>
 
@@ -208,6 +296,31 @@ onMounted(async () => {
               </button>
             </div>
             <p class="tc__hint">{{ selectedProvinces.length }} il seçildi → {{ provincesToRegions(selectedProvinces).length }} bölge kapsanıyor</p>
+          </div>
+
+          <div v-else-if="scope === 'group'" class="tc__groups">
+            <div class="tc__groups-head">
+              <p class="tc__hint" style="margin: 0">{{ groups.length }} grup tanımlı</p>
+              <button type="button" class="tc__mini" @click="openGroupManager">⚙ Grupları Yönet</button>
+            </div>
+            <div v-if="groups.length" class="tc__chips">
+              <button
+                v-for="g in groups"
+                :key="g.id"
+                type="button"
+                class="tc__chip"
+                :class="{ 'is-on': selectedGroups.includes(g.id) }"
+                @click="toggleGroup(g.id)"
+              >
+                🎙️ {{ g.name }} <em class="tc__chip-n">{{ g.station_ids.length }}</em>
+              </button>
+            </div>
+            <p v-else class="tc__hint">
+              Henüz grup yok. “Grupları Yönet” ile radyo grubu oluşturun (örn. “Marmara Premium”).
+            </p>
+            <p v-if="selectedGroups.length" class="tc__hint">
+              {{ selectedGroups.length }} grup → {{ groupStationCount }} radyo hedeflenecek
+            </p>
           </div>
 
           <div v-else class="tc__chips tc__chips--scroll">
@@ -288,6 +401,51 @@ onMounted(async () => {
         </section>
       </aside>
     </div>
+
+    <!-- Radio group manager -->
+    <Modal
+      v-model:open="groupModalOpen"
+      title="🎙️ Radyo Gruplarını Yönet"
+      :footer="null"
+      width="620px"
+    >
+      <div class="tc__gm">
+        <div v-if="groups.length" class="tc__gm-list">
+          <div v-for="g in groups" :key="g.id" class="tc__gm-row">
+            <div class="tc__gm-info">
+              <strong>{{ g.name }}</strong>
+              <span>{{ g.station_ids.length }} radyo</span>
+            </div>
+            <Popconfirm title="Grup silinsin mi?" ok-text="Sil" cancel-text="Vazgeç" @confirm="removeGroup(g.id)">
+              <button type="button" class="tc__gm-del">Sil</button>
+            </Popconfirm>
+          </div>
+        </div>
+        <p v-else class="tc__hint">Henüz grup yok.</p>
+
+        <div class="tc__gm-new">
+          <p class="tc__label" style="margin-top: 0">Yeni Grup</p>
+          <input v-model="newGroupName" class="tc__search" placeholder="Grup adı (örn. Marmara Premium)">
+          <p class="tc__hint">Radyo seç ({{ newGroupStations.length }})</p>
+          <div class="tc__chips tc__chips--scroll">
+            <button
+              v-for="st in stations"
+              :key="st.id"
+              type="button"
+              class="tc__chip tc__chip--sm"
+              :class="{ 'is-on': newGroupStations.includes(st.id) }"
+              @click="toggleNewGroupStation(st.id)"
+            >
+              {{ st.name }}
+            </button>
+            <p v-if="!stations.length" class="tc__hint">İstasyon bulunamadı.</p>
+          </div>
+          <button type="button" class="tc__submit" :disabled="savingGroup" style="margin-top: 12px" @click="saveGroup">
+            {{ savingGroup ? 'Kaydediliyor…' : '+ Grubu Oluştur' }}
+          </button>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -425,6 +583,77 @@ onMounted(async () => {
   margin: 8px 0 0;
   font-size: var(--t-xs);
   color: var(--c-text-3);
+}
+
+.tc__groups-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
+.tc__mini {
+  border: 1px solid var(--c-line);
+  background: transparent;
+  color: var(--c-text-2);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc__mini:hover {
+  border-color: var(--c-brand);
+  color: var(--c-brand);
+}
+.tc__chip-n {
+  font-style: normal;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  font-size: 10px;
+  font-weight: 800;
+}
+.tc__gm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.tc__gm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tc__gm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+}
+.tc__gm-info strong {
+  color: var(--c-text);
+}
+.tc__gm-info span {
+  margin-left: 8px;
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+}
+.tc__gm-del {
+  border: none;
+  background: transparent;
+  color: var(--c-bad);
+  font-weight: 700;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+.tc__gm-new {
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--c-line);
 }
 
 .tc__templates {

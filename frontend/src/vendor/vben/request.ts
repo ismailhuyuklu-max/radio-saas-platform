@@ -76,6 +76,14 @@ export class RequestClient {
     return this.request<T>('POST', url, data, config);
   }
 
+  public async put<T>(url: string, data?: unknown, config: RequestCallConfig = {}) {
+    return this.request<T>('PUT', url, data, config);
+  }
+
+  public async delete<T>(url: string, config: RequestCallConfig = {}) {
+    return this.request<T>('DELETE', url, undefined, config);
+  }
+
   private resolveUrl(url: string, params?: Record<string, unknown>) {
     const hasAbsoluteBase = /^https?:\/\//i.test(this.baseURL);
     const normalizedPath = url.startsWith('/') ? url : `/${url}`;

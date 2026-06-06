@@ -736,6 +736,38 @@ export interface CustomerBreakdownRow {
   impressions: number;
 }
 
+// --- Faz 9: radio groups (Radyo Grubu targeting) ----------------------------
+
+export interface StationGroup {
+  id: string;
+  name: string;
+  description?: string | null;
+  station_count?: number;
+  station_ids: string[];
+}
+
+export function getStationGroups() {
+  return requestClient.get<{ groups: StationGroup[] }>('/traffic/groups');
+}
+export function createStationGroup(payload: {
+  name: string;
+  description?: string;
+  station_ids: string[];
+}) {
+  return requestClient.post<{ code: number; result: StationGroup }>('/traffic/groups', payload);
+}
+export function updateStationGroupMembers(id: string, stationIds: string[]) {
+  return requestClient.put<{ code: number; result: { station_ids: string[] } }>(
+    `/traffic/groups/${id}/members`,
+    { station_ids: stationIds },
+  );
+}
+export function deleteStationGroup(id: string) {
+  return requestClient.delete<{ code: number; result: { deleted: boolean } }>(
+    `/traffic/groups/${id}`,
+  );
+}
+
 export function getProvinceBreakdown() {
   return requestClient.get<{ type: string; rows: ProvinceBreakdownRow[]; count: number }>(
     '/reports/breakdown/province',
