@@ -173,22 +173,35 @@ async function refresh(silent = false): Promise<void> {
       getMetrics(),
       getAuditLogs({ limit: 25 }),
     ]);
-    if (h.status === 'fulfilled') health.value = h.value;
-    if (m.status === 'fulfilled') {
-      metrics.value = m.value;
-      pushSample(cpuHist.value, m.value.cpu.usage_pct ?? 0);
-      pushSample(memHist.value, m.value.memory.used_pct ?? 0);
-      pushSample(diskHist.value, m.value.disk.used_pct ?? 0);
-      pushSample(load1Hist.value, m.value.load['1m']);
+    const healthOk =
+      h.status === 'fulfilled' &&
+      h.value !== null &&
+      typeof h.value === 'object' &&
+      Array.isArray((h.value as HealthResponse).services);
+    const metricsOk =
+      m.status === 'fulfilled' &&
+      m.value !== null &&
+      typeof m.value === 'object' &&
+      !!(m.value as MetricsResponse).cpu;
+
+    if (healthOk) health.value = h.value as HealthResponse;
+    if (metricsOk) {
+      const mv = m.value as MetricsResponse;
+      metrics.value = mv;
+      pushSample(cpuHist.value, mv.cpu.usage_pct ?? 0);
+      pushSample(memHist.value, mv.memory.used_pct ?? 0);
+      pushSample(diskHist.value, mv.disk.used_pct ?? 0);
+      pushSample(load1Hist.value, mv.load['1m']);
     }
     if (ev.status === 'fulfilled') {
       // /audit/logs döner: AuditLogItem[] (array). Eski versiyonlarda
-      // {logs: [...]} olabilir — her ikisini destekle.
-      const raw = ev.value as AuditLogItem[] | { logs?: AuditLogItem[] };
+      // {logs: [...]} olabilir — her ikisini destekle. HTML hata gövdesi
+      // gelirse (backend down) array değildir ve atılır.
+      const raw = ev.value as AuditLogItem[] | { logs?: AuditLogItem[] } | null;
       const list = Array.isArray(raw) ? raw : (raw?.logs ?? []);
       events.value = list.slice(0, 20);
     }
-    connected.value = h.status === 'fulfilled' && m.status === 'fulfilled';
+    connected.value = healthOk && metricsOk;
     lastUpdated.value = dayjs();
     nextRefreshIn.value = REFRESH_MS / 1000;
     if (!silent) {
@@ -304,6 +317,20 @@ onUnmounted(() => {
         </div>
       </div>
     </header>
+
+    <!-- ========== BACKEND DOWN BANNER ========== -->
+    <div v-if="!connected" class="noc__banner">
+      <span class="noc__banner-dot" />
+      <div>
+        <strong>Backend erişilemiyor</strong>
+        <span>
+          /monitoring/health ve /monitoring/metrics 5xx döndü.
+          PostgreSQL bağlantısı veya PHP servisi düşmüş olabilir.
+          Docker Desktop'ı kontrol edin — postgres + php-fpm container'larının ayakta olması gerekir.
+        </span>
+      </div>
+      <button type="button" class="noc__btn" @click="manualRefresh">↻ Tekrar Dene</button>
+    </div>
 
     <!-- ========== KPI STRIP ========== -->
     <section class="noc__kpis">
@@ -566,6 +593,55 @@ onUnmounted(() => {
 }
 .noc__btn:hover { background: var(--c-surface-2); color: var(--c-text); }
 .noc__btn.is-on { background: var(--c-brand); color: #fff; }
+
+/* ===== Backend-down banner ===== */
+.noc__banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(251, 113, 133, 0.08);
+  border: 1px solid rgba(251, 113, 133, 0.32);
+  color: var(--c-text);
+}
+.noc__banner-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--c-bad);
+  box-shadow: 0 0 12px var(--c-bad);
+  animation: noc-pulse 0.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.noc__banner > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.noc__banner strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--c-bad);
+}
+.noc__banner span {
+  font-size: 12px;
+  color: var(--c-text-2);
+  line-height: 1.45;
+}
+.noc__banner .noc__btn {
+  background: var(--c-bad);
+  color: #fff;
+  width: auto;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.noc__banner .noc__btn:hover { background: #e11d48; }
 
 /* ===== KPI strip ===== */
 .noc__kpis {
