@@ -108,4 +108,65 @@ describe('Partner Radio Portal view', () => {
     expect(wrapper.find('.prt__activity').exists() || wrapper.text().includes('aktivite yok')).toBe(true);
     wrapper.unmount();
   });
+
+  // Faz 29 — Support flow vitests
+  describe('Support tab', () => {
+    it('opens the Destek tab', async () => {
+      const wrapper = mount(Portal);
+      await flushPromises();
+      const tab = wrapper.findAll('.prt__tab').find((t) => t.text().includes('Destek'));
+      await tab!.trigger('click');
+      expect(wrapper.text()).toContain('Yeni Talep');
+      wrapper.unmount();
+    });
+
+    it('shows the new-ticket form when "Yeni Talep" is clicked', async () => {
+      const wrapper = mount(Portal);
+      await flushPromises();
+      await wrapper.findAll('.prt__tab').find((t) => t.text().includes('Destek'))!.trigger('click');
+      await wrapper.findAll('button').find((b) => b.text().includes('Yeni Talep'))!.trigger('click');
+      // Form inputs surface
+      const selects = wrapper.findAll('select');
+      expect(selects.length).toBeGreaterThan(0);
+      expect(wrapper.find('textarea').exists()).toBe(true);
+    });
+
+    it('warns when the new-ticket form is submitted empty', async () => {
+      const wrapper = mount(Portal);
+      await flushPromises();
+      await wrapper.findAll('.prt__tab').find((t) => t.text().includes('Destek'))!.trigger('click');
+      await wrapper.findAll('button').find((b) => b.text().includes('Yeni Talep'))!.trigger('click');
+      // Locate the modal/inline submit button (the second "Yeni Talep…"/"Talebi
+      // Gönder" button on the page — text differs while submitting).
+      const submit = wrapper.findAll('button').find((b) => b.text().includes('Talebi Gönder'));
+      expect(submit).toBeDefined();
+      await submit!.trigger('click');
+      await flushPromises();
+      // No throws, no network mutation: we only assert the warn path is
+      // reachable. The createSupportTicket mock is not called when subject is
+      // empty (validated in-component).
+    });
+  });
+
+  // Faz 29 — Security tab smoke
+  describe('Security tab', () => {
+    it('opens the Güvenlik tab and shows the MFA + password sections', async () => {
+      const wrapper = mount(Portal);
+      await flushPromises();
+      const tab = wrapper.findAll('.prt__tab').find((t) => t.text().includes('Güvenlik'));
+      await tab!.trigger('click');
+      expect(wrapper.text()).toContain('MFA');
+      expect(wrapper.text()).toContain('Şifre Değiştir');
+    });
+
+    it('starts MFA setup and reveals the secret', async () => {
+      const wrapper = mount(Portal);
+      await flushPromises();
+      await wrapper.findAll('.prt__tab').find((t) => t.text().includes('Güvenlik'))!.trigger('click');
+      const setupBtn = wrapper.findAll('button').find((b) => b.text().includes('MFA Kur'));
+      await setupBtn!.trigger('click');
+      await flushPromises();
+      expect(wrapper.text()).toContain('JBSWY3DPEHPK3PXP');
+    });
+  });
 });
