@@ -522,7 +522,7 @@ $partnerApiKeyController = new PartnerApiKeyController($adminAuthenticator, $par
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
-$mediaLibraryController = new MediaLibraryController($adminAuthenticator, $mediaRepository, $sponsorRepository, $storage);
+$mediaLibraryController = new MediaLibraryController($adminAuthenticator, $mediaRepository, $sponsorRepository, $storage, $auditLogRepository);
 $reportController = new ReportController($adminAuthenticator, $adCampaignRepository, $planRepository, $stationRepository, $auditLogRepository);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -1019,6 +1019,28 @@ try {
             $status = 409;
         } elseif (str_contains($message, 'required') || str_contains($message, 'gecersiz')) {
             $status = 400;
+        }
+    }
+
+    // Faz 21: aktivite kayıtları include "Hata Kayıtları". Internal errors
+    // (500) get an audit row so an operator can spot incidents in the audit
+    // log without parsing nginx logs. Non-500 (4xx) are user errors → skip.
+    if ($status === 500) {
+        try {
+            $auditLogRepository->log(
+                'system',
+                'error',
+                'request',
+                null,
+                [
+                    'path' => $path,
+                    'method' => $method,
+                    'class' => get_class($exception),
+                    'message' => $exception->getMessage(),
+                ]
+            );
+        } catch (Throwable) {
+            // The error handler must not throw — silently drop audit failure.
         }
     }
 

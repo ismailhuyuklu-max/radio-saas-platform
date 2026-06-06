@@ -277,9 +277,21 @@ final class AuthController
     public function logout(): void
     {
         $token = $this->extractToken();
+        $user = null;
         if ($token !== null && $token !== '') {
+            $user = $this->sessionRepository->findActiveUserByToken($token);
             $this->sessionRepository->revokeByToken($token);
         }
+        // Faz 21: master prompt's aktivite kayıtları list demands a logout
+        // audit. We still emit it even when the token was already invalid so
+        // a brute-force logout call is visible.
+        $this->auditLogRepository->log(
+            (string) ($user['username'] ?? 'unknown'),
+            'logout',
+            'user',
+            isset($user['id']) ? (string) $user['id'] : null,
+            []
+        );
         $this->clearSessionCookie();
         $this->clearCsrfCookie();
 

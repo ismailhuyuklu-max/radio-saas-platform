@@ -6,6 +6,7 @@ namespace RadioSaaS\Controller;
 
 use RadioSaaS\Exception\NotFoundException;
 use RadioSaaS\Infrastructure\MinioStorage;
+use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\MediaContentRepository;
 use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Service\AdminAuthenticator;
@@ -25,7 +26,8 @@ final class MediaLibraryController
         private readonly AdminAuthenticator $authenticator,
         private readonly MediaContentRepository $mediaRepository,
         private readonly SponsorAdRepository $sponsorRepository,
-        private readonly MinioStorage $storage
+        private readonly MinioStorage $storage,
+        private readonly ?AuditLogRepository $auditLogRepository = null
     ) {
     }
 
@@ -68,7 +70,7 @@ final class MediaLibraryController
 
     public function stream(string $kind, string $id): void
     {
-        $this->guard('matrix:view');
+        $caller = $this->guard('matrix:view');
 
         $object = $kind === 'sponsor'
             ? $this->sponsorRepository->findPlayable($id)
@@ -78,9 +80,27 @@ final class MediaLibraryController
             throw new NotFoundException('Medya bulunamadı.');
         }
 
+        // Faz 21: aktivite kayıtları — Dosya İndirme.
+        // Only the FIRST byte-range (i.e. the start of a fresh playback /
+        // download) is recorded so HTML5 audio seek-bar requests don't spam
+        // the audit table.
+        $range = $_SERVER['HTTP_RANGE'] ?? '';
+        $isInitialRequest = $range === '' || preg_match('/bytes=0-/', $range);
+        if ($isInitialRequest && $this->auditLogRepository !== null) {
+            $this->auditLogRepository->log(
+                (string) ($caller['username'] ?? 'unknown'),
+                'media_download',
+                $kind === 'sponsor' ? 'sponsor' : 'media_content',
+                $id,
+                [
+                    'station_id' => (string) ($caller['station_id'] ?? ''),
+                    'mime' => (string) ($object['mime'] ?? ''),
+                ]
+            );
+        }
+
         $params = ['Bucket' => $object['bucket'], 'Key' => $object['key']];
         $status = 200;
-        $range = $_SERVER['HTTP_RANGE'] ?? '';
         if ($range !== '' && preg_match('/bytes=(\d+)-(\d*)/', $range, $rm)) {
             $params['Range'] = 'bytes=' . $rm[1] . '-' . ($rm[2] !== '' ? $rm[2] : '');
             $status = 206;
@@ -113,12 +133,13 @@ final class MediaLibraryController
         }
     }
 
-    private function guard(string $permission): void
+    /** @return array<string,mixed> the authenticated user record */
+    private function guard(string $permission): array
     {
         $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
         if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $matches)) {
             $token = trim($matches[1]);
         }
-        $this->authenticator->authorize($token, $permission);
+        return $this->authenticator->authorize($token, $permission);
     }
 }

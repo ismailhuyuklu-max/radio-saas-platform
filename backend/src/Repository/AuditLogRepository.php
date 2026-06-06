@@ -34,9 +34,26 @@ final class AuditLogRepository
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'ip_address' => $this->clientIp(),
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
         ]);
+    }
+
+    /**
+     * Best-guess client IP — prefers the first X-Forwarded-For hop when behind
+     * a trusted reverse proxy, otherwise falls back to REMOTE_ADDR.
+     */
+    private function clientIp(): ?string
+    {
+        $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if (is_string($fwd) && $fwd !== '') {
+            $first = trim((string) explode(',', $fwd)[0]);
+            if ($first !== '') {
+                return $first;
+            }
+        }
+        $remote = $_SERVER['REMOTE_ADDR'] ?? null;
+        return is_string($remote) ? $remote : null;
     }
 
     /**

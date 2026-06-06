@@ -430,6 +430,13 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_api_keys_station ON partner_api_keys (station_id, revoked_at)');
 
+/**
+ * Faz 21 — Audit log: master prompt wants "kim, ne zaman, hangi IP ile,
+ * hangi işlemi". The ip_address column closes that gap. Idempotent ADD.
+ */
+$pdo->exec('ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address varchar(64) NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs (ip_address, created_at DESC)');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');
