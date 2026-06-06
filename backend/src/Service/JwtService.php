@@ -43,6 +43,9 @@ final class JwtService
             'iss' => 'aircast-portal',
             'sub' => $userId,
             'iat' => $now,
+            // jti gives every issued token a unique identity even when two
+            // issues land in the same second (refresh rotation hits this).
+            'jti' => bin2hex(random_bytes(8)),
             'exp' => $now + self::ACCESS_TTL_SECONDS,
             'roles' => array_values($roles),
         ];
