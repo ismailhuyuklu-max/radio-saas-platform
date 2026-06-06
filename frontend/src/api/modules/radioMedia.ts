@@ -274,6 +274,8 @@ export interface AuditLogItem {
   entity_type: string;
   entity_id?: string | null;
   payload: Record<string, unknown>;
+  ip_address?: string | null;
+  user_agent?: string | null;
   created_at: string;
 }
 
