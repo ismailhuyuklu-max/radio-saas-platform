@@ -675,8 +675,27 @@ export function buildSoleaLink(regionCode: RegionCode, category: PartCode, token
   return `${baseUrl}/${regionCode}/${category}?token=${encodeURIComponent(token)}`;
 }
 
-export function createStation(payload: StationSavePayload) {
-  return requestClient.post<StationItem>('/stations', payload);
+/**
+ * Create a station. On success the backend auto-provisions a partner user
+ * + 8 stream tokens unless {auto_provision: false} is passed, and the
+ * response carries the one-shot credentials so the admin can read them
+ * back immediately (Faz 18).
+ */
+export interface CreateStationResult {
+  station: StationItem | null;
+  partner: {
+    username?: string;
+    one_time_password?: string;
+    user_id?: string;
+    error?: string;
+  } | null;
+  tokens: Record<string, string> | null;
+}
+export function createStation(payload: StationSavePayload & { auto_provision?: boolean }) {
+  return requestClient.post<{ code: number; result: CreateStationResult }>(
+    '/stations',
+    payload,
+  );
 }
 
 export function updateStation(stationId: string, payload: StationSavePayload) {

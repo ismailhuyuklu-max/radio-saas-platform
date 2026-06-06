@@ -79,6 +79,26 @@ if (!$superId) {
 $sessions = new AdminSessionRepository($pdo);
 $adminToken = $sessions->create((string) $superId);
 
+// 0. Faz 18: creating a station auto-provisions the partner user + 8 tokens.
+$regionForAuto = (string) $pdo->query("SELECT id FROM regions LIMIT 1")->fetchColumn();
+[$code, $body] = api('POST', "{$base}/stations", $adminToken, [
+    'name' => 'Auto Provision FM ' . bin2hex(random_bytes(2)),
+    'region_code' => (string) $pdo->query("SELECT code FROM regions WHERE id = '{$regionForAuto}'")->fetchColumn(),
+    'city_name' => 'AutoCity',
+]);
+check($code === 201, "POST /stations auto-provision → 201 (got {$code})");
+$autoStationId = (string) ($body['result']['station']['id'] ?? '');
+check($autoStationId !== '', 'auto-provision returns station id');
+check(!empty($body['result']['partner']['one_time_password'] ?? null),
+    'auto-provision returns one-shot password in same response');
+check(!empty($body['result']['partner']['username'] ?? null),
+    'auto-provision returns partner username in same response');
+$autoTokens = $body['result']['tokens'] ?? [];
+check(count((array) $autoTokens) === 8, 'auto-provision returns 8 stream tokens');
+
+// Cleanup the auto-provision station's by-products.
+$autoPartnerId = (string) ($body['result']['partner']['user_id'] ?? '');
+
 // Pick an unprovisioned station (or insert a throwaway one).
 $stationId = (string) ($pdo->query(
     "SELECT id FROM stations WHERE user_id IS NULL ORDER BY created_at ASC LIMIT 1"
@@ -253,6 +273,16 @@ try {
     $pdo->prepare('DELETE FROM users WHERE id = :u')->execute(['u' => $isoUserId]);
     $pdo->prepare('DELETE FROM stations WHERE id = :s')->execute(['s' => $isoStation]);
 } finally {
+    // Auto-provision station cleanup (Faz 18 smoke).
+    if (!empty($autoStationId)) {
+        $pdo->prepare('DELETE FROM station_stream_tokens WHERE station_id = :s')->execute(['s' => $autoStationId]);
+        $pdo->prepare('UPDATE stations SET user_id = NULL WHERE id = :s')->execute(['s' => $autoStationId]);
+        if (!empty($autoPartnerId)) {
+            $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :u')->execute(['u' => $autoPartnerId]);
+            $pdo->prepare('DELETE FROM users WHERE id = :u')->execute(['u' => $autoPartnerId]);
+        }
+        $pdo->prepare('DELETE FROM stations WHERE id = :s')->execute(['s' => $autoStationId]);
+    }
     // Cleanup.
     if ($partnerUserId !== null && $partnerUserId !== '') {
         $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :u')->execute(['u' => $partnerUserId]);

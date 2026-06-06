@@ -149,12 +149,26 @@ async function saveStation() {
     if (editingId.value) {
       await updateStation(editingId.value, payload);
       message.success('İstasyon güncellendi.');
+      modalOpen.value = false;
+      await loadStations();
     } else {
-      await createStation(payload);
+      const res = await createStation(payload);
       message.success('İstasyon eklendi.');
+      modalOpen.value = false;
+      await loadStations();
+      // Auto-provision returned one-shot credentials → surface them now.
+      const p = res?.result?.partner;
+      const fresh = res?.result?.station;
+      if (p?.one_time_password && fresh) {
+        partnerStation.value = fresh;
+        partnerCreds.value = {
+          username: p.username,
+          password: p.one_time_password,
+        };
+        partnerCopied.value = false;
+        partnerOpen.value = true;
+      }
     }
-    modalOpen.value = false;
-    await loadStations();
   } catch (error) {
     console.error(error);
     message.error('İstasyon kaydedilemedi.');

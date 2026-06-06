@@ -9,7 +9,10 @@ use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\RadioCredentialService;
+use RadioSaaS\Service\StreamTokenService;
 use RuntimeException;
+use Throwable;
 
 final class StationController
 {
@@ -18,7 +21,9 @@ final class StationController
         private readonly StationRepository $stationRepository,
         private readonly ApiTokenRepository $tokenRepository,
         private readonly RegionRepository $regionRepository,
-        private readonly AuditLogRepository $auditLogRepository
+        private readonly AuditLogRepository $auditLogRepository,
+        private readonly ?RadioCredentialService $credentialService = null,
+        private readonly ?StreamTokenService $streamTokenService = null
     ) {
     }
 
@@ -68,9 +73,44 @@ final class StationController
 
         $station = $this->stationRepository->findById($stationId);
         $this->auditLogRepository->log('admin', 'create', 'station', $stationId, $station ?? []);
+
+        // Faz 18: auto-provision the partner user + 8 stream tokens in the
+        // same request, unless the caller explicitly opts out with
+        // {auto_provision:false}. This realises the master prompt's pledge
+        // "Admin yeni radyo eklediğinde sistem otomatik oluşturmalıdır".
+        $autoProvision = $this->readBool($payload['auto_provision'] ?? null, true);
+        $partner = null;
+        $tokens = null;
+        if ($autoProvision && $this->credentialService !== null && $this->streamTokenService !== null) {
+            try {
+                $cred = $this->credentialService->provision($stationId);
+                $partner = [
+                    'username' => $cred['username'],
+                    'one_time_password' => $cred['password'],
+                    'user_id' => (string) ($cred['user']['id'] ?? ''),
+                ];
+                $tokens = $this->streamTokenService->rotate($stationId);
+                $this->auditLogRepository->log('admin', 'partner_auto_provision', 'station', $stationId, [
+                    'username' => $partner['username'],
+                    'token_count' => count($tokens),
+                ]);
+                // Refresh the station row so the response carries user_id.
+                $station = $this->stationRepository->findById($stationId);
+            } catch (Throwable $e) {
+                // Provisioning is best-effort during station create — the
+                // station row is still useful, the admin can re-run
+                // provision from the Portal modal. Surface the warning.
+                $partner = ['error' => $e->getMessage()];
+            }
+        }
+
         $this->respond([
             'code' => 0,
-            'result' => $station,
+            'result' => [
+                'station' => $station,
+                'partner' => $partner,
+                'tokens' => $tokens,
+            ],
             'message' => 'Success',
         ], 201);
     }
