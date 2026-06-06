@@ -147,9 +147,12 @@ export function rotatePartnerPassword(stationId: string) {
 }
 
 /** Rotate all 8 stream tokens — any cached partner URL is invalidated. */
-export function rotatePartnerTokens(stationId: string) {
+export function rotatePartnerTokens(
+  stationId: string,
+  opts: { ip?: string; domain?: string; expires_in_days?: number } = {},
+) {
   return requestClient.post<{
     code: number;
-    result: { tokens: Record<string, string> };
-  }>(`/stations/${stationId}/rotate-tokens`);
+    result: { tokens: Record<string, string>; restrictions?: Record<string, string> };
+  }>(`/stations/${stationId}/rotate-tokens`, opts);
 }

@@ -30,17 +30,35 @@ final class PartnerAdminController
     /**
      * Rotate all 8 purpose-keyed stream tokens for a station. Any cached
      * partner URL stops working the moment this returns.
+     *
+     * Optional JSON payload {ip?, domain?, expires_at?} applies the same
+     * restriction to every freshly issued token (Faz 20).
      */
     public function rotateTokens(string $stationId): void
     {
         $this->guard('partner:provision');
-        $tokens = $this->streamTokenService->rotate($stationId);
+        $payload = $this->readJsonPayload();
+        $opts = [];
+        if (isset($payload['ip'])) {
+            $opts['ip'] = (string) $payload['ip'];
+        }
+        if (isset($payload['domain'])) {
+            $opts['domain'] = (string) $payload['domain'];
+        }
+        if (!empty($payload['expires_at'])) {
+            $opts['expires_at'] = (string) $payload['expires_at'];
+        } elseif (!empty($payload['expires_in_days'])) {
+            $days = max(1, (int) $payload['expires_in_days']);
+            $opts['expires_at'] = date('Y-m-d H:i:s', time() + $days * 86_400);
+        }
+        $tokens = $this->streamTokenService->rotate($stationId, $opts);
         $this->auditLogRepository->log('admin', 'partner_token_rotate', 'station', $stationId, [
             'purposes' => array_keys($tokens),
+            'restrictions' => $opts,
         ]);
         $this->respond([
             'code' => 0,
-            'result' => ['tokens' => $tokens],
+            'result' => ['tokens' => $tokens, 'restrictions' => $opts],
             'message' => 'Rotated',
         ]);
     }

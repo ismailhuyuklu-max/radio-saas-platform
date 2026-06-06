@@ -35,8 +35,10 @@ final class SignedFeedController
 
     public function show(string $stationId, string $token, string $purpose, string $format): void
     {
+        $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        $referer = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? null;
         try {
-            $row = $this->tokenService->verify($stationId, $purpose, $token);
+            $row = $this->tokenService->verify($stationId, $purpose, $token, $clientIp, $referer);
         } catch (RuntimeException $e) {
             http_response_code(403);
             header('Content-Type: application/json; charset=utf-8');
