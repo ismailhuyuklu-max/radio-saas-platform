@@ -12,6 +12,7 @@ use RadioSaaS\Controller\MediaLibraryController;
 use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
+use RadioSaaS\Controller\PartnerAdminController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Controller\TrafficMetaController;
 use RadioSaaS\Infrastructure\MinioStorage;
@@ -32,6 +33,7 @@ use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\RadioCredentialService;
 use RadioSaaS\Service\MediaFeedService;
 use RadioSaaS\Service\RenderQueueService;
 use RadioSaaS\Service\TokenAuthenticator;
@@ -497,6 +499,8 @@ $matrixController = new MatrixController($adminAuthenticator, $matrixRepository,
 $stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository);
 $planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository, $provinceRepository, $stationGroupRepository);
 $trafficMetaController = new TrafficMetaController($adminAuthenticator, $provinceRepository, $stationGroupRepository, $stationRepository);
+$radioCredentialService = new RadioCredentialService($userRepository, $stationRepository);
+$partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -739,6 +743,22 @@ try {
 
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/token$#', $path, $matches)) {
         $stationController->generateToken($matches[1]);
+        return;
+    }
+
+    // Partner-radio admin: provision a station user, rotate password, edit
+    // the corporate profile card. Returns the one-time plaintext password
+    // only in the immediate response — never stored, never logged.
+    if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/provision$#', $path, $matches)) {
+        $partnerAdminController->provision($matches[1]);
+        return;
+    }
+    if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/rotate-password$#', $path, $matches)) {
+        $partnerAdminController->rotatePassword($matches[1]);
+        return;
+    }
+    if ($method === 'PATCH' && preg_match('#^/api/v1/stations/([^/]+)/profile$#', $path, $matches)) {
+        $partnerAdminController->updateProfile($matches[1]);
         return;
     }
 

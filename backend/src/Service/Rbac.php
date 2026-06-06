@@ -26,6 +26,12 @@ final class Rbac
     public const ROLE_MANAGER = 'radio_manager';
     public const ROLE_EDITOR = 'editor';
     public const ROLE_VIEWER = 'viewer';
+    /**
+     * Partner-radio tenant user. Scoped to a single station — sees only its
+     * own profile, links and feeds. Wall-off enforced at controller level by
+     * matching the user's station_id against the requested resource.
+     */
+    public const ROLE_STATION_USER = 'station_user';
 
     /** All assignable roles, highest privilege first. */
     public const ROLES = [
@@ -33,13 +39,20 @@ final class Rbac
         self::ROLE_MANAGER,
         self::ROLE_EDITOR,
         self::ROLE_VIEWER,
+        self::ROLE_STATION_USER,
     ];
 
     /** Convenience role groupings used to build the permission map. */
-    private const ANY = self::ROLES;
+    private const ANY = [
+        self::ROLE_SUPER,
+        self::ROLE_MANAGER,
+        self::ROLE_EDITOR,
+        self::ROLE_VIEWER,
+    ];
     private const CONTENT_WRITERS = [self::ROLE_SUPER, self::ROLE_MANAGER, self::ROLE_EDITOR];
     private const MANAGERS = [self::ROLE_SUPER, self::ROLE_MANAGER];
     private const ADMINS = [self::ROLE_SUPER];
+    private const PARTNERS = [self::ROLE_STATION_USER];
 
     /**
      * permission => roles allowed.
@@ -70,6 +83,21 @@ final class Rbac
 
         // User / role administration — super only.
         'users:manage' => self::ADMINS,
+
+        // Partner Radio Portal — station_user (own tenant) + managers (admin
+        // operations). Tenant isolation is enforced by the controller, not
+        // by the permission alone.
+        'portal:view' => [self::ROLE_STATION_USER, self::ROLE_SUPER, self::ROLE_MANAGER],
+        'portal:download' => [self::ROLE_STATION_USER, self::ROLE_SUPER, self::ROLE_MANAGER],
+        'support:open' => [
+            self::ROLE_STATION_USER,
+            self::ROLE_SUPER,
+            self::ROLE_MANAGER,
+            self::ROLE_EDITOR,
+        ],
+        'support:manage' => self::MANAGERS,
+        // Admin-only provisioning of partner accounts and credential rotation.
+        'partner:provision' => self::MANAGERS,
     ];
 
     /**

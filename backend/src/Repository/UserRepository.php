@@ -12,6 +12,39 @@ final class UserRepository
     {
     }
 
+    /**
+     * Insert a new user account.
+     *
+     * @param array{username:string,password_hash:string,real_name:string,roles:list<string>,station_id?:string|null} $data
+     */
+    public function insert(array $data): array
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO users (username, password_hash, real_name, roles, station_id, is_active)
+             VALUES (:u, :p, :r, CAST(:roles AS jsonb), :sid, true)
+             RETURNING id'
+        );
+        $stmt->execute([
+            'u' => $data['username'],
+            'p' => $data['password_hash'],
+            'r' => $data['real_name'] ?? $data['username'],
+            'roles' => json_encode(array_values($data['roles'])),
+            'sid' => $data['station_id'] ?? null,
+        ]);
+        $id = (string) $stmt->fetchColumn();
+        return $this->findById($id) ?? [];
+    }
+
+    public function findByStation(string $stationId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM users WHERE station_id = :sid LIMIT 1'
+        );
+        $stmt->execute(['sid' => $stationId]);
+        $row = $stmt->fetch();
+        return $row === false ? null : $this->normalizeRow($row);
+    }
+
     public function findByUsername(string $username): ?array
     {
         $stmt = $this->pdo->prepare(

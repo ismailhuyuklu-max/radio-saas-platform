@@ -328,6 +328,27 @@ $pdo->exec(
 $pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS group_id uuid NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stations_group ON stations (group_id)');
 
+/**
+ * Faz 12 — Partner Radio Portal: bind a station to its dedicated user,
+ * enrich the corporate profile card (logo / frequency / company / contact),
+ * and track last broadcast time for the partner-portal dashboard.
+ */
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS user_id uuid NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS logo_url varchar(512) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS frequency varchar(32) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS company_name varchar(255) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS contact_name varchar(128) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS contact_phone varchar(64) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS contact_email varchar(128) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS website varchar(255) NULL');
+$pdo->exec('ALTER TABLE stations ADD COLUMN IF NOT EXISTS last_broadcast_at timestamptz NULL');
+$pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_stations_user_id ON stations (user_id) WHERE user_id IS NOT NULL');
+
+// Bind the partner user back to its station (a station_user role only ever
+// operates inside that one station's tenant scope).
+$pdo->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS station_id uuid NULL');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_users_station ON users (station_id) WHERE station_id IS NOT NULL');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');

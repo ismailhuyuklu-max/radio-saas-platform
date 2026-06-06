@@ -176,6 +176,48 @@ final class StationRepository
         $stmt->execute(['id' => $stationId]);
     }
 
+    /** Bind a freshly provisioned partner user to its station. */
+    public function bindUser(string $stationId, string $userId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE stations SET user_id = :uid, updated_at = now() WHERE id = :id'
+        );
+        $stmt->execute(['uid' => $userId, 'id' => $stationId]);
+    }
+
+    /**
+     * Update the partner-portal profile card fields (logo / frequency /
+     * company / contact). Unknown keys are ignored.
+     */
+    public function updateProfile(string $stationId, array $profile): ?array
+    {
+        $allowed = ['logo_url', 'frequency', 'company_name', 'contact_name', 'contact_phone', 'contact_email', 'website'];
+        $sets = [];
+        $params = ['id' => $stationId];
+        foreach ($allowed as $col) {
+            if (array_key_exists($col, $profile)) {
+                $val = $profile[$col];
+                $sets[] = "{$col} = :{$col}";
+                $params[$col] = $val === '' ? null : $val;
+            }
+        }
+        if ($sets === []) {
+            return $this->findById($stationId);
+        }
+        $sql = 'UPDATE stations SET ' . implode(', ', $sets) . ', updated_at = now() WHERE id = :id';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $this->findById($stationId);
+    }
+
+    public function touchLastBroadcast(string $stationId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE stations SET last_broadcast_at = now(), updated_at = now() WHERE id = :id'
+        );
+        $stmt->execute(['id' => $stationId]);
+    }
+
     public function toggleActive(string $stationId, bool $isActive): ?array
     {
         $stmt = $this->pdo->prepare(
