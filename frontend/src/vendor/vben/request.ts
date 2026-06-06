@@ -163,7 +163,31 @@ export class RequestClient {
 
     const contentType = response.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
-      return (await response.json()) as T;
+      // JSON parse fail durumunda (örn. backend yarısında patladı,
+      // truncated body) caller'a açık hata vermek istiyoruz — sessizce
+      // `T` yerine `undefined` döndürmek (NOC zaafiyetinin kök sebebi).
+      try {
+        return (await response.json()) as T;
+      } catch (e) {
+        throw new Error(
+          `Sunucudan geçersiz JSON yanıtı (status ${response.status}, content-type ${contentType}): ${(e as Error).message}`,
+        );
+      }
+    }
+
+    // Faz H1-2: content-type JSON DEĞİL ama HTTP 200.
+    // Bu, PHP fatal HTML body veya nginx/caddy hata sayfası anlamına
+    // gelir; consumer'a güvenli bir T tipi döndürmek için "fulfilled" sayıp
+    // sonradan ekranda boşalmasına izin vermek (NOC tipi sessiz çökme)
+    // yerine açık hata fırlat. Caller catch eder + UI uygun mesajı gösterir.
+    const responseExpectsJson = !!config.headers?.['Accept']?.includes?.('json')
+      || true; // varsayılan: tüm API çağrıları JSON bekler
+    if (responseExpectsJson) {
+      const bodyPreview = (await response.text().catch(() => '')).slice(0, 200);
+      throw new Error(
+        `Sunucudan beklenmeyen yanıt türü (${contentType || 'boş content-type'}, status ${response.status}). ` +
+          `İçerik önizleme: ${bodyPreview.replace(/\s+/g, ' ').slice(0, 120)}`,
+      );
     }
 
     return (await response.text()) as unknown as T;

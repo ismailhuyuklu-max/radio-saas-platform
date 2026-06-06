@@ -61,9 +61,10 @@ async function load() {
   loading.value = true;
   try {
     const res = await getPlanning({ date: selectedDate.value.format('YYYY-MM-DD') });
-    plans.value = res?.plans ?? [];
-  } catch {
-    message.error('Plan verisi alınamadı.');
+    plans.value = Array.isArray(res?.plans) ? res.plans : [];
+  } catch (e) {
+    plans.value = [];
+    message.error(extractApiError(e) ?? 'Plan verisi alınamadı.');
   } finally {
     loading.value = false;
   }

@@ -23,6 +23,7 @@ import {
   savePlanning,
   updatePlanning,
 } from '#/api/modules/radioMedia';
+import ConnectionBanner from '#/components/ui/ConnectionBanner.vue';
 import VirtualList from '#/components/ui/VirtualList.vue';
 import { extractApiError } from '#/utils/api-error';
 
@@ -66,6 +67,9 @@ const slotsView = computed(() =>
 );
 const totalPlans = computed(() => calendar.value.reduce((n, s) => n + s.items.length, 0));
 
+// Faz H1-5: bağlantı sağlığı flag'i — banner için
+const healthy = ref(true);
+
 async function load() {
   loading.value = true;
   try {
@@ -73,11 +77,13 @@ async function load() {
       date: selectedDate.value.format('YYYY-MM-DD'),
       region: regionFilter.value,
     });
-    calendar.value = res?.calendar ?? [];
+    calendar.value = Array.isArray(res?.calendar) ? res.calendar : [];
+    healthy.value = !!res && Array.isArray(res?.calendar);
   } catch (error) {
     console.error(error);
-    message.error('Takvim verileri alınamadı.');
+    message.error(extractApiError(error) ?? 'Takvim verileri alınamadı.');
     calendar.value = [];
+    healthy.value = false;
   } finally {
     loading.value = false;
   }
@@ -437,6 +443,13 @@ onMounted(() => {
 
 <template>
   <div class="pln">
+    <ConnectionBanner
+      v-if="!healthy && !loading"
+      message="Planlama servisi geçici olarak erişilemiyor"
+      detail="Takvim ve plan listesi yüklenemedi. Backend durumunu kontrol edin."
+      :busy="loading"
+      @retry="load()"
+    />
     <header class="pln__bar">
       <div>
         <h1 class="pln__title">Planlama</h1>

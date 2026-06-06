@@ -22,6 +22,9 @@ vi.mock('#/api/modules/radioMedia', async (importOriginal) => {
       load: { '1m': 0.5, '5m': 0.4, '15m': 0.3 },
       sampled_at: '2026-06-05T12:00:00+03:00',
     }),
+    // Faz 21+H1 — NOC artık olay akışı için audit/logs da çekiyor;
+    // mock yoksa requestClient gerçekten çağrılıyor, test fail oluyor.
+    getAuditLogs: vi.fn().mockResolvedValue([]),
   };
 });
 

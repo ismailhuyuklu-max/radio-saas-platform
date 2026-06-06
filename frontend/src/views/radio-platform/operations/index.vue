@@ -12,6 +12,7 @@ import {
   type SponsorListItem,
   type StationItem,
 } from '#/api/modules/radioMedia';
+import ConnectionBanner from '#/components/ui/ConnectionBanner.vue';
 import StatCard from '#/components/ui/StatCard.vue';
 import {
   NEWS_SLOTS,
@@ -104,10 +105,20 @@ async function refresh() {
       getSponsors(),
       getPlanning({ date: now.value.format('YYYY-MM-DD') }),
     ]);
+    // Faz H1-5: response shape doğrulaması (NOC tipi HTML 200 sızıntısına karşı)
     if (st.status === 'fulfilled' && Array.isArray(st.value)) stations.value = st.value;
+    else stations.value = [];
     if (sp.status === 'fulfilled' && Array.isArray(sp.value)) sponsors.value = sp.value;
-    if (pl.status === 'fulfilled' && pl.value) plans.value = pl.value.plans ?? [];
-    healthy.value = st.status === 'fulfilled' && pl.status === 'fulfilled';
+    else sponsors.value = [];
+    if (pl.status === 'fulfilled' && pl.value && typeof pl.value === 'object'
+        && Array.isArray((pl.value as { plans?: unknown }).plans)) {
+      plans.value = (pl.value as { plans: typeof plans.value }).plans;
+    } else {
+      plans.value = [];
+    }
+    healthy.value =
+      st.status === 'fulfilled' && Array.isArray(st.value)
+      && pl.status === 'fulfilled' && !!pl.value;
     lastUpdated.value = dayjs();
   } catch {
     healthy.value = false;
@@ -138,6 +149,13 @@ onUnmounted(() => {
 
 <template>
   <div class="ops">
+    <ConnectionBanner
+      v-if="!healthy"
+      message="Yayın merkezi servislerine ulaşılamıyor"
+      detail="İstasyon ve plan verileri eksik olabilir. Backend / Docker durumunu kontrol edin."
+      :busy="loading"
+      @retry="refresh()"
+    />
     <header class="ops__head">
       <div class="ops__title">
         <h1>Yayın Operasyon Merkezi</h1>

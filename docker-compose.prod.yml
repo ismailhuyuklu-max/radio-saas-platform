@@ -43,6 +43,34 @@ services:
     networks:
       - radio_network
 
+  # Faz H1-4: günlük PostgreSQL yedek + MinIO mirror.
+  # pg_dump -Fc | gzip her gece çalışır, MinIO'nun radio-backup bucket'ına
+  # push edilir, 30 günden eski lokal kopyalar silinir.
+  backup:
+    build:
+      context: ./docker/backup
+    container_name: radio-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-radio_saas}
+      POSTGRES_USER: ${POSTGRES_USER:-radio_saas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-radio_saas_password}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      TZ: Europe/Istanbul
+    volumes:
+      - backup_data:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - radio_network
+
   minio-init:
     image: minio/mc
     container_name: radio-minio-init
@@ -235,6 +263,7 @@ volumes:
   minio_data:
   media_work:
   frontend_node_modules:
+  backup_data:
 
 networks:
   radio_network:

@@ -17,10 +17,13 @@ import {
   type SessionInfo,
 } from '#/api/modules/auth';
 import { extractApiError } from '#/utils/api-error';
+import ConnectionBanner from '#/components/ui/ConnectionBanner.vue';
 
 const loading = ref(true);
 const busy = ref(false);
 const status = ref<MfaStatus>({ enabled: false, pending: false });
+// Faz H1-5: backend dayanıklılığı
+const healthy = ref(true);
 
 // enrolment state
 const stage = ref<'idle' | 'enrolling' | 'recovery'>('idle');
@@ -40,8 +43,10 @@ async function refresh() {
   try {
     const res = await getMfaStatus();
     status.value = res?.result ?? { enabled: false, pending: false };
-  } catch {
-    // not fatal
+    healthy.value = !!res?.result;
+  } catch (e) {
+    healthy.value = false;
+    message.warning(extractApiError(e) ?? 'MFA durumu alınamadı.');
   } finally {
     loading.value = false;
   }
@@ -153,9 +158,10 @@ function fmt(ts: string) {
 async function loadSessions() {
   try {
     const res = await getSessions();
-    sessions.value = res?.result ?? [];
-  } catch {
-    /* ignore */
+    sessions.value = Array.isArray(res?.result) ? res.result : [];
+  } catch (e) {
+    sessions.value = [];
+    message.warning(extractApiError(e) ?? 'Oturum listesi alınamadı.');
   }
 }
 async function revokeOthers() {
@@ -184,10 +190,22 @@ onMounted(async () => {
   await refresh();
   await loadSessions();
 });
+
+async function retryAll(): Promise<void> {
+  await refresh();
+  await loadSessions();
+}
 </script>
 
 <template>
   <div class="sec">
+    <ConnectionBanner
+      v-if="!healthy && !loading"
+      message="Güvenlik servisi erişilemiyor"
+      detail="MFA durumu ve oturum bilgileri yüklenemedi. Backend / Docker durumunu kontrol edin."
+      :busy="loading || busy"
+      @retry="retryAll()"
+    />
     <header class="sec__head">
       <h1>Güvenlik</h1>
       <p class="sec__sub">Hesabınızı iki adımlı doğrulama (2FA) ile koruyun</p>

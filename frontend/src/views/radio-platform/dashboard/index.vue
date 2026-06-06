@@ -20,6 +20,7 @@ import {
 } from '#/api/modules/radioMedia';
 import { getStoredUser } from '#/api/modules/auth';
 
+import ConnectionBanner from '#/components/ui/ConnectionBanner.vue';
 import StatCard from '#/components/ui/StatCard.vue';
 import TurkeySvgMap, { type TurkeyRegionState } from '#/components/TurkeySvgMap.vue';
 
@@ -127,7 +128,7 @@ function openMatrix() {
   void router.push('/radio-platform/matrix');
 }
 
-onMounted(async () => {
+async function load(): Promise<void> {
   loading.value = true;
   try {
     const [st, sp, pl, mx, au] = await Promise.allSettled([
@@ -137,22 +138,51 @@ onMounted(async () => {
       getMatrixStatus(),
       getAuditLogs({ limit: 6 }),
     ]);
+    // Faz H1-5: response shape doğrulaması (NOC tipi HTML 200 sızıntısına
+    // karşı). fulfilled olsa bile veri Array değilse / nesne değilse
+    // varsayılana düş + healthy=false.
     if (st.status === 'fulfilled' && Array.isArray(st.value)) stations.value = st.value;
+    else stations.value = [];
     if (sp.status === 'fulfilled' && Array.isArray(sp.value)) sponsors.value = sp.value;
-    if (pl.status === 'fulfilled' && pl.value) calendar.value = pl.value.calendar ?? [];
-    if (mx.status === 'fulfilled') matrixCells.value = normalizeMatrixPayload(mx.value);
+    else sponsors.value = [];
+    if (pl.status === 'fulfilled' && pl.value && typeof pl.value === 'object'
+        && Array.isArray((pl.value as { calendar?: unknown }).calendar)) {
+      calendar.value = (pl.value as { calendar: typeof calendar.value }).calendar;
+    } else {
+      calendar.value = [];
+    }
+    if (mx.status === 'fulfilled' && mx.value && typeof mx.value === 'object') {
+      matrixCells.value = normalizeMatrixPayload(mx.value);
+    } else {
+      matrixCells.value = [];
+    }
     if (au.status === 'fulfilled' && Array.isArray(au.value)) activity.value = au.value;
-    healthy.value = st.status === 'fulfilled' && mx.status === 'fulfilled';
+    else activity.value = [];
+
+    // Healthy: 4 ana endpoint'in hepsi başarılı + beklenen shape.
+    healthy.value =
+      st.status === 'fulfilled' && Array.isArray(st.value)
+      && mx.status === 'fulfilled' && !!mx.value
+      && pl.status === 'fulfilled' && !!pl.value;
   } catch {
     healthy.value = false;
   } finally {
     loading.value = false;
   }
-});
+}
+
+onMounted(load);
 </script>
 
 <template>
   <div class="dash">
+    <ConnectionBanner
+      v-if="!healthy && !loading"
+      message="Bazı sistem servisleri erişilemiyor"
+      detail="Genel bakış metrikleri eksik görünebilir. Docker Desktop'ı kontrol edin veya 'Tekrar Dene'."
+      :busy="loading"
+      @retry="load()"
+    />
     <header class="dash__head">
       <div>
         <p class="dash__greet">{{ greeting }}{{ userName ? ', ' + userName : '' }}</p>

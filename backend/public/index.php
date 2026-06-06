@@ -2,6 +2,79 @@
 
 declare(strict_types=1);
 
+// ============================================================================
+// Faz H1-1 — Production error chrome.
+// Aim: a PHP fatal / parse error / OOM / unhandled exception NEVER leaks an
+// HTML error page to the API client. Always emit JSON 500 with empty body,
+// log the real cause to stderr (container log driver picks it up).
+// ============================================================================
+ob_start();
+ini_set('display_errors', '0');
+ini_set('html_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', '/proc/self/fd/2');
+
+/** Emit a uniform JSON error and exit. Honours headers_sent() so we don't
+ *  warn about already-emitted output (which would itself become HTML noise). */
+function radio_error_response(int $status, string $message, ?string $debug = null): void
+{
+    if (ob_get_level() > 0) {
+        // Wipe any partial output (PHP warnings, controller echo before fatal).
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+    }
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        header('X-Content-Type-Options: nosniff');
+    }
+    $body = ['error' => $message];
+    if ($debug !== null && filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOL)) {
+        $body['debug'] = $debug;
+    }
+    echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+set_exception_handler(static function (Throwable $e): void {
+    error_log(sprintf(
+        '[PHP-FATAL] %s: %s in %s:%d',
+        get_class($e),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine()
+    ));
+    radio_error_response(500, 'Internal Server Error', $e->getMessage());
+});
+
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    // Only escalate to exception when the level is actually enabled by
+    // error_reporting (we obey the configured mask).
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+register_shutdown_function(static function (): void {
+    $err = error_get_last();
+    if ($err === null) {
+        return;
+    }
+    // E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR
+    $fatal = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR;
+    if (($err['type'] & $fatal) === 0) {
+        return;
+    }
+    error_log(sprintf(
+        '[PHP-SHUTDOWN] %s in %s:%d',
+        $err['message'],
+        $err['file'],
+        $err['line']
+    ));
+    radio_error_response(500, 'Internal Server Error', $err['message']);
+});
+
 use RadioSaaS\Controller\FeedController;
 use RadioSaaS\Controller\AuthController;
 use RadioSaaS\Controller\AccessController;
@@ -1054,8 +1127,10 @@ try {
         return;
     }
 
-    http_response_code(404);
-    header('Content-Type: application/json');
+    if (!headers_sent()) {
+        http_response_code(404);
+        header('Content-Type: application/json');
+    }
     echo json_encode(['error' => 'Not Found'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $exception) {
     $debug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOL);
@@ -1102,8 +1177,19 @@ try {
         }
     }
 
-    http_response_code($status);
-    header('Content-Type: application/json');
+    // Faz H1-1: önce partial output'u temizle, sonra header'ları korumalı set et.
+    // Controller'lar respond() ile zaten echo etmiş olabilir; bu durumda ob_clean
+    // bunları siler, JSON gövdesi tek seferlik gönderilir, HTML kalıntısı sızmaz.
+    if (ob_get_level() > 0) {
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+    }
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        header('X-Content-Type-Options: nosniff');
+    }
     echo json_encode([
         'error' => $status === 500 ? 'Internal Server Error' : $exception->getMessage(),
         'message' => $debug ? $exception->getMessage() : null,

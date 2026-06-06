@@ -144,9 +144,10 @@ const savingGroup = ref(false);
 async function loadGroups() {
   try {
     const res = await getStationGroups();
-    groups.value = res?.groups ?? [];
-  } catch {
+    groups.value = Array.isArray(res?.groups) ? res.groups : [];
+  } catch (e) {
     groups.value = [];
+    message.warning(`Radyo grupları alınamadı: ${(e as Error)?.message ?? ''}`.trim());
   }
 }
 function openGroupManager() {
@@ -224,8 +225,11 @@ async function refreshPlacement() {
       slots.value.map((s) => ({ slot_time: s.slot_time, part_code: s.part_code })),
     );
     placement.value = res?.result ?? null;
-  } catch {
+  } catch (e) {
+    // Önizleme her keystroke'ta tetiklenir; toast atmak gürültü olur.
+    // Sessizce sıfırla ama dev'de debug için warn et.
     placement.value = null;
+    console.warn('[traffic-center] preview-suggestions failed:', e);
   }
 }
 function schedulePlacement() {
@@ -281,15 +285,17 @@ onMounted(async () => {
   try {
     const s = await getStations();
     stations.value = Array.isArray(s) ? s : [];
-  } catch {
-    /* ignore */
+  } catch (e) {
+    stations.value = [];
+    message.warning(`İstasyon listesi alınamadı: ${(e as Error)?.message ?? ''}`.trim());
   }
   await loadGroups();
   try {
     const t = await getAdTraffic();
-    campaigns.value = t?.campaigns ?? [];
-  } catch {
-    /* ignore */
+    campaigns.value = Array.isArray(t?.campaigns) ? t.campaigns : [];
+  } catch (e) {
+    campaigns.value = [];
+    message.warning(`Kampanya listesi alınamadı: ${(e as Error)?.message ?? ''}`.trim());
   }
 });
 </script>

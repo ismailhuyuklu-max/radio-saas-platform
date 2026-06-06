@@ -181,9 +181,10 @@ const oneTimeApiKey = ref<string | null>(null);
 async function loadApiKeys() {
   try {
     const res = await listPartnerApiKeys();
-    apiKeys.value = res?.result?.keys ?? [];
-  } catch {
+    apiKeys.value = Array.isArray(res?.result?.keys) ? res.result.keys : [];
+  } catch (e) {
     apiKeys.value = [];
+    message.warning(`API anahtarları alınamadı: ${(e as Error)?.message ?? ''}`.trim());
   }
 }
 async function issueApiKey() {
@@ -228,8 +229,9 @@ async function loadMfaStatus() {
   try {
     const res = await getMfaStatus();
     mfaStatus.value = res?.result ?? null;
-  } catch {
+  } catch (e) {
     mfaStatus.value = null;
+    message.warning(`MFA durumu alınamadı: ${(e as Error)?.message ?? ''}`.trim());
   }
 }
 async function startMfaSetup() {
