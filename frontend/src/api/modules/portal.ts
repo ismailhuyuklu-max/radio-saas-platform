@@ -124,6 +124,43 @@ export function getPortalActivity() {
   );
 }
 
+// --- Faz 24 — Son İndirilenler + Sponsor/Reklam içerik listeleri --------
+
+export interface PortalDownload {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  created_at: string;
+  ip_address?: string | null;
+  payload?: { station_id?: string; mime?: string } | null;
+}
+export interface PortalSponsorItem {
+  id: string;
+  sponsor_name?: string;
+  placement_type?: string;
+  content_type?: string;
+  region_code?: string;
+  region_name?: string;
+  is_global?: boolean;
+}
+
+export function getPortalDownloads() {
+  return requestClient.get<{ code: number; result: { downloads: PortalDownload[] } }>(
+    '/portal/downloads',
+  );
+}
+export function getPortalSponsors() {
+  return requestClient.get<{ code: number; result: { sponsors: PortalSponsorItem[] } }>(
+    '/portal/sponsors',
+  );
+}
+export function getPortalAds() {
+  return requestClient.get<{ code: number; result: { ads: PortalSponsorItem[] } }>(
+    '/portal/ads',
+  );
+}
+
 // --- Admin-side partner management ---------------------------------------
 
 export interface PartnerCredentials {

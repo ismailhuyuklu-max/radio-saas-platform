@@ -513,7 +513,7 @@ $planningController = new PlanningController($adminAuthenticator, $planRepositor
 $trafficMetaController = new TrafficMetaController($adminAuthenticator, $provinceRepository, $stationGroupRepository, $stationRepository);
 $partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
 $signedFeedController = new SignedFeedController($streamTokenRepository, $streamTokenService, $stationRepository, $feedService, $auditLogRepository);
-$partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService);
+$partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService, $sponsorRepository);
 $supportTicketRepository = new SupportTicketRepository($pdo);
 $supportController = new SupportController($adminAuthenticator, $supportTicketRepository, $auditLogRepository);
 $partnerApiKeyRepository = new PartnerApiKeyRepository($pdo);
@@ -823,6 +823,18 @@ try {
     }
     if ($method === 'GET' && $path === '/api/v1/portal/activity') {
         $partnerPortalController->activity();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/downloads') {
+        $partnerPortalController->downloads();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/sponsors') {
+        $partnerPortalController->sponsors();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/ads') {
+        $partnerPortalController->ads();
         return;
     }
 

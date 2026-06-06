@@ -8,16 +8,21 @@ import { logout } from '#/api/modules/auth';
 import {
   type PortalActivity,
   type PortalCard,
+  type PortalDownload,
   type PortalLink,
   type PortalMediaItem,
   type PortalPlan,
+  type PortalSponsorItem,
   PURPOSE_ICONS,
   PURPOSE_LABELS,
   getPortalActivity,
+  getPortalAds,
+  getPortalDownloads,
   getPortalFeeds,
   getPortalLinks,
   getPortalMe,
   getPortalMedia,
+  getPortalSponsors,
 } from '#/api/modules/portal';
 import {
   CATEGORY_LABELS,
@@ -44,6 +49,11 @@ const card = ref<PortalCard | null>(null);
 const links = ref<PortalLink[]>([]);
 const plans = ref<PortalPlan[]>([]);
 const mediaItems = ref<PortalMediaItem[]>([]);
+const downloadsList = ref<PortalDownload[]>([]);
+const sponsorsList = ref<PortalSponsorItem[]>([]);
+const adsList = ref<PortalSponsorItem[]>([]);
+type MediaSubTab = 'available' | 'downloads' | 'sponsors' | 'ads';
+const mediaSubTab = ref<MediaSubTab>('available');
 const activity = ref<PortalActivity[]>([]);
 const tab = ref<Tab>('links');
 const copiedKey = ref<string>('');
@@ -63,13 +73,16 @@ const fmtDuration = (ms?: number) => {
 async function load() {
   loading.value = true;
   try {
-    const [me, ln, ff, mm, ac, tk] = await Promise.all([
+    const [me, ln, ff, mm, ac, tk, dl, sp, ad] = await Promise.all([
       getPortalMe(),
       getPortalLinks(),
       getPortalFeeds(),
       getPortalMedia(),
       getPortalActivity(),
       listSupportTickets(),
+      getPortalDownloads(),
+      getPortalSponsors(),
+      getPortalAds(),
     ]);
     card.value = me?.result ?? null;
     links.value = ln?.result?.links ?? [];
@@ -77,6 +90,9 @@ async function load() {
     mediaItems.value = mm?.result?.items ?? [];
     activity.value = ac?.result?.logs ?? [];
     tickets.value = tk?.result?.tickets ?? [];
+    downloadsList.value = dl?.result?.downloads ?? [];
+    sponsorsList.value = sp?.result?.sponsors ?? [];
+    adsList.value = ad?.result?.ads ?? [];
   } catch {
     message.error('Veriler yüklenemedi.');
   } finally {
@@ -349,26 +365,104 @@ onMounted(async () => {
 
     <!-- DOWNLOAD CENTER -->
     <section v-else-if="tab === 'media'" class="prt__section">
-      <p class="prt__hint">
-        Bölgenize ait son içerikleri MP3 olarak indirebilirsiniz.
-      </p>
-      <div v-if="mediaItems.length" class="prt__media ui-card">
-        <div v-for="m in mediaItems" :key="m.id" class="prt__media-row">
-          <span class="prt__media-title">{{ m.title }}</span>
-          <span class="prt__media-meta">{{ m.part_code }} · {{ fmtDuration(m.source_duration_ms) }}</span>
-          <div class="prt__formats">
-            <a
-              v-for="f in DOWNLOAD_FORMATS"
-              :key="f.key"
-              class="prt__dl-fmt"
-              :href="downloadMediaUrl(m, f.key)"
-              target="_blank"
-              rel="noopener"
-            >{{ f.label }}</a>
+      <nav class="prt__subtabs">
+        <button
+          type="button"
+          class="prt__subtab"
+          :class="{ 'is-active': mediaSubTab === 'available' }"
+          @click="mediaSubTab = 'available'"
+        >📥 Mevcut ({{ mediaItems.length }})</button>
+        <button
+          type="button"
+          class="prt__subtab"
+          :class="{ 'is-active': mediaSubTab === 'downloads' }"
+          @click="mediaSubTab = 'downloads'"
+        >🕓 Son İndirilenler ({{ downloadsList.length }})</button>
+        <button
+          type="button"
+          class="prt__subtab"
+          :class="{ 'is-active': mediaSubTab === 'sponsors' }"
+          @click="mediaSubTab = 'sponsors'"
+        >🎯 Sponsor İçerikleri ({{ sponsorsList.length }})</button>
+        <button
+          type="button"
+          class="prt__subtab"
+          :class="{ 'is-active': mediaSubTab === 'ads' }"
+          @click="mediaSubTab = 'ads'"
+        >📢 Reklam İçerikleri ({{ adsList.length }})</button>
+      </nav>
+
+      <template v-if="mediaSubTab === 'available'">
+        <p class="prt__hint">
+          Bölgenize ait son içerikleri MP3, WAV, AAC, M3U veya PLS olarak indirebilirsiniz.
+        </p>
+        <div v-if="mediaItems.length" class="prt__media ui-card">
+          <div v-for="m in mediaItems" :key="m.id" class="prt__media-row">
+            <span class="prt__media-title">{{ m.title }}</span>
+            <span class="prt__media-meta">{{ m.part_code }} · {{ fmtDuration(m.source_duration_ms) }}</span>
+            <div class="prt__formats">
+              <a
+                v-for="f in DOWNLOAD_FORMATS"
+                :key="f.key"
+                class="prt__dl-fmt"
+                :href="downloadMediaUrl(m, f.key)"
+                target="_blank"
+                rel="noopener"
+              >{{ f.label }}</a>
+            </div>
           </div>
         </div>
-      </div>
-      <p v-else class="prt__empty">Henüz indirilebilir içerik yok.</p>
+        <p v-else class="prt__empty">Henüz indirilebilir içerik yok.</p>
+      </template>
+
+      <template v-else-if="mediaSubTab === 'downloads'">
+        <p class="prt__hint">Son 30 günde indirdiğiniz dosyalar (audit kayıtlarından).</p>
+        <div v-if="downloadsList.length" class="prt__media ui-card">
+          <div v-for="d in downloadsList" :key="d.id" class="prt__media-row">
+            <span class="prt__media-title">{{ d.entity_type }} · {{ d.entity_id }}</span>
+            <span class="prt__media-meta">{{ fmtTime(d.created_at) }}<template v-if="d.ip_address"> · {{ d.ip_address }}</template></span>
+            <a
+              class="prt__dl-fmt"
+              :href="`/api/v1/media-stream/${d.entity_type === 'sponsor' ? 'sponsor' : 'content'}/${d.entity_id}`"
+              target="_blank"
+              rel="noopener"
+            >Tekrar İndir</a>
+          </div>
+        </div>
+        <p v-else class="prt__empty">Henüz indirme yok.</p>
+      </template>
+
+      <template v-else-if="mediaSubTab === 'sponsors'">
+        <p class="prt__hint">Bölgenize atanmış sponsor takdimleri (yayın öncesi/sonrası).</p>
+        <div v-if="sponsorsList.length" class="prt__media ui-card">
+          <div v-for="s in sponsorsList" :key="s.id" class="prt__media-row">
+            <span class="prt__media-title">{{ s.sponsor_name || '(adsız sponsor)' }}</span>
+            <span class="prt__media-meta">
+              {{ s.placement_type }} · {{ s.content_type }}
+              <template v-if="s.is_global"> · Ulusal</template>
+              <template v-else-if="s.region_name"> · {{ s.region_name }}</template>
+            </span>
+            <a class="prt__dl-fmt" :href="`/api/v1/media-stream/sponsor/${s.id}`" target="_blank" rel="noopener">Dinle</a>
+          </div>
+        </div>
+        <p v-else class="prt__empty">Sponsor içerik bulunamadı.</p>
+      </template>
+
+      <template v-else>
+        <p class="prt__hint">Bölgenize atanmış reklam spotları.</p>
+        <div v-if="adsList.length" class="prt__media ui-card">
+          <div v-for="a in adsList" :key="a.id" class="prt__media-row">
+            <span class="prt__media-title">{{ a.sponsor_name || '(adsız reklam)' }}</span>
+            <span class="prt__media-meta">
+              {{ a.content_type }}
+              <template v-if="a.is_global"> · Ulusal</template>
+              <template v-else-if="a.region_name"> · {{ a.region_name }}</template>
+            </span>
+            <a class="prt__dl-fmt" :href="`/api/v1/media-stream/sponsor/${a.id}`" target="_blank" rel="noopener">Dinle</a>
+          </div>
+        </div>
+        <p v-else class="prt__empty">Reklam içeriği bulunamadı.</p>
+      </template>
     </section>
 
     <!-- ACTIVITY -->
@@ -834,6 +928,28 @@ onMounted(async () => {
   font-size: 11px;
   color: var(--c-text-3);
 }
+.prt__subtabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.prt__subtab {
+  padding: 6px 10px;
+  border: 1px solid var(--c-line);
+  background: transparent;
+  color: var(--c-text-3);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.prt__subtab.is-active {
+  background: var(--c-info);
+  border-color: var(--c-info);
+  color: #fff;
+}
+
 .prt__formats {
   display: flex;
   gap: 4px;

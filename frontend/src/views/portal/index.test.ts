@@ -64,6 +64,9 @@ vi.mock('#/api/modules/portal', async (importOriginal) => {
     getPortalFeeds: vi.fn().mockResolvedValue({ result: { plans: [] } }),
     getPortalMedia: vi.fn().mockResolvedValue({ result: { items: [] } }),
     getPortalActivity: vi.fn().mockResolvedValue({ result: { logs: [] } }),
+    getPortalDownloads: vi.fn().mockResolvedValue({ result: { downloads: [] } }),
+    getPortalSponsors: vi.fn().mockResolvedValue({ result: { sponsors: [] } }),
+    getPortalAds: vi.fn().mockResolvedValue({ result: { ads: [] } }),
   };
 });
 

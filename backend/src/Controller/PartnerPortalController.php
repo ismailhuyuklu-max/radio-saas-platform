@@ -9,6 +9,7 @@ use RadioSaaS\Exception\UnauthorizedException;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\ContentPlanRepository;
 use RadioSaaS\Repository\MediaContentRepository;
+use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\StreamTokenService;
@@ -41,7 +42,8 @@ final class PartnerPortalController
         private readonly ContentPlanRepository $planRepository,
         private readonly MediaContentRepository $mediaRepository,
         private readonly AuditLogRepository $auditLogRepository,
-        private readonly StreamTokenService $tokenService
+        private readonly StreamTokenService $tokenService,
+        private readonly ?SponsorAdRepository $sponsorRepository = null
     ) {
     }
 
@@ -156,6 +158,81 @@ final class PartnerPortalController
             'entity_id' => $stationId,
         ], 100);
         $this->respond(['code' => 0, 'result' => ['logs' => $logs], 'message' => 'OK']);
+    }
+
+    /**
+     * GET /portal/downloads — Faz 24: master prompt's "Son İndirilen Dosyalar".
+     * Pulls the partner's own media_download audit rows from the last 30 days.
+     */
+    public function downloads(): void
+    {
+        $ctx = $this->context();
+        $username = (string) ($ctx['user']['username'] ?? '');
+        if ($username === '') {
+            $this->respond(['code' => 0, 'result' => ['downloads' => []], 'message' => 'OK']);
+            return;
+        }
+        $logs = $this->auditLogRepository->listLogs([
+            'actor_username' => $username,
+            'action' => 'media_download',
+            'date_from' => date('Y-m-d', strtotime('-30 days')),
+        ], 50);
+        $this->respond(['code' => 0, 'result' => ['downloads' => $logs], 'message' => 'OK']);
+    }
+
+    /**
+     * GET /portal/sponsors — sponsor reads ("sponsor takdimi") relevant to
+     * the partner's region (national_access ⇒ all). Listing only — playback
+     * still goes through /media-stream/sponsor/{id}.
+     */
+    public function sponsors(): void
+    {
+        if ($this->sponsorRepository === null) {
+            $this->respond(['code' => 0, 'result' => ['sponsors' => []]]);
+            return;
+        }
+        $ctx = $this->context();
+        $national = (bool) ($ctx['station']['national_access'] ?? false);
+        $all = $this->sponsorRepository->listAll(200, 0);
+        $regionCode = (string) ($ctx['station']['region_code'] ?? '');
+        $list = $national ? $all : array_values(array_filter(
+            $all,
+            static fn (array $s): bool =>
+                (bool) ($s['is_global'] ?? false)
+                || ((string) ($s['region_code'] ?? '')) === $regionCode
+        ));
+        // Sponsor rows (non-ad placements only).
+        $sponsors = array_values(array_filter(
+            $list,
+            static fn (array $s): bool => ($s['placement_type'] ?? '') !== 'ad'
+        ));
+        $this->respond(['code' => 0, 'result' => ['sponsors' => $sponsors]]);
+    }
+
+    /**
+     * GET /portal/ads — same as sponsors() but for ad-placement rows.
+     */
+    public function ads(): void
+    {
+        if ($this->sponsorRepository === null) {
+            $this->respond(['code' => 0, 'result' => ['ads' => []]]);
+            return;
+        }
+        $ctx = $this->context();
+        $national = (bool) ($ctx['station']['national_access'] ?? false);
+        $all = $this->sponsorRepository->listAll(200, 0);
+        $regionCode = (string) ($ctx['station']['region_code'] ?? '');
+        $list = $national ? $all : array_values(array_filter(
+            $all,
+            static fn (array $s): bool =>
+                (bool) ($s['is_global'] ?? false)
+                || ((string) ($s['region_code'] ?? '')) === $regionCode
+        ));
+        $ads = array_values(array_filter(
+            $list,
+            static fn (array $s): bool => ($s['placement_type'] ?? '') === 'ad'
+        ));
+        $this->respond(['code' => 0, 'result' => ['ads' => $ads]]);
     }
 
     /**
