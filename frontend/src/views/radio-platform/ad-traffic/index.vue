@@ -22,6 +22,7 @@ import {
   getAdTraffic,
   updateAdCampaign,
   type AdCampaign,
+  type AdTrafficColumnsSummary,
   type AdTrafficSummary,
   type CampaignStatus,
   type PartCode,
@@ -38,6 +39,7 @@ const loading = ref(false);
 const saving = ref(false);
 const campaigns = ref<AdCampaign[]>([]);
 const summary = ref<AdTrafficSummary | null>(null);
+const trafficSummary = ref<AdTrafficColumnsSummary | null>(null);
 
 const MODEL_LABELS: Record<PricingModel, string> = {
   cpm: 'CPM (1000 gösterim)',
@@ -86,6 +88,7 @@ async function load() {
     const res = await getAdTraffic();
     campaigns.value = res?.campaigns ?? [];
     summary.value = res?.summary ?? null;
+    trafficSummary.value = res?.traffic_summary ?? null;
   } catch (error) {
     message.error(extractApiError(error) ?? 'Reklam verisi alınamadı.');
   } finally {
@@ -281,8 +284,27 @@ onMounted(load);
       <!-- Campaign list -->
       <article class="ui-card ad__panel">
         <div class="ad__panel-head">
-          <h2>Kampanyalar</h2>
+          <h2>Kampanyalar — Yayın Trafiği</h2>
           <span class="ad__muted">{{ campaigns.length }} kayıt</span>
+        </div>
+
+        <!-- Tamamlanan / Kalan / Kaçırılan roll-up -->
+        <div v-if="trafficSummary" class="ad__traffic-sum">
+          <span class="ad__ts ad__ts--plan">
+            <em>{{ formatCompact(trafficSummary.planned) }}</em>Planlanan
+          </span>
+          <span class="ad__ts ad__ts--aired">
+            <em>{{ formatCompact(trafficSummary.aired) }}</em>Tamamlanan
+          </span>
+          <span class="ad__ts ad__ts--rem">
+            <em>{{ formatCompact(trafficSummary.remaining) }}</em>Kalan
+          </span>
+          <span class="ad__ts ad__ts--miss">
+            <em>{{ formatCompact(trafficSummary.missed) }}</em>Kaçırılan
+          </span>
+          <span class="ad__ts ad__ts--rate">
+            <em>{{ formatPercent(trafficSummary.completion_rate * 100) }}</em>Tamamlanma
+          </span>
         </div>
         <div v-if="campaigns.length" class="ad__list">
           <div v-for="c in campaigns" :key="c.id" class="ad__camp">
@@ -297,6 +319,36 @@ onMounted(load);
                 <span>{{ c.target_regions.length }} bölge</span>
                 <span>·</span>
                 <span>{{ c.spots_per_day }} spot/gün</span>
+              </div>
+              <!-- Reklam trafik kolonları -->
+              <div v-if="c.traffic" class="ad__traffic">
+                <span class="ad__tcol ad__tcol--plan" title="Planlanan spot">
+                  ◷ {{ c.traffic.planned }}
+                </span>
+                <span class="ad__tcol ad__tcol--aired" title="Tamamlanan (yayınlanan)">
+                  ✓ {{ c.traffic.aired }}
+                </span>
+                <span class="ad__tcol ad__tcol--rem" title="Kalan">
+                  ◴ {{ c.traffic.remaining }}
+                </span>
+                <span
+                  v-if="c.traffic.missed > 0"
+                  class="ad__tcol ad__tcol--miss"
+                  title="Kaçırılan (geçmiş, yayınlanmadı)"
+                >
+                  ✕ {{ c.traffic.missed }}
+                </span>
+                <span class="ad__tbar" :title="`Tamamlanma %${Math.round(c.traffic.completion_rate * 100)}`">
+                  <i
+                    class="ad__tbar-aired"
+                    :style="{ width: c.traffic.completion_rate * 100 + '%' }"
+                  />
+                  <i
+                    v-if="c.traffic.planned > 0"
+                    class="ad__tbar-miss"
+                    :style="{ width: (c.traffic.missed / c.traffic.planned) * 100 + '%' }"
+                  />
+                </span>
               </div>
             </div>
             <div class="ad__camp-rev">
@@ -505,6 +557,95 @@ onMounted(load);
 }
 .ad__model-chip strong {
   color: var(--c-text);
+}
+
+/* Traffic roll-up strip */
+.ad__traffic-sum {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding: 10px;
+  border-radius: var(--r-sm);
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid var(--c-line);
+}
+.ad__ts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--c-text-3);
+  text-align: center;
+}
+.ad__ts em {
+  font-style: normal;
+  font-size: var(--t-h3);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+.ad__ts--aired em {
+  color: var(--c-ok);
+}
+.ad__ts--rem em {
+  color: var(--c-info);
+}
+.ad__ts--miss em {
+  color: var(--c-bad);
+}
+.ad__ts--rate em {
+  color: var(--c-warn);
+}
+
+/* Per-campaign traffic columns */
+.ad__traffic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.ad__tcol {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--c-text-2);
+}
+.ad__tcol--aired {
+  color: var(--c-ok);
+  background: rgba(52, 211, 153, 0.14);
+}
+.ad__tcol--rem {
+  color: var(--c-info);
+  background: rgba(96, 165, 250, 0.14);
+}
+.ad__tcol--miss {
+  color: var(--c-bad);
+  background: rgba(251, 113, 133, 0.16);
+}
+.ad__tbar {
+  position: relative;
+  display: flex;
+  height: 6px;
+  min-width: 90px;
+  flex: 1;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+.ad__tbar-aired {
+  height: 100%;
+  background: var(--c-ok);
+}
+.ad__tbar-miss {
+  height: 100%;
+  background: var(--c-bad);
+  opacity: 0.7;
 }
 
 .ad__list {

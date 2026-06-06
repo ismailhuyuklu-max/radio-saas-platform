@@ -118,6 +118,66 @@ final class AdCampaignRepository
     }
 
     /**
+     * Scheduled-spot totals per campaign, sourced from content_plans linked by
+     * campaign_id. Powers the Reklam Trafik columns:
+     *   planned  = all scheduled spots for the campaign
+     *   past_due = spots whose air date has already passed (should have aired)
+     *
+     * @return array<string, array{planned:int, past_due:int}>
+     */
+    public function planTotals(): array
+    {
+        $rows = $this->pdo->query(
+            "SELECT campaign_id,
+                    COUNT(*) AS planned,
+                    COUNT(*) FILTER (WHERE plan_date < CURRENT_DATE) AS past_due
+             FROM content_plans
+             WHERE campaign_id IS NOT NULL
+             GROUP BY campaign_id"
+        )->fetchAll() ?: [];
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['campaign_id']] = [
+                'planned' => (int) $row['planned'],
+                'past_due' => (int) $row['past_due'],
+            ];
+        }
+        return $map;
+    }
+
+    /**
+     * Derive the Tamamlanan / Kalan / Kaçırılan traffic columns for one
+     * campaign from its scheduled (planned/past_due) and actual (aired) totals.
+     *
+     * @param array{planned:int, past_due:int}|null $plan
+     * @param array{spots:int, impressions:int}|null $actual
+     * @return array{planned:int, aired:int, missed:int, remaining:int, past_due:int, completion_rate:float}
+     */
+    public static function trafficColumns(?array $plan, ?array $actual): array
+    {
+        $planned = (int) ($plan['planned'] ?? 0);
+        $pastDue = (int) ($plan['past_due'] ?? 0);
+        $aired = (int) ($actual['spots'] ?? 0);
+
+        // Missed = past-due spots that never aired; remaining = everything not
+        // yet aired or missed. Both clamped to avoid negative columns when
+        // automation over-reports airings vs the plan.
+        $missed = max(0, $pastDue - $aired);
+        $remaining = max(0, $planned - $aired - $missed);
+        $completion = $planned > 0 ? round($aired / $planned, 4) : 0.0;
+
+        return [
+            'planned' => $planned,
+            'aired' => $aired,
+            'missed' => $missed,
+            'remaining' => $remaining,
+            'past_due' => $pastDue,
+            'completion_rate' => $completion,
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */

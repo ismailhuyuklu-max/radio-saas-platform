@@ -25,16 +25,33 @@ final class AdTrafficController
         $today = date('Y-m-d');
         $campaigns = $this->campaignRepository->listAll($_GET['limit'] ?? null, $_GET['offset'] ?? null);
         $actuals = $this->campaignRepository->airingTotals();
+        $plans = $this->campaignRepository->planTotals();
 
-        $enriched = array_map(static function (array $campaign) use ($today, $actuals): array {
-            $actual = $actuals[(string) ($campaign['id'] ?? '')] ?? null;
+        // Roll up the traffic columns across the page for the header KPIs.
+        $trafficSummary = ['planned' => 0, 'aired' => 0, 'missed' => 0, 'remaining' => 0];
+
+        $enriched = array_map(static function (array $campaign) use ($today, $actuals, $plans, &$trafficSummary): array {
+            $id = (string) ($campaign['id'] ?? '');
+            $actual = $actuals[$id] ?? null;
+            $plan = $plans[$id] ?? null;
             $campaign['metrics'] = RevenueService::computeCampaign($campaign, $today, $actual);
+            $traffic = AdCampaignRepository::trafficColumns($plan, $actual);
+            $campaign['traffic'] = $traffic;
+            $trafficSummary['planned'] += $traffic['planned'];
+            $trafficSummary['aired'] += $traffic['aired'];
+            $trafficSummary['missed'] += $traffic['missed'];
+            $trafficSummary['remaining'] += $traffic['remaining'];
             return $campaign;
         }, $campaigns);
+
+        $trafficSummary['completion_rate'] = $trafficSummary['planned'] > 0
+            ? round($trafficSummary['aired'] / $trafficSummary['planned'], 4)
+            : 0.0;
 
         $this->respond([
             'campaigns' => $enriched,
             'summary' => RevenueService::summary($campaigns, $today, $actuals),
+            'traffic_summary' => $trafficSummary,
             'region_reach' => RevenueService::REGION_REACH,
         ]);
     }

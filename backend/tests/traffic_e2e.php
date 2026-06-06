@@ -132,11 +132,23 @@ try {
     check(($body['result']['created'] ?? 0) === 1, 'Ankara plan created (different il, no false conflict)');
 
     // --- Campaign link ------------------------------------------------------
+    // Create a dedicated campaign so planned/aired/missed are fully controlled
+    // (reusing a demo campaign would carry pre-seeded airings).
     $campaignDate = '2031-04-0' . random_int(1, 9);
-    $campaignId = null;
-    $camp = $pdo->query("SELECT id FROM ad_campaigns LIMIT 1");
-    $campaignId = $camp !== false ? ($camp->fetchColumn() ?: null) : null;
-    if ($campaignId !== false && $campaignId !== null) {
+    [$cc, $cbody] = api('POST', $base . '/ad-campaigns', $token, [
+        'advertiser_name' => 'E2E Trafik Reklamvereni',
+        'pricing_model' => 'cpm',
+        'rate' => 50,
+        'budget' => 10000,
+        'spots_per_day' => 1,
+        'target_regions' => ['ege'],
+        'starts_at' => $campaignDate,
+        'ends_at' => $campaignDate,
+        'status' => 'active',
+    ]);
+    $campaignId = (string) ($cbody['result']['id'] ?? '');
+    check($cc === 201 && $campaignId !== '', 'dedicated test campaign created');
+    if ($campaignId !== '') {
         $payloadCamp = [
             'target_provinces' => ['İzmir'],
             'slots' => [['slot_time' => '10:00', 'part_code' => 'ad', 'content_title' => 'Kampanya Spotu']],
@@ -149,6 +161,25 @@ try {
         $r = $pdo->prepare("SELECT campaign_id FROM content_plans WHERE plan_date = :d AND province = 'İzmir' LIMIT 1");
         $r->execute(['d' => $campaignDate]);
         check((string) $r->fetchColumn() === (string) $campaignId, 'plan linked to campaign_id');
+
+        // Faz 3: Reklam Trafik columns derived from the campaign↔plan link.
+        [$code, $body] = api('GET', $base . '/ad-campaigns?limit=500', $token);
+        check($code === 200, "GET /ad-campaigns → 200 (got {$code})");
+        $found = null;
+        foreach (($body['campaigns'] ?? []) as $c) {
+            if ((string) ($c['id'] ?? '') === (string) $campaignId) {
+                $found = $c;
+                break;
+            }
+        }
+        check($found !== null && isset($found['traffic']), 'campaign carries traffic columns');
+        if ($found !== null) {
+            $t = $found['traffic'];
+            check(($t['planned'] ?? 0) >= 1, 'traffic.planned reflects linked plan (>=1)');
+            check(($t['remaining'] ?? 0) >= 1, 'traffic.remaining counts future spot');
+            check(($t['missed'] ?? -1) === 0, 'traffic.missed is 0 for future-dated spot');
+            check(isset($body['traffic_summary']['planned']), 'traffic_summary present');
+        }
     } else {
         echo "  SKIP: no ad_campaigns row to link (campaign test skipped)\n";
     }
@@ -189,6 +220,11 @@ try {
         ->execute(['a' => $planDate, 'b' => $campaignDate ?? '2000-01-01', 'c' => '2000-01-01']);
     $pdo->prepare("DELETE FROM content_plans WHERE content_title IN ('İl Haber','Kampanya Spotu','Grup Yayını')")
         ->execute();
+    if (!empty($campaignId)) {
+        $pdo->prepare('DELETE FROM content_plans WHERE campaign_id = :c')->execute(['c' => $campaignId]);
+        $pdo->prepare('DELETE FROM ad_airings WHERE campaign_id = :c')->execute(['c' => $campaignId]);
+        $pdo->prepare('DELETE FROM ad_campaigns WHERE id = :c')->execute(['c' => $campaignId]);
+    }
     $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :id')->execute(['id' => $superId]);
     $pdo->prepare('DELETE FROM users WHERE id = :id')->execute(['id' => $superId]);
 }

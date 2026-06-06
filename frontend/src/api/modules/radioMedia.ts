@@ -808,6 +808,16 @@ export interface CampaignMetrics {
   has_actuals: boolean;
 }
 
+/** Reklam Trafik columns: scheduled vs aired vs missed vs remaining spots. */
+export interface CampaignTraffic {
+  planned: number;
+  aired: number;
+  missed: number;
+  remaining: number;
+  past_due: number;
+  completion_rate: number;
+}
+
 export interface AdCampaign {
   id: string;
   advertiser_name: string;
@@ -823,6 +833,7 @@ export interface AdCampaign {
   ends_at: string;
   status: CampaignStatus;
   metrics?: CampaignMetrics;
+  traffic?: CampaignTraffic;
 }
 
 export interface AdTrafficSummary {
@@ -838,9 +849,18 @@ export interface AdTrafficSummary {
   revenue_by_model: Record<string, number>;
 }
 
+export interface AdTrafficColumnsSummary {
+  planned: number;
+  aired: number;
+  missed: number;
+  remaining: number;
+  completion_rate: number;
+}
+
 export interface AdTrafficResponse {
   campaigns: AdCampaign[];
   summary: AdTrafficSummary;
+  traffic_summary?: AdTrafficColumnsSummary;
   region_reach: Record<string, number>;
 }
 
