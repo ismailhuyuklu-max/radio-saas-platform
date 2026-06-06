@@ -13,6 +13,7 @@ use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
 use RadioSaaS\Controller\PartnerAdminController;
+use RadioSaaS\Controller\PartnerPortalController;
 use RadioSaaS\Controller\SignedFeedController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Controller\TrafficMetaController;
@@ -507,6 +508,7 @@ $streamTokenRepository = new StreamTokenRepository($pdo);
 $streamTokenService = new StreamTokenService($streamTokenRepository);
 $partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
 $signedFeedController = new SignedFeedController($streamTokenRepository, $streamTokenService, $stationRepository, $feedService, $auditLogRepository);
+$partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -769,6 +771,29 @@ try {
     }
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/rotate-tokens$#', $path, $matches)) {
         $partnerAdminController->rotateTokens($matches[1]);
+        return;
+    }
+
+    // Partner Radio Portal — tenant-scoped reads only. Controller resolves
+    // the caller to their station_id and rejects cross-tenant requests.
+    if ($method === 'GET' && $path === '/api/v1/portal/me') {
+        $partnerPortalController->me();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/links') {
+        $partnerPortalController->links();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/feeds') {
+        $partnerPortalController->feeds();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/media') {
+        $partnerPortalController->media();
+        return;
+    }
+    if ($method === 'GET' && $path === '/api/v1/portal/activity') {
+        $partnerPortalController->activity();
         return;
     }
 

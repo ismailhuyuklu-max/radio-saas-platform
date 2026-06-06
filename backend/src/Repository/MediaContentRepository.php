@@ -74,6 +74,30 @@ final class MediaContentRepository
         ];
     }
 
+    /**
+     * Renderable media for one region, newest first. Powers the partner
+     * portal's "İndirme Merkezi" — tenant filter is applied by the caller.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listByRegion(string $regionId, int $limit = 60): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT m.*, r.name AS region_name, r.code AS region_code
+             FROM media_contents m
+             INNER JOIN regions r ON r.id = m.region_id
+             WHERE m.region_id = :rid
+               AND m.render_state = :rendered
+             ORDER BY m.published_at DESC NULLS LAST, m.created_at DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('rid', $regionId, PDO::PARAM_STR);
+        $stmt->bindValue('rendered', 'rendered', PDO::PARAM_STR);
+        $stmt->bindValue('limit', max(1, min(200, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function findLatestRenderable(string $regionId, string $partCode): ?array
     {
         $stmt = $this->pdo->prepare(
