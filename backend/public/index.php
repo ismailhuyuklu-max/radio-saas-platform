@@ -613,6 +613,22 @@ try {
         return;
     }
 
+    // Smart placement (read-only suggestions) + timeline bulk operations.
+    if ($method === 'GET' && $path === '/api/v1/plans/suggest') {
+        $planningController->suggest();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/plans/bulk-delete') {
+        $planningController->bulkDelete();
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/api/v1/plans/bulk-move') {
+        $planningController->bulkMove();
+        return;
+    }
+
     // Traffic-center targeting metadata: provinces, radio groups, station list.
     if ($method === 'GET' && $path === '/api/v1/traffic/provinces') {
         $trafficMetaController->provinces();

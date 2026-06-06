@@ -159,6 +159,49 @@ final class ContentPlanRepository
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Fetch many plans by id (preserving nothing about order). Used by the
+     * timeline bulk move/copy operations.
+     *
+     * @param list<string> $ids
+     * @return list<array<string,mixed>>
+     */
+    public function findManyByIds(array $ids): array
+    {
+        $ids = array_values(array_filter(array_map('strval', $ids), static fn (string $v): bool => $v !== ''));
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT p.*, r.code AS region_code
+             FROM content_plans p
+             INNER JOIN regions r ON r.id = p.region_id
+             WHERE p.id IN ({$placeholders})"
+        );
+        $stmt->execute($ids);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * Delete many plans by id; returns the number actually removed.
+     *
+     * @param list<string> $ids
+     */
+    public function deleteMany(array $ids): int
+    {
+        $ids = array_values(array_filter(array_map('strval', $ids), static fn (string $v): bool => $v !== ''));
+        if ($ids === []) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->pdo->prepare("DELETE FROM content_plans WHERE id IN ({$placeholders})");
+        $stmt->execute($ids);
+
+        return $stmt->rowCount();
+    }
+
     public function hasConflict(array $payload, ?string $ignoreId = null): bool
     {
         // Conflict scope is keyed on region + province + date + slot + part so a

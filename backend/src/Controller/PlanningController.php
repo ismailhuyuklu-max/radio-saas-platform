@@ -11,6 +11,7 @@ use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\SmartPlacement;
 use RadioSaaS\Service\TrafficPlanner;
 use RuntimeException;
 
@@ -172,6 +173,124 @@ final class PlanningController
                 'total' => count($specs),
                 'conflicts' => $conflicts,
             ],
+            'message' => 'Success',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Smart placement: read a region/day's plans and propose sponsor reads, ad
+     * spacing fixes and prime-gap fills. Read-only (no DB writes).
+     */
+    public function suggest(): void
+    {
+        $this->guard('plans:view');
+        $filters = [
+            'date' => $_GET['date'] ?? date('Y-m-d'),
+            'region' => $_GET['region'] ?? null,
+        ];
+        $plans = $this->planRepository->listPlans($filters);
+        $result = SmartPlacement::suggest($plans);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'code' => 0,
+            'result' => $result,
+            'message' => 'Success',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** Bulk delete plans by id (timeline multi-select). */
+    public function bulkDelete(): void
+    {
+        $this->guard('plans:write');
+        $payload = $this->readJsonPayload();
+        $ids = array_map('strval', $this->asArray($payload['ids'] ?? []));
+        if ($ids === []) {
+            throw new RuntimeException('Silinecek plan seçilmedi.');
+        }
+        $deleted = $this->planRepository->deleteMany($ids);
+        $this->auditLogRepository->log('admin', 'bulk_delete', 'content_plan', null, ['count' => $deleted]);
+
+        $this->respond(['deleted' => $deleted]);
+    }
+
+    /**
+     * Bulk move/copy plans to another date and/or shift their slot. When
+     * `copy` is true the originals stay; otherwise they are moved.
+     */
+    public function bulkMove(): void
+    {
+        $this->guard('plans:write');
+        $payload = $this->readJsonPayload();
+        $ids = array_map('strval', $this->asArray($payload['ids'] ?? []));
+        if ($ids === []) {
+            throw new RuntimeException('Taşınacak/kopyalanacak plan seçilmedi.');
+        }
+        $copy = (bool) ($payload['copy'] ?? false);
+        $targetDate = isset($payload['target_date']) ? (string) $payload['target_date'] : null;
+        $slotShift = (int) ($payload['slot_shift'] ?? 0); // ± steps of 2h day slots
+        $daySlots = SmartPlacement::DAY_SLOTS;
+
+        $source = $this->planRepository->findManyByIds($ids);
+        $written = 0;
+        $skipped = 0;
+        foreach ($source as $plan) {
+            $newDate = $targetDate ?? (string) ($plan['plan_date'] ?? date('Y-m-d'));
+            $newSlot = substr((string) ($plan['slot_time'] ?? '08:00'), 0, 5);
+            if ($slotShift !== 0) {
+                $idx = array_search($newSlot, $daySlots, true);
+                if ($idx !== false) {
+                    $next = $idx + $slotShift;
+                    if ($next >= 0 && $next < count($daySlots)) {
+                        $newSlot = $daySlots[$next];
+                    }
+                }
+            }
+
+            $spec = [
+                'region_id' => (string) $plan['region_id'],
+                'station_id' => $plan['station_id'] ?? null,
+                'province' => $plan['province'] ?? null,
+                'campaign_id' => $plan['campaign_id'] ?? null,
+                'part_code' => (string) ($plan['part_code'] ?? 'news'),
+                'slot_time' => $newSlot,
+                'plan_date' => $newDate,
+                'content_title' => (string) ($plan['content_title'] ?? 'Yayın'),
+                'content_kind' => (string) ($plan['content_kind'] ?? $plan['part_code'] ?? 'news'),
+                'status' => (string) ($plan['status'] ?? 'draft'),
+                'is_global' => false,
+                'target_regions' => [$plan['region_code'] ?? ''],
+                'target_parts' => [$plan['part_code'] ?? 'news'],
+                'created_by' => 'admin',
+            ];
+
+            // Don't create a duplicate at the destination for region/il plans.
+            if ($spec['station_id'] === null && $this->planRepository->hasConflict($spec)) {
+                $skipped++;
+                continue;
+            }
+            if (!$copy) {
+                $spec['id'] = (string) $plan['id'];
+            }
+            $this->planRepository->upsert($spec);
+            $written++;
+        }
+
+        $this->auditLogRepository->log('admin', $copy ? 'bulk_copy' : 'bulk_move', 'content_plan', null, [
+            'written' => $written,
+            'skipped' => $skipped,
+            'copy' => $copy,
+        ]);
+
+        $this->respond(['written' => $written, 'skipped' => $skipped, 'copy' => $copy]);
+    }
+
+    private function respond(array $result): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'code' => 0,
+            'result' => $result,
             'message' => 'Success',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }

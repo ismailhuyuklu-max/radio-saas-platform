@@ -29,7 +29,8 @@
       "php tests/HttpExceptionTest.php",
       "php tests/PaginationTest.php",
       "php tests/BroadcastSlotTest.php",
-      "php tests/TrafficPlannerTest.php"
+      "php tests/TrafficPlannerTest.php",
+      "php tests/SmartPlacementTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",

@@ -706,7 +706,10 @@ export function savePlanning(payload: PlanningSavePayload) {
 
 export interface BulkPlanPayload {
   target_regions?: string[];
+  target_provinces?: string[];
   station_ids?: string[];
+  group_ids?: string[];
+  campaign_id?: string;
   slots: Array<{ slot_time: string; part_code: string; content_title: string; status: string }>;
   start_date: string;
   repeat_days: number;
@@ -721,6 +724,51 @@ export interface BulkPlanResult {
 
 export function bulkPlan(payload: BulkPlanPayload) {
   return requestClient.post<{ code: number; result: BulkPlanResult }>('/plans/bulk', payload);
+}
+
+// --- Faz 4: smart placement + timeline bulk operations ----------------------
+
+export interface PlacementSuggestion {
+  slot_time: string;
+  part_code: string;
+  content_title: string;
+  reason: string;
+}
+export interface PlacementWarning {
+  slot_time: string;
+  message: string;
+}
+export interface PlacementResult {
+  suggestions: PlacementSuggestion[];
+  warnings: PlacementWarning[];
+}
+
+export function getPlanSuggestions(filters: { date?: string; region?: RegionCode }) {
+  const params: Record<string, string> = {};
+  if (filters.date) params.date = filters.date;
+  if (filters.region) params.region = filters.region;
+  return requestClient.get<{ code: number; result: PlacementResult }>('/plans/suggest', {
+    params,
+  });
+}
+
+export function bulkDeletePlans(ids: string[]) {
+  return requestClient.post<{ code: number; result: { deleted: number } }>('/plans/bulk-delete', {
+    ids,
+  });
+}
+
+export interface BulkMovePayload {
+  ids: string[];
+  target_date?: string;
+  slot_shift?: number;
+  copy?: boolean;
+}
+export function bulkMovePlans(payload: BulkMovePayload) {
+  return requestClient.post<{
+    code: number;
+    result: { written: number; skipped: number; copy: boolean };
+  }>('/plans/bulk-move', payload);
 }
 
 export function updatePlanning(planId: string, payload: PlanningSavePayload) {

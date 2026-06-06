@@ -2,16 +2,20 @@
 import { computed, onMounted, ref } from 'vue';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { Button, DatePicker, Input, Modal, Select, Switch, message } from 'ant-design-vue';
+import { Button, DatePicker, Input, Modal, Popconfirm, Select, Switch, message } from 'ant-design-vue';
 
 import {
   type CalendarSlotItem,
   type ContentPlanItem,
   type PartCode,
+  type PlacementResult,
   type PlanStatus,
   type RegionCode,
   type StationItem,
+  bulkDeletePlans,
+  bulkMovePlans,
   getPlanning,
+  getPlanSuggestions,
   getStations,
   REGION_LABELS,
   REGION_LIST,
@@ -190,6 +194,123 @@ async function submit() {
   }
 }
 
+/* ---- Faz 4: multi-select + bulk operations ---- */
+const selectMode = ref(false);
+const selected = ref<Set<string>>(new Set());
+const busy = ref(false);
+
+const selectedCount = computed(() => selected.value.size);
+
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value;
+  if (!selectMode.value) selected.value = new Set();
+}
+function isSelected(id: string) {
+  return selected.value.has(id);
+}
+function toggleSelect(id: string) {
+  const next = new Set(selected.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selected.value = next;
+}
+function onItemClick(item: ContentPlanItem) {
+  if (selectMode.value) toggleSelect(item.id);
+  else openEdit(item);
+}
+function clearSelection() {
+  selected.value = new Set();
+}
+
+async function runBulkMove(shift: number, copy = false, targetDate?: string) {
+  if (!selected.value.size) return;
+  busy.value = true;
+  try {
+    const res = await bulkMovePlans({
+      ids: [...selected.value],
+      slot_shift: shift,
+      copy,
+      target_date: targetDate,
+    });
+    const r = res?.result;
+    const verb = copy ? 'kopyalandı' : 'taşındı';
+    message.success(`${r?.written ?? 0} plan ${verb}${r?.skipped ? `, ${r.skipped} çakışma atlandı` : ''}.`);
+    clearSelection();
+    await load();
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'İşlem başarısız.');
+  } finally {
+    busy.value = false;
+  }
+}
+function bulkShift(shift: number) {
+  return runBulkMove(shift, false);
+}
+function bulkCopyNextDay() {
+  return runBulkMove(0, true, selectedDate.value.add(1, 'day').format('YYYY-MM-DD'));
+}
+async function runBulkDelete() {
+  if (!selected.value.size) return;
+  busy.value = true;
+  try {
+    const res = await bulkDeletePlans([...selected.value]);
+    message.success(`${res?.result?.deleted ?? 0} plan silindi.`);
+    clearSelection();
+    await load();
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'Silme başarısız.');
+  } finally {
+    busy.value = false;
+  }
+}
+
+/* ---- Faz 4: smart placement suggestions ---- */
+const suggestOpen = ref(false);
+const suggestLoading = ref(false);
+const suggestResult = ref<PlacementResult | null>(null);
+
+async function openSuggestions() {
+  suggestOpen.value = true;
+  suggestLoading.value = true;
+  suggestResult.value = null;
+  try {
+    const res = await getPlanSuggestions({
+      date: selectedDate.value.format('YYYY-MM-DD'),
+      region: regionFilter.value,
+    });
+    suggestResult.value = res?.result ?? { suggestions: [], warnings: [] };
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'Öneriler alınamadı.');
+    suggestResult.value = { suggestions: [], warnings: [] };
+  } finally {
+    suggestLoading.value = false;
+  }
+}
+
+async function applySuggestion(s: PlacementResult['suggestions'][number]) {
+  const region = regionFilter.value ?? 'akdeniz';
+  try {
+    await savePlanning({
+      region_id: region,
+      target_regions: [region],
+      part_code: s.part_code as PartCode,
+      slot_time: s.slot_time,
+      plan_date: selectedDate.value.format('YYYY-MM-DD'),
+      content_title: s.content_title,
+      content_kind: s.part_code as PartCode,
+      status: 'published',
+      created_by: 'admin',
+    });
+    message.success(`${s.slot_time} ${s.content_title} eklendi.`);
+    if (suggestResult.value) {
+      suggestResult.value.suggestions = suggestResult.value.suggestions.filter((x) => x !== s);
+    }
+    await load();
+  } catch (error) {
+    message.error(extractApiError(error) ?? 'Öneri uygulanamadı.');
+  }
+}
+
 onMounted(() => {
   void load();
   void loadStations();
@@ -203,8 +324,28 @@ onMounted(() => {
         <h1 class="pln__title">Planlama</h1>
         <p class="pln__sub">{{ totalPlans }} plan · {{ selectedDate.format('DD MMMM') }}</p>
       </div>
-      <Button type="primary" @click="openCreate()">+ Yeni Plan</Button>
+      <div class="pln__actions">
+        <Button @click="openSuggestions">💡 Akıllı Öneriler</Button>
+        <Button :type="selectMode ? 'default' : 'dashed'" @click="toggleSelectMode">
+          {{ selectMode ? 'Seçimi Kapat' : 'Çoklu Seç' }}
+        </Button>
+        <Button type="primary" @click="openCreate()">+ Yeni Plan</Button>
+      </div>
     </header>
+
+    <!-- Bulk operations toolbar (multi-select) -->
+    <div v-if="selectMode" class="pln__bulkbar ui-card">
+      <span class="pln__bulkcount">{{ selectedCount }} seçili</span>
+      <div class="pln__bulkacts">
+        <Button size="small" :disabled="!selectedCount || busy" @click="bulkShift(-1)">◄ Önceki kuşak</Button>
+        <Button size="small" :disabled="!selectedCount || busy" @click="bulkShift(1)">Sonraki kuşak ►</Button>
+        <Button size="small" :disabled="!selectedCount || busy" @click="bulkCopyNextDay">⧉ Ertesi güne kopyala</Button>
+        <Popconfirm title="Seçili planlar silinsin mi?" ok-text="Sil" cancel-text="Vazgeç" @confirm="runBulkDelete">
+          <Button size="small" danger :disabled="!selectedCount || busy">🗑 Sil</Button>
+        </Popconfirm>
+        <Button v-if="selectedCount" size="small" type="text" @click="clearSelection">Temizle</Button>
+      </div>
+    </div>
 
     <div class="pln__filters ui-card">
       <DatePicker v-model:value="selectedDate" class="pln__date" :allow-clear="false" @change="load" />
@@ -220,7 +361,16 @@ onMounted(() => {
           </span>
         </div>
         <ul v-if="slot.items.length" class="pln__items">
-          <li v-for="item in slot.items" :key="item.id" class="pln__item" @click="openEdit(item)">
+          <li
+            v-for="item in slot.items"
+            :key="item.id"
+            class="pln__item"
+            :class="{ 'is-selected': selectMode && isSelected(item.id) }"
+            @click="onItemClick(item)"
+          >
+            <span v-if="selectMode" class="pln__check" :class="{ 'is-on': isSelected(item.id) }">
+              {{ isSelected(item.id) ? '✓' : '' }}
+            </span>
             <div class="pln__item-main">
               <strong>{{ item.content_title }}</strong>
               <span>{{ item.region_name }}<template v-if="item.station_name"> · {{ item.station_name }}</template></span>
@@ -274,6 +424,44 @@ onMounted(() => {
             <Switch v-model:checked="form.allRegions" />
           </label>
         </div>
+      </div>
+    </Modal>
+
+    <!-- Smart placement suggestions -->
+    <Modal
+      v-model:open="suggestOpen"
+      title="💡 Akıllı Yerleştirme Önerileri"
+      :footer="null"
+      width="560px"
+    >
+      <div class="pln__sg">
+        <p class="pln__sg-meta">
+          {{ selectedDate.format('DD MMMM YYYY') }}
+          · {{ regionFilter ? REGION_LABELS[regionFilter] : 'Tüm bölgeler' }}
+        </p>
+
+        <div v-if="suggestLoading" class="pln__sg-empty">Analiz ediliyor…</div>
+
+        <template v-else-if="suggestResult">
+          <div v-if="suggestResult.warnings.length" class="pln__sg-warns">
+            <div v-for="(w, i) in suggestResult.warnings" :key="`w${i}`" class="pln__sg-warn">
+              ⚠ {{ w.message }}
+            </div>
+          </div>
+
+          <ul v-if="suggestResult.suggestions.length" class="pln__sg-list">
+            <li v-for="(s, i) in suggestResult.suggestions" :key="`s${i}`" class="pln__sg-item">
+              <div class="pln__sg-info">
+                <strong>{{ s.slot_time }} · {{ s.content_title }}</strong>
+                <span>{{ s.reason }}</span>
+              </div>
+              <Button size="small" type="primary" @click="applySuggestion(s)">Ekle</Button>
+            </li>
+          </ul>
+          <div v-else-if="!suggestResult.warnings.length" class="pln__sg-empty">
+            ✓ Bu gün için öneri yok — yayın akışı dengeli görünüyor.
+          </div>
+        </template>
       </div>
     </Modal>
   </div>
@@ -415,6 +603,118 @@ onMounted(() => {
 .pln__chip.is-muted {
   color: var(--c-text-3);
   background: rgba(148, 163, 184, 0.1);
+}
+
+.pln__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* Bulk toolbar */
+.pln__bulkbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-3);
+  flex-wrap: wrap;
+}
+.pln__bulkcount {
+  font-size: var(--t-sm);
+  font-weight: 800;
+  color: var(--c-info);
+}
+.pln__bulkacts {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* Selection checkbox on item */
+.pln__check {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--c-line-strong);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  margin-right: 4px;
+}
+.pln__check.is-on {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+}
+.pln__item.is-selected {
+  border-color: var(--c-brand);
+  background: rgba(225, 29, 72, 0.08);
+}
+
+/* Suggestions modal */
+.pln__sg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.pln__sg-meta {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--c-text-3);
+}
+.pln__sg-warns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pln__sg-warn {
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  color: var(--c-warn);
+  font-size: var(--t-sm);
+}
+.pln__sg-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.pln__sg-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+}
+.pln__sg-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pln__sg-info strong {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--c-text);
+}
+.pln__sg-info span {
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+}
+.pln__sg-empty {
+  padding: 18px 0;
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: var(--t-sm);
 }
 
 .pln__form {

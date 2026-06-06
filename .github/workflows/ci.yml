@@ -53,6 +53,7 @@ jobs:
           php tests/PaginationTest.php
           php tests/BroadcastSlotTest.php
           php tests/TrafficPlannerTest.php
+          php tests/SmartPlacementTest.php
 
   e2e:
     name: E2E (Playwright)

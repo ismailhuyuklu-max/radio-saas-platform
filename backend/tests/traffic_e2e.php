@@ -214,6 +214,48 @@ try {
     } else {
         echo "  SKIP: no stations to build a group (group test skipped)\n";
     }
+    // --- Faz 4: smart placement + timeline bulk operations -----------------
+    // İstanbul has a news plan at 08:00 (created above) → suggest a sponsor
+    // read for it and fill empty prime slots.
+    [$code, $body] = api(
+        'GET',
+        $base . '/plans/suggest?region=marmara&date=' . $planDate,
+        $token
+    );
+    check($code === 200, "GET /plans/suggest → 200 (got {$code})");
+    $suggestions = $body['result']['suggestions'] ?? [];
+    $hasSponsor = false;
+    foreach ($suggestions as $s) {
+        if (($s['part_code'] ?? '') === 'sponsor' && ($s['slot_time'] ?? '') === '08:00') {
+            $hasSponsor = true;
+        }
+    }
+    check($hasSponsor, 'smart placement suggests a sponsor read for the 08:00 news');
+
+    // Bulk move: shift İstanbul plan by +1 slot (08:00 → 10:00).
+    $idRow = $pdo->prepare(
+        "SELECT id FROM content_plans WHERE plan_date = :d AND province = 'İstanbul' LIMIT 1"
+    );
+    $idRow->execute(['d' => $planDate]);
+    $istanbulPlanId = (string) $idRow->fetchColumn();
+    if ($istanbulPlanId !== '') {
+        [$code, $body] = api('POST', $base . '/plans/bulk-move', $token, [
+            'ids' => [$istanbulPlanId],
+            'slot_shift' => 1,
+        ]);
+        check(($body['result']['written'] ?? 0) === 1, 'bulk-move shifted 1 plan');
+        $chk = $pdo->prepare('SELECT slot_time FROM content_plans WHERE id = :id');
+        $chk->execute(['id' => $istanbulPlanId]);
+        check(substr((string) $chk->fetchColumn(), 0, 5) === '10:00', 'plan moved to 10:00 slot');
+
+        // Bulk delete it.
+        [$code, $body] = api('POST', $base . '/plans/bulk-delete', $token, [
+            'ids' => [$istanbulPlanId],
+        ]);
+        check(($body['result']['deleted'] ?? 0) === 1, 'bulk-delete removed the plan');
+        $chk->execute(['id' => $istanbulPlanId]);
+        check($chk->fetchColumn() === false, 'plan no longer exists after bulk-delete');
+    }
 } finally {
     // Remove all plans this test created.
     $pdo->prepare("DELETE FROM content_plans WHERE plan_date IN (:a, :b, :c)")
