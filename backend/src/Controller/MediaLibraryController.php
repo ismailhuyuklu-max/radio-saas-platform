@@ -80,6 +80,18 @@ final class MediaLibraryController
             throw new NotFoundException('Medya bulunamadı.');
         }
 
+        // Faz 23: format selector. Defaults to mp3 (raw passthrough). m3u/pls
+        // return tiny text playlists pointing at the same MP3 URL — handy for
+        // partner automation. wav/aac trigger an ffmpeg transcode stream.
+        $format = strtolower((string) ($_GET['format'] ?? 'mp3'));
+        if (!in_array($format, ['mp3', 'wav', 'aac', 'm3u', 'pls'], true)) {
+            $format = 'mp3';
+        }
+        if ($format === 'm3u' || $format === 'pls') {
+            $this->serveTextPlaylist($format, $kind, $id, (string) ($object['title'] ?? 'radio'));
+            return;
+        }
+
         // Faz 21: aktivite kayıtları — Dosya İndirme.
         // Only the FIRST byte-range (i.e. the start of a fresh playback /
         // download) is recorded so HTML5 audio seek-bar requests don't spam
@@ -97,6 +109,14 @@ final class MediaLibraryController
                     'mime' => (string) ($object['mime'] ?? ''),
                 ]
             );
+        }
+
+        // Transcode formats (wav/aac) → pipe raw MP3 from MinIO to ffmpeg and
+        // stream the encoded output. Range requests are NOT supported on
+        // transcoded streams (ffmpeg writes sequentially); we always return 200.
+        if ($format === 'wav' || $format === 'aac') {
+            $this->serveTranscoded($format, $object, (string) ($object['title'] ?? 'audio'));
+            return;
         }
 
         $params = ['Bucket' => $object['bucket'], 'Key' => $object['key']];
@@ -131,6 +151,119 @@ final class MediaLibraryController
         } else {
             echo (string) $body;
         }
+    }
+
+    /**
+     * Tiny text playlist that points at the same MP3 stream URL. Useful for
+     * partner automation that consumes M3U/PLS (e.g. RCS, WideOrbit).
+     */
+    private function serveTextPlaylist(string $format, string $kind, string $id, string $title): void
+    {
+        $absolute = $this->absoluteStreamUrl($kind, $id);
+        if ($format === 'm3u') {
+            header('Content-Type: audio/mpegurl; charset=utf-8');
+            header("Content-Disposition: attachment; filename=\"{$kind}-{$id}.m3u\"");
+            echo "#EXTM3U\n";
+            echo "#EXTINF:-1,{$title}\n";
+            echo $absolute . "\n";
+            return;
+        }
+        // PLS
+        header('Content-Type: audio/x-scpls; charset=utf-8');
+        header("Content-Disposition: attachment; filename=\"{$kind}-{$id}.pls\"");
+        echo "[playlist]\nNumberOfEntries=1\nFile1={$absolute}\nTitle1={$title}\nLength1=-1\nVersion=2\n";
+    }
+
+    /**
+     * Stream the MP3 source through ffmpeg and pipe the encoded bytes back
+     * to the partner. ffmpeg reads MP3 from stdin (-i pipe:0) and writes the
+     * requested codec to stdout (-f wav/adts -). proc_open keeps both pipes
+     * non-blocking so we can interleave the MinIO body into stdin while
+     * draining stdout to the client.
+     */
+    private function serveTranscoded(string $format, array $object, string $title): void
+    {
+        // Pull the entire source object once (network < transcode time). The
+        // source is typically a 1-3 MB news bulletin.
+        try {
+            $obj = $this->storage->client()->getObject([
+                'Bucket' => $object['bucket'],
+                'Key' => $object['key'],
+            ]);
+        } catch (\Throwable) {
+            throw new NotFoundException('Medya akışı alınamadı.');
+        }
+        $body = $obj['Body'] ?? null;
+        $source = is_object($body) && method_exists($body, 'getContents')
+            ? (string) $body->getContents()
+            : (string) $body;
+
+        $ext = $format === 'wav' ? 'wav' : 'aac';
+        $contentType = $format === 'wav' ? 'audio/wav' : 'audio/aac';
+        // ffmpeg target format flag (-f wav | adts for AAC).
+        $ffFormat = $format === 'wav' ? 'wav' : 'adts';
+        // Reasonable defaults: 16-bit/44.1k stereo WAV, 128k AAC.
+        $codecArgs = $format === 'wav'
+            ? ['-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2']
+            : ['-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2'];
+
+        $safeTitle = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $title) ?: 'audio';
+        header('Content-Type: ' . $contentType);
+        header("Content-Disposition: attachment; filename=\"{$safeTitle}.{$ext}\"");
+        header('Cache-Control: private, no-store');
+
+        $cmd = array_merge(
+            ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:0'],
+            $codecArgs,
+            ['-f', $ffFormat, 'pipe:1']
+        );
+
+        $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+        $proc = @proc_open($cmd, $descriptors, $pipes);
+        if (!is_resource($proc)) {
+            throw new NotFoundException('Dönüştürücü başlatılamadı.');
+        }
+        // Write source MP3 in chunks, then close stdin so ffmpeg flushes.
+        $written = 0;
+        $len = strlen($source);
+        while ($written < $len) {
+            $chunk = fwrite($pipes[0], substr($source, $written, 65536));
+            if ($chunk === false) {
+                break;
+            }
+            $written += $chunk;
+        }
+        fclose($pipes[0]);
+
+        // Stream stdout straight to the response; drain stderr silently.
+        while (!feof($pipes[1])) {
+            $bytes = fread($pipes[1], 65536);
+            if ($bytes === '' || $bytes === false) {
+                break;
+            }
+            echo $bytes;
+            @ob_flush();
+            @flush();
+        }
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+    }
+
+    /**
+     * Absolute URL to /media-stream/{kind}/{id}. Prefers APP_URL; otherwise
+     * mirrors the inbound request so partner automation can fetch the same
+     * link from outside the cluster.
+     */
+    private function absoluteStreamUrl(string $kind, string $id): string
+    {
+        $base = getenv('APP_URL');
+        if (is_string($base) && trim($base) !== '') {
+            return rtrim($base, '/') . "/api/v1/media-stream/{$kind}/{$id}";
+        }
+        $scheme = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return "{$scheme}://{$host}/api/v1/media-stream/{$kind}/{$id}";
     }
 
     /** @return array<string,mixed> the authenticated user record */

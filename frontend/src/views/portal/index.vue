@@ -203,11 +203,20 @@ async function copy(text: string, key: string) {
   }
 }
 
-function downloadMediaUrl(item: PortalMediaItem): string {
+function downloadMediaUrl(item: PortalMediaItem, format = 'mp3'): string {
   // Backend streams media via /media-stream/content/{id} for any authenticated
   // user; the partner reads it through the same cookie session.
-  return `/api/v1/media-stream/content/${item.id}`;
+  // Faz 23: ?format=mp3|wav|aac|m3u|pls — ffmpeg transcode for wav/aac,
+  // text playlist for m3u/pls.
+  return `/api/v1/media-stream/content/${item.id}?format=${format}`;
 }
+const DOWNLOAD_FORMATS = [
+  { key: 'mp3', label: 'MP3' },
+  { key: 'wav', label: 'WAV' },
+  { key: 'aac', label: 'AAC' },
+  { key: 'm3u', label: 'M3U' },
+  { key: 'pls', label: 'PLS' },
+] as const;
 
 async function signOut() {
   await logout();
@@ -347,7 +356,16 @@ onMounted(async () => {
         <div v-for="m in mediaItems" :key="m.id" class="prt__media-row">
           <span class="prt__media-title">{{ m.title }}</span>
           <span class="prt__media-meta">{{ m.part_code }} · {{ fmtDuration(m.source_duration_ms) }}</span>
-          <a class="prt__dl" :href="downloadMediaUrl(m)" target="_blank" rel="noopener">İndir</a>
+          <div class="prt__formats">
+            <a
+              v-for="f in DOWNLOAD_FORMATS"
+              :key="f.key"
+              class="prt__dl-fmt"
+              :href="downloadMediaUrl(m, f.key)"
+              target="_blank"
+              rel="noopener"
+            >{{ f.label }}</a>
+          </div>
         </div>
       </div>
       <p v-else class="prt__empty">Henüz indirilebilir içerik yok.</p>
@@ -816,17 +834,23 @@ onMounted(async () => {
   font-size: 11px;
   color: var(--c-text-3);
 }
-.prt__dl {
-  padding: 5px 12px;
-  border-radius: 7px;
-  background: var(--c-brand);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+.prt__formats {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.prt__dl-fmt {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--c-brand);
+  font-size: 10px;
+  font-weight: 800;
   text-decoration: none;
 }
-.prt__dl:hover {
-  filter: brightness(1.08);
+.prt__dl-fmt:hover {
+  background: var(--c-brand);
+  color: #fff;
 }
 
 .prt__activity {
