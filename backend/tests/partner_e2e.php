@@ -196,6 +196,62 @@ try {
     ]);
     check($code === 200 && ($body['result']['userId'] ?? '') === $partnerUserId,
         'rotated password logs in');
+
+    // 8. Faz 16: Support module — partner opens a ticket, admin replies,
+    //    partner sees the admin reply. Tenant isolation guaranteed.
+    $newPartnerToken = $sessions->create($partnerUserId);
+    [$code, $body] = api('POST', "{$base}/portal/support", $newPartnerToken, [
+        'category' => 'technical',
+        'subject' => 'E2E Test Talebi',
+        'body' => 'Yayın linkim çalışmıyor.',
+    ]);
+    check($code === 201, "partner POST /portal/support → 201 (got {$code})");
+    $ticketId = (string) ($body['result']['id'] ?? '');
+    check($ticketId !== '', 'partner ticket created with id');
+
+    [$code, $body] = api('GET', "{$base}/portal/support", $newPartnerToken);
+    check($code === 200 && count($body['result']['tickets'] ?? []) >= 1,
+        'partner sees own ticket in list');
+
+    // Admin reads + replies.
+    [$code, $body] = api('GET', "{$base}/support/tickets/{$ticketId}", $adminToken);
+    check($code === 200, "admin GET /support/tickets/{id} → 200 (got {$code})");
+
+    [$code] = api('POST', "{$base}/support/tickets/{$ticketId}/message", $adminToken, [
+        'body' => 'Tokenları yeniledik, tekrar deneyin.',
+    ]);
+    check($code === 201, "admin reply → 201 (got {$code})");
+
+    [$code, $body] = api('PATCH', "{$base}/support/tickets/{$ticketId}/status", $adminToken, [
+        'status' => 'in_progress',
+    ]);
+    check($code === 200, "admin PATCH status → 200 (got {$code})");
+    check(($body['result']['status'] ?? '') === 'in_progress', 'ticket status now in_progress');
+
+    [$code, $body] = api('GET', "{$base}/portal/support/{$ticketId}", $newPartnerToken);
+    check($code === 200, "partner GET own ticket → 200 (got {$code})");
+    check(count($body['result']['messages'] ?? []) >= 1, 'partner sees admin reply');
+
+    // Cross-tenant isolation: a fresh second station + user cannot read
+    // the first partner's ticket even by guessing its UUID.
+    $rid2 = $pdo->query("SELECT id FROM regions LIMIT 1")->fetchColumn();
+    $slug2 = 'partner_e2e_iso_' . bin2hex(random_bytes(3));
+    $pdo->prepare(
+        "INSERT INTO stations (region_id, name, slug, station_code, city_name)
+         VALUES (:r, 'Iso E2E FM', :s, :c, 'Iso')"
+    )->execute(['r' => $rid2, 's' => $slug2, 'c' => $slug2]);
+    $isoStation = (string) $pdo->query("SELECT id FROM stations WHERE slug = '{$slug2}'")->fetchColumn();
+    [$code, $body] = api('POST', "{$base}/stations/{$isoStation}/provision", $adminToken);
+    $isoUserId = (string) ($body['result']['user_id'] ?? '');
+    $isoToken = $sessions->create($isoUserId);
+    [$code] = api('GET', "{$base}/portal/support/{$ticketId}", $isoToken);
+    check($code === 404, "other tenant cannot read foreign ticket → 404 (got {$code})");
+
+    // Cleanup the iso station.
+    $pdo->prepare('DELETE FROM admin_sessions WHERE user_id = :u')->execute(['u' => $isoUserId]);
+    $pdo->prepare('UPDATE stations SET user_id = NULL WHERE id = :s')->execute(['s' => $isoStation]);
+    $pdo->prepare('DELETE FROM users WHERE id = :u')->execute(['u' => $isoUserId]);
+    $pdo->prepare('DELETE FROM stations WHERE id = :s')->execute(['s' => $isoStation]);
 } finally {
     // Cleanup.
     if ($partnerUserId !== null && $partnerUserId !== '') {

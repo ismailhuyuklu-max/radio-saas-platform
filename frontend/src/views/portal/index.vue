@@ -19,8 +19,19 @@ import {
   getPortalMe,
   getPortalMedia,
 } from '#/api/modules/portal';
+import {
+  CATEGORY_LABELS,
+  STATUS_LABELS,
+  type SupportCategory,
+  type SupportMessage,
+  type SupportTicket,
+  createSupportTicket,
+  getSupportTicket,
+  listSupportTickets,
+  replySupportTicket,
+} from '#/api/modules/support';
 
-type Tab = 'links' | 'feeds' | 'media' | 'activity';
+type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support';
 
 const loading = ref(true);
 const card = ref<PortalCard | null>(null);
@@ -46,24 +57,92 @@ const fmtDuration = (ms?: number) => {
 async function load() {
   loading.value = true;
   try {
-    const [me, ln, ff, mm, ac] = await Promise.all([
+    const [me, ln, ff, mm, ac, tk] = await Promise.all([
       getPortalMe(),
       getPortalLinks(),
       getPortalFeeds(),
       getPortalMedia(),
       getPortalActivity(),
+      listSupportTickets(),
     ]);
     card.value = me?.result ?? null;
     links.value = ln?.result?.links ?? [];
     plans.value = ff?.result?.plans ?? [];
     mediaItems.value = mm?.result?.items ?? [];
     activity.value = ac?.result?.logs ?? [];
+    tickets.value = tk?.result?.tickets ?? [];
   } catch {
     message.error('Veriler yüklenemedi.');
   } finally {
     loading.value = false;
   }
 }
+
+// --- Support tab state ----------------------------------------------------
+const tickets = ref<SupportTicket[]>([]);
+const newTicket = ref<{ category: SupportCategory; subject: string; body: string }>({
+  category: 'technical',
+  subject: '',
+  body: '',
+});
+const showNewTicket = ref(false);
+const submittingTicket = ref(false);
+const openTicketId = ref<string | null>(null);
+const openTicketMessages = ref<SupportMessage[]>([]);
+const replyBody = ref('');
+
+async function submitNewTicket() {
+  if (!newTicket.value.subject.trim() || !newTicket.value.body.trim()) {
+    message.warning('Konu ve açıklama gerekli.');
+    return;
+  }
+  submittingTicket.value = true;
+  try {
+    await createSupportTicket({
+      category: newTicket.value.category,
+      subject: newTicket.value.subject.trim(),
+      body: newTicket.value.body.trim(),
+    });
+    message.success('Destek talebi oluşturuldu.');
+    newTicket.value = { category: 'technical', subject: '', body: '' };
+    showNewTicket.value = false;
+    const res = await listSupportTickets();
+    tickets.value = res?.result?.tickets ?? [];
+  } catch {
+    message.error('Talep oluşturulamadı.');
+  } finally {
+    submittingTicket.value = false;
+  }
+}
+
+async function openTicket(id: string) {
+  openTicketId.value = id;
+  openTicketMessages.value = [];
+  try {
+    const res = await getSupportTicket(id);
+    openTicketMessages.value = res?.result?.messages ?? [];
+  } catch {
+    message.error('Talep okunamadı.');
+  }
+}
+
+async function sendReply() {
+  if (!openTicketId.value || !replyBody.value.trim()) return;
+  try {
+    await replySupportTicket(openTicketId.value, replyBody.value.trim());
+    replyBody.value = '';
+    const res = await getSupportTicket(openTicketId.value);
+    openTicketMessages.value = res?.result?.messages ?? [];
+    message.success('Yanıt gönderildi.');
+  } catch {
+    message.error('Yanıt gönderilemedi.');
+  }
+}
+
+const categoryOptions = (Object.keys(CATEGORY_LABELS) as SupportCategory[]).map((k) => ({
+  value: k,
+  label: CATEGORY_LABELS[k],
+}));
 
 async function copy(text: string, key: string) {
   try {
@@ -154,6 +233,12 @@ onMounted(load);
         :class="{ 'is-active': tab === 'activity' }"
         @click="tab = 'activity'"
       >📜 Aktivite</button>
+      <button
+        type="button"
+        class="prt__tab"
+        :class="{ 'is-active': tab === 'support' }"
+        @click="tab = 'support'"
+      >🎫 Destek</button>
     </nav>
 
     <!-- LINKS -->
@@ -214,7 +299,7 @@ onMounted(load);
     </section>
 
     <!-- ACTIVITY -->
-    <section v-else class="prt__section">
+    <section v-else-if="tab === 'activity'" class="prt__section">
       <p class="prt__hint">Son 100 aktivite kaydı</p>
       <div v-if="activity.length" class="prt__activity ui-card">
         <div v-for="a in activity" :key="a.id" class="prt__act">
@@ -224,6 +309,83 @@ onMounted(load);
         </div>
       </div>
       <p v-else class="prt__empty">Henüz aktivite yok.</p>
+    </section>
+
+    <!-- SUPPORT -->
+    <section v-else class="prt__section">
+      <div class="prt__support-head">
+        <p class="prt__hint" style="margin: 0">
+          Teknik destek, yayın sorunu, reklam/haber sorunu veya genel talep oluşturun.
+        </p>
+        <button type="button" class="prt__primary" @click="showNewTicket = !showNewTicket">
+          {{ showNewTicket ? 'Vazgeç' : '+ Yeni Talep' }}
+        </button>
+      </div>
+
+      <div v-if="showNewTicket" class="prt__new-ticket ui-card">
+        <label>
+          <span>Kategori</span>
+          <select v-model="newTicket.category" class="prt__input">
+            <option v-for="o in categoryOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+          </select>
+        </label>
+        <label>
+          <span>Konu</span>
+          <input v-model="newTicket.subject" class="prt__input" maxlength="255" placeholder="Kısa başlık">
+        </label>
+        <label>
+          <span>Açıklama</span>
+          <textarea
+            v-model="newTicket.body"
+            class="prt__input prt__textarea"
+            rows="5"
+            placeholder="Lütfen sorunu detaylı anlatın"
+          />
+        </label>
+        <button
+          type="button"
+          class="prt__primary"
+          :disabled="submittingTicket"
+          @click="submitNewTicket"
+        >{{ submittingTicket ? 'Gönderiliyor…' : 'Talebi Gönder' }}</button>
+      </div>
+
+      <div v-if="tickets.length" class="prt__tickets ui-card">
+        <div v-for="t in tickets" :key="t.id" class="prt__ticket" @click="openTicket(t.id)">
+          <span class="prt__ticket-cat">{{ CATEGORY_LABELS[t.category] }}</span>
+          <span class="prt__ticket-sub">{{ t.subject }}</span>
+          <span class="prt__chip" :class="`is-${t.status}`">{{ STATUS_LABELS[t.status] }}</span>
+          <span class="prt__ticket-time">{{ fmtTime(t.created_at) }}</span>
+        </div>
+      </div>
+      <p v-else-if="!showNewTicket" class="prt__empty">Henüz destek talebiniz yok.</p>
+
+      <!-- Open ticket thread -->
+      <div v-if="openTicketId" class="prt__thread ui-card">
+        <h3>Yazışmalar</h3>
+        <div v-if="openTicketMessages.length" class="prt__messages">
+          <div
+            v-for="m in openTicketMessages"
+            :key="m.id"
+            class="prt__msg"
+            :class="m.author_type === 'admin' ? 'is-admin' : 'is-partner'"
+          >
+            <span class="prt__msg-from">{{ m.author_type === 'admin' ? '🛠 Destek' : '📻 Siz' }}</span>
+            <p>{{ m.body }}</p>
+            <small>{{ fmtTime(m.created_at) }}</small>
+          </div>
+        </div>
+        <p v-else class="prt__empty">Bu talepte henüz mesaj yok.</p>
+        <div class="prt__reply">
+          <textarea
+            v-model="replyBody"
+            class="prt__input prt__textarea"
+            rows="3"
+            placeholder="Yanıt yaz…"
+          />
+          <button type="button" class="prt__primary" @click="sendReply">Gönder</button>
+        </div>
+      </div>
     </section>
 
     <p v-if="loading" class="prt__loading">Yükleniyor…</p>
@@ -599,6 +761,161 @@ onMounted(load);
 .prt__loading {
   text-align: center;
   color: var(--c-text-3);
+}
+
+/* ---- Support ---- */
+.prt__support-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.prt__primary {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: var(--c-brand);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.prt__primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.prt__new-ticket {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prt__new-ticket label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-2);
+}
+.prt__input {
+  padding: 8px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 13px;
+}
+.prt__textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+.prt__tickets {
+  padding: 6px 12px;
+}
+.prt__ticket {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px 130px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--c-line);
+  cursor: pointer;
+  font-size: 13px;
+}
+.prt__ticket:last-child {
+  border-bottom: none;
+}
+.prt__ticket:hover {
+  background: rgba(96, 165, 250, 0.04);
+}
+.prt__ticket-cat {
+  font-weight: 700;
+  color: var(--c-info);
+  font-size: 11px;
+}
+.prt__ticket-sub {
+  color: var(--c-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prt__ticket-time {
+  font-size: 11px;
+  color: var(--c-text-3);
+}
+.prt__chip.is-open {
+  background: rgba(96, 165, 250, 0.14);
+  color: var(--c-info);
+}
+.prt__chip.is-in_progress {
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--c-warn);
+}
+.prt__chip.is-resolved,
+.prt__chip.is-closed {
+  background: rgba(52, 211, 153, 0.14);
+  color: var(--c-ok);
+}
+.prt__thread {
+  padding: 14px;
+  margin-top: 10px;
+}
+.prt__thread h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+.prt__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.prt__msg {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--c-surface-2);
+  border-left: 3px solid var(--c-line-strong);
+}
+.prt__msg.is-admin {
+  border-left-color: var(--c-info);
+}
+.prt__msg.is-partner {
+  border-left-color: var(--c-brand);
+}
+.prt__msg-from {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+}
+.prt__msg p {
+  margin: 4px 0 6px;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.prt__msg small {
+  color: var(--c-text-3);
+  font-size: 11px;
+}
+.prt__reply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prt__reply .prt__primary {
+  align-self: flex-end;
+}
+@media (max-width: 480px) {
+  .prt__ticket {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 /* ---- Mobile (≤390px) ---- */

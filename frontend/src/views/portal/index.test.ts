@@ -5,6 +5,17 @@ vi.mock('#/api/modules/auth', () => ({
   logout: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('#/api/modules/support', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#/api/modules/support')>();
+  return {
+    ...actual,
+    listSupportTickets: vi.fn().mockResolvedValue({ result: { tickets: [] } }),
+    createSupportTicket: vi.fn().mockResolvedValue({ result: { id: 't1' } }),
+    getSupportTicket: vi.fn().mockResolvedValue({ result: { ticket: {}, messages: [] } }),
+    replySupportTicket: vi.fn().mockResolvedValue({ result: { id: 'm1' } }),
+  };
+});
+
 vi.mock('#/api/modules/portal', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#/api/modules/portal')>();
   return {

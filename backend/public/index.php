@@ -16,6 +16,7 @@ use RadioSaaS\Controller\PartnerAdminController;
 use RadioSaaS\Controller\PartnerPortalController;
 use RadioSaaS\Controller\SignedFeedController;
 use RadioSaaS\Controller\StationController;
+use RadioSaaS\Controller\SupportController;
 use RadioSaaS\Controller\TrafficMetaController;
 use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Infrastructure\PdoFactory;
@@ -34,6 +35,7 @@ use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\StreamTokenRepository;
+use RadioSaaS\Repository\SupportTicketRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\RadioCredentialService;
@@ -509,6 +511,8 @@ $streamTokenService = new StreamTokenService($streamTokenRepository);
 $partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
 $signedFeedController = new SignedFeedController($streamTokenRepository, $streamTokenService, $stationRepository, $feedService, $auditLogRepository);
 $partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService);
+$supportTicketRepository = new SupportTicketRepository($pdo);
+$supportController = new SupportController($adminAuthenticator, $supportTicketRepository, $auditLogRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -794,6 +798,42 @@ try {
     }
     if ($method === 'GET' && $path === '/api/v1/portal/activity') {
         $partnerPortalController->activity();
+        return;
+    }
+
+    // Partner support — only own tenant's tickets.
+    if ($method === 'GET' && $path === '/api/v1/portal/support') {
+        $supportController->partnerIndex();
+        return;
+    }
+    if ($method === 'POST' && $path === '/api/v1/portal/support') {
+        $supportController->partnerCreate();
+        return;
+    }
+    if ($method === 'GET' && preg_match('#^/api/v1/portal/support/([^/]+)$#', $path, $matches)) {
+        $supportController->partnerShow($matches[1]);
+        return;
+    }
+    if ($method === 'POST' && preg_match('#^/api/v1/portal/support/([^/]+)/message$#', $path, $matches)) {
+        $supportController->partnerReply($matches[1]);
+        return;
+    }
+
+    // Admin support worklist.
+    if ($method === 'GET' && $path === '/api/v1/support/tickets') {
+        $supportController->adminIndex();
+        return;
+    }
+    if ($method === 'GET' && preg_match('#^/api/v1/support/tickets/([^/]+)$#', $path, $matches)) {
+        $supportController->adminShow($matches[1]);
+        return;
+    }
+    if ($method === 'PATCH' && preg_match('#^/api/v1/support/tickets/([^/]+)/status$#', $path, $matches)) {
+        $supportController->adminUpdateStatus($matches[1]);
+        return;
+    }
+    if ($method === 'POST' && preg_match('#^/api/v1/support/tickets/([^/]+)/message$#', $path, $matches)) {
+        $supportController->adminReply($matches[1]);
         return;
     }
 

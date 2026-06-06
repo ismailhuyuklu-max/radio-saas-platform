@@ -373,6 +373,40 @@ $pdo->exec(
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stream_tokens_station ON station_stream_tokens (station_id, purpose) WHERE revoked_at IS NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stream_tokens_token ON station_stream_tokens (token) WHERE revoked_at IS NULL');
 
+/**
+ * Faz 16 — Support tickets per partner radio. Categories enumerated in PHP
+ * (technical / broadcast / ad / news / general). status: open / in_progress
+ * / resolved / closed. Threaded follow-ups in support_ticket_messages.
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS support_tickets (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        station_id uuid NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+        category varchar(32) NOT NULL,
+        subject varchar(255) NOT NULL,
+        body text NOT NULL,
+        status varchar(24) NOT NULL DEFAULT 'open',
+        created_by uuid NULL,
+        assigned_to uuid NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_tickets_station ON support_tickets (station_id, status, created_at DESC)');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets (status, created_at DESC)');
+
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS support_ticket_messages (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id uuid NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+        author_type varchar(16) NOT NULL,
+        author_id uuid NULL,
+        body text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_ticket_msgs_ticket ON support_ticket_messages (ticket_id, created_at)');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');
