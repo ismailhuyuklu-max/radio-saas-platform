@@ -123,3 +123,33 @@ export function getPortalActivity() {
     '/portal/activity',
   );
 }
+
+// --- Admin-side partner management ---------------------------------------
+
+export interface PartnerCredentials {
+  username: string;
+  one_time_password: string;
+  user_id: string;
+}
+
+/** Provision a partner user for an unprovisioned station. */
+export function provisionPartner(stationId: string) {
+  return requestClient.post<{ code: number; result: PartnerCredentials }>(
+    `/stations/${stationId}/provision`,
+  );
+}
+
+/** Rotate the partner's password — returns the one-shot plaintext. */
+export function rotatePartnerPassword(stationId: string) {
+  return requestClient.post<{ code: number; result: { one_time_password: string } }>(
+    `/stations/${stationId}/rotate-password`,
+  );
+}
+
+/** Rotate all 8 stream tokens — any cached partner URL is invalidated. */
+export function rotatePartnerTokens(stationId: string) {
+  return requestClient.post<{
+    code: number;
+    result: { tokens: Record<string, string> };
+  }>(`/stations/${stationId}/rotate-tokens`);
+}

@@ -73,6 +73,8 @@ export interface StationItem {
   is_active?: boolean;
   station_token?: string;
   stream_token?: string;
+  /** Bound partner-radio user id (Faz 12+). Falsy when not provisioned yet. */
+  user_id?: string | null;
 }
 
 export interface StationSavePayload {

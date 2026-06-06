@@ -28,6 +28,11 @@ import {
   toggleStationStatus,
   updateStation,
 } from '#/api/modules/radioMedia';
+import {
+  provisionPartner,
+  rotatePartnerPassword,
+  rotatePartnerTokens,
+} from '#/api/modules/portal';
 
 const stations = ref<StationItem[]>([]);
 const loading = ref(false);
@@ -187,6 +192,81 @@ function openLink(s: StationItem) {
   linkOpen.value = true;
 }
 
+// --- Faz 17: Partner-portal management for this station ------------------
+const partnerOpen = ref(false);
+const partnerStation = ref<StationItem | null>(null);
+const partnerBusy = ref(false);
+/** One-shot credential surface — wiped when the modal closes. */
+const partnerCreds = ref<{ username?: string; password?: string } | null>(null);
+const partnerCopied = ref(false);
+
+function openPartner(s: StationItem) {
+  partnerStation.value = s;
+  partnerCreds.value = null;
+  partnerCopied.value = false;
+  partnerOpen.value = true;
+}
+function closePartner() {
+  // Wipe the one-shot password from memory the instant the operator closes
+  // the dialog. If they need it again they must rotate again.
+  partnerCreds.value = null;
+  partnerOpen.value = false;
+}
+async function doProvision() {
+  if (!partnerStation.value) return;
+  partnerBusy.value = true;
+  try {
+    const res = await provisionPartner(partnerStation.value.id);
+    partnerCreds.value = {
+      username: res.result.username,
+      password: res.result.one_time_password,
+    };
+    message.success('Partner kullanıcısı oluşturuldu.');
+  } catch (error) {
+    message.error((error as Error)?.message ?? 'Oluşturulamadı.');
+  } finally {
+    partnerBusy.value = false;
+  }
+}
+async function doRotatePassword() {
+  if (!partnerStation.value) return;
+  partnerBusy.value = true;
+  try {
+    const res = await rotatePartnerPassword(partnerStation.value.id);
+    partnerCreds.value = { password: res.result.one_time_password };
+    message.success('Şifre yenilendi.');
+  } catch (error) {
+    message.error((error as Error)?.message ?? 'Yenilenemedi.');
+  } finally {
+    partnerBusy.value = false;
+  }
+}
+async function doRotateTokens() {
+  if (!partnerStation.value) return;
+  partnerBusy.value = true;
+  try {
+    await rotatePartnerTokens(partnerStation.value.id);
+    message.success('Yayın linkleri yenilendi (8 token). Eski URL\'ler iptal edildi.');
+  } catch (error) {
+    message.error((error as Error)?.message ?? 'Token yenilenemedi.');
+  } finally {
+    partnerBusy.value = false;
+  }
+}
+async function copyCreds() {
+  const c = partnerCreds.value;
+  if (!c?.password) return;
+  const text = c.username ? `${c.username}\n${c.password}` : c.password;
+  try {
+    await navigator.clipboard.writeText(text);
+    partnerCopied.value = true;
+    setTimeout(() => (partnerCopied.value = false), 1500);
+    message.success('Kopyalandı.');
+  } catch {
+    message.error('Kopyalanamadı.');
+  }
+}
+
 async function regenToken() {
   if (!linkStation.value) return;
   linkBusy.value = true;
@@ -296,6 +376,7 @@ onMounted(loadStations);
           </label>
           <div class="stn__card-actions">
             <button class="stn__lnk" type="button" @click="openLink(s)">Link</button>
+            <button class="stn__lnk" type="button" @click="openPartner(s)">Portal</button>
             <button class="stn__lnk" type="button" @click="openEdit(s)">Düzenle</button>
             <Popconfirm title="Silinsin mi?" ok-text="Sil" cancel-text="Vazgeç" @confirm="removeStation(s.id)">
               <button class="stn__lnk is-danger" type="button">Sil</button>
@@ -347,6 +428,57 @@ onMounted(loadStations);
         <div class="stn__link-actions">
           <Button :loading="linkBusy" @click="regenToken">Token Yenile</Button>
           <Button type="primary" @click="copyLink">Kopyala</Button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Partner Portal management modal -->
+    <Modal
+      v-model:open="partnerOpen"
+      title="Partner Radyo Yönetimi"
+      :footer="null"
+      :after-close="closePartner"
+    >
+      <div class="stn__partner">
+        <p class="stn__link-name">{{ partnerStation?.name }}</p>
+
+        <!-- One-shot credentials surface — visible only after a provision /
+             password rotation. Auto-discarded when the modal closes. -->
+        <div v-if="partnerCreds" class="stn__creds">
+          <p class="stn__warn">
+            ⚠ Aşağıdaki bilgi <strong>bir kez</strong> gösterilir. Pencereyi kapatırsanız
+            bir daha okunamaz; ihtiyaç olursa <em>Şifre Yenile</em> ile yeni bir
+            tek-seferlik şifre üretebilirsiniz.
+          </p>
+          <div v-if="partnerCreds.username" class="stn__cred-row">
+            <span>Kullanıcı Adı</span><code>{{ partnerCreds.username }}</code>
+          </div>
+          <div class="stn__cred-row">
+            <span>Şifre</span><code>{{ partnerCreds.password }}</code>
+          </div>
+          <Button :type="partnerCopied ? 'default' : 'primary'" block @click="copyCreds">
+            {{ partnerCopied ? '✓ Kopyalandı' : 'Kopyala' }}
+          </Button>
+        </div>
+
+        <p v-if="!partnerStation?.user_id && !partnerCreds" class="stn__hint">
+          Bu radyonun henüz partner kullanıcısı yok. “Kullanıcı Oluştur”'a basınca
+          otomatik kullanıcı adı + güçlü şifre üretilir ve <strong>bir defa</strong> gösterilir.
+        </p>
+        <p v-else-if="!partnerCreds" class="stn__hint">
+          Radyonun partner kullanıcısı mevcut. Şifre veya yayın linklerini yenileyebilirsiniz.
+        </p>
+
+        <div class="stn__partner-actions">
+          <Button
+            v-if="!partnerStation?.user_id"
+            type="primary"
+            :loading="partnerBusy"
+            @click="doProvision"
+          >+ Kullanıcı Oluştur</Button>
+          <Button v-else :loading="partnerBusy" @click="doRotatePassword">🔑 Şifre Yenile</Button>
+          <Button :loading="partnerBusy" @click="doRotateTokens">🔗 Linkleri Yenile</Button>
+          <Button type="text" @click="closePartner">Kapat</Button>
         </div>
       </div>
     </Modal>
@@ -581,6 +713,61 @@ onMounted(loadStations);
   display: flex;
   justify-content: flex-end;
   gap: var(--sp-2);
+}
+
+/* Partner-portal management modal */
+.stn__partner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stn__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+.stn__creds {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stn__warn {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--c-warn);
+}
+.stn__cred-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stn__cred-row span {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+}
+.stn__cred-row code {
+  padding: 8px 10px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  word-break: break-all;
+  user-select: all;
+}
+.stn__partner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* Responsive switch: cards on mobile, table on >= 768 */
