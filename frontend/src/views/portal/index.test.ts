@@ -16,6 +16,12 @@ vi.mock('#/api/modules/support', async (importOriginal) => {
   };
 });
 
+vi.mock('#/api/modules/apikeys', () => ({
+  listPartnerApiKeys: vi.fn().mockResolvedValue({ result: { keys: [] } }),
+  issuePartnerApiKey: vi.fn().mockResolvedValue({ result: { record: {}, one_time_key: 'ak_test' } }),
+  revokePartnerApiKey: vi.fn().mockResolvedValue({ result: { revoked: true } }),
+}));
+
 vi.mock('#/api/modules/portal', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#/api/modules/portal')>();
   return {

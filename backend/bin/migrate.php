@@ -407,6 +407,29 @@ $pdo->exec(
 );
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ticket_msgs_ticket ON support_ticket_messages (ticket_id, created_at)');
 
+/**
+ * Faz 19 — Programmatic API keys per partner station. The master prompt's
+ * KAYIT SİSTEMİ lists "API Anahtarı" + "Güvenlik Tokenı" as separate items;
+ * stream tokens cover signed-URL feeds, this table covers /api/v1/* calls
+ * from a partner's own server-side integration. Hashed at rest (sha256).
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS partner_api_keys (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        station_id uuid NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+        name varchar(120) NOT NULL,
+        key_hash varchar(128) NOT NULL UNIQUE,
+        key_prefix varchar(16) NOT NULL,
+        scopes jsonb NOT NULL DEFAULT '[]'::jsonb,
+        last_used_at timestamptz NULL,
+        last_used_ip varchar(64) NULL,
+        revoked_at timestamptz NULL,
+        created_by uuid NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_api_keys_station ON partner_api_keys (station_id, revoked_at)');
+
 // Province- and campaign-keyed plans.
 $pdo->exec("ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS province varchar(64) NULL");
 $pdo->exec('ALTER TABLE content_plans ADD COLUMN IF NOT EXISTS campaign_id uuid NULL');

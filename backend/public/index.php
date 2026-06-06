@@ -13,6 +13,7 @@ use RadioSaaS\Controller\MonitoringController;
 use RadioSaaS\Controller\PlanningController;
 use RadioSaaS\Controller\ReportController;
 use RadioSaaS\Controller\PartnerAdminController;
+use RadioSaaS\Controller\PartnerApiKeyController;
 use RadioSaaS\Controller\PartnerPortalController;
 use RadioSaaS\Controller\SignedFeedController;
 use RadioSaaS\Controller\StationController;
@@ -34,10 +35,12 @@ use RadioSaaS\Repository\RegionRepository;
 use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
+use RadioSaaS\Repository\PartnerApiKeyRepository;
 use RadioSaaS\Repository\StreamTokenRepository;
 use RadioSaaS\Repository\SupportTicketRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Service\ApiKeyService;
 use RadioSaaS\Service\RadioCredentialService;
 use RadioSaaS\Service\StreamTokenService;
 use RadioSaaS\Service\MediaFeedService;
@@ -513,6 +516,9 @@ $signedFeedController = new SignedFeedController($streamTokenRepository, $stream
 $partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService);
 $supportTicketRepository = new SupportTicketRepository($pdo);
 $supportController = new SupportController($adminAuthenticator, $supportTicketRepository, $auditLogRepository);
+$partnerApiKeyRepository = new PartnerApiKeyRepository($pdo);
+$apiKeyService = new ApiKeyService($partnerApiKeyRepository);
+$partnerApiKeyController = new PartnerApiKeyController($adminAuthenticator, $partnerApiKeyRepository, $apiKeyService, $auditLogRepository);
 $accessController = new AccessController($adminAuthenticator, $userRepository, $auditLogRepository);
 $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignRepository, $auditLogRepository);
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
@@ -546,6 +552,25 @@ if ($authViaCookie && $isMutating && !in_array($path, $csrfExemptPaths, true)) {
 // every endpoint that reads Authorization works without the token living in JS.
 if ($authViaCookie) {
     $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $_COOKIE['radio_session'];
+}
+
+// Faz 19 — Programmatic API key. If the caller passes X-API-Key, verify it
+// and promote the partner user's session token to a Bearer so downstream
+// controllers see a normal authenticated request. This makes every
+// /portal/* endpoint usable from a partner's own server-side integration
+// without keeping a browser session alive.
+$apiKeyHeader = $_SERVER['HTTP_X_API_KEY'] ?? '';
+if ($apiKeyHeader !== '' && empty($_COOKIE['radio_session'])) {
+    $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+    $row = $apiKeyService->verify((string) $apiKeyHeader, $clientIp);
+    if ($row !== null) {
+        $partnerUser = $userRepository->findByStation((string) $row['station_id']);
+        if ($partnerUser !== null) {
+            $session = $adminSessionRepository->create((string) $partnerUser['id']);
+            $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $session;
+        }
+    }
+    // Invalid key → don't set Authorization; controllers will reject with 401.
 }
 
 try {
@@ -816,6 +841,33 @@ try {
     }
     if ($method === 'POST' && preg_match('#^/api/v1/portal/support/([^/]+)/message$#', $path, $matches)) {
         $supportController->partnerReply($matches[1]);
+        return;
+    }
+
+    // Partner API keys — admin side.
+    if ($method === 'GET' && preg_match('#^/api/v1/stations/([^/]+)/api-keys$#', $path, $matches)) {
+        $partnerApiKeyController->adminList($matches[1]);
+        return;
+    }
+    if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/api-keys$#', $path, $matches)) {
+        $partnerApiKeyController->adminIssue($matches[1]);
+        return;
+    }
+    if ($method === 'DELETE' && preg_match('#^/api/v1/stations/([^/]+)/api-keys/([^/]+)$#', $path, $matches)) {
+        $partnerApiKeyController->adminRevoke($matches[1], $matches[2]);
+        return;
+    }
+    // Partner API keys — partner (own tenant).
+    if ($method === 'GET' && $path === '/api/v1/portal/api-keys') {
+        $partnerApiKeyController->portalList();
+        return;
+    }
+    if ($method === 'POST' && $path === '/api/v1/portal/api-keys') {
+        $partnerApiKeyController->portalIssue();
+        return;
+    }
+    if ($method === 'DELETE' && preg_match('#^/api/v1/portal/api-keys/([^/]+)$#', $path, $matches)) {
+        $partnerApiKeyController->portalRevoke($matches[1]);
         return;
     }
 

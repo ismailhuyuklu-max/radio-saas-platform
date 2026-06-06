@@ -30,8 +30,14 @@ import {
   listSupportTickets,
   replySupportTicket,
 } from '#/api/modules/support';
+import {
+  type PartnerApiKey,
+  issuePartnerApiKey,
+  listPartnerApiKeys,
+  revokePartnerApiKey,
+} from '#/api/modules/apikeys';
 
-type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support';
+type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support' | 'apikeys';
 
 const loading = ref(true);
 const card = ref<PortalCard | null>(null);
@@ -144,6 +150,46 @@ const categoryOptions = (Object.keys(CATEGORY_LABELS) as SupportCategory[]).map(
   label: CATEGORY_LABELS[k],
 }));
 
+// --- API keys tab state ---------------------------------------------------
+const apiKeys = ref<PartnerApiKey[]>([]);
+const newApiKeyName = ref('');
+const oneTimeApiKey = ref<string | null>(null);
+async function loadApiKeys() {
+  try {
+    const res = await listPartnerApiKeys();
+    apiKeys.value = res?.result?.keys ?? [];
+  } catch {
+    apiKeys.value = [];
+  }
+}
+async function issueApiKey() {
+  if (!newApiKeyName.value.trim()) {
+    message.warning('Anahtar için isim girin.');
+    return;
+  }
+  try {
+    const res = await issuePartnerApiKey(newApiKeyName.value.trim());
+    oneTimeApiKey.value = res?.result?.one_time_key ?? null;
+    newApiKeyName.value = '';
+    await loadApiKeys();
+    message.success('API anahtarı oluşturuldu — yalnızca bir kez gösterilir.');
+  } catch {
+    message.error('Anahtar oluşturulamadı.');
+  }
+}
+async function revokeApiKey(id: string) {
+  try {
+    await revokePartnerApiKey(id);
+    await loadApiKeys();
+    message.success('Anahtar iptal edildi.');
+  } catch {
+    message.error('İptal başarısız.');
+  }
+}
+function clearOneTimeApiKey() {
+  oneTimeApiKey.value = null;
+}
+
 async function copy(text: string, key: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -168,7 +214,10 @@ async function signOut() {
   window.location.href = '/login';
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await loadApiKeys();
+});
 </script>
 
 <template>
@@ -239,6 +288,12 @@ onMounted(load);
         :class="{ 'is-active': tab === 'support' }"
         @click="tab = 'support'"
       >🎫 Destek</button>
+      <button
+        type="button"
+        class="prt__tab"
+        :class="{ 'is-active': tab === 'apikeys' }"
+        @click="tab = 'apikeys'"
+      >🔑 API Anahtarları</button>
     </nav>
 
     <!-- LINKS -->
@@ -312,7 +367,7 @@ onMounted(load);
     </section>
 
     <!-- SUPPORT -->
-    <section v-else class="prt__section">
+    <section v-else-if="tab === 'support'" class="prt__section">
       <div class="prt__support-head">
         <p class="prt__hint" style="margin: 0">
           Teknik destek, yayın sorunu, reklam/haber sorunu veya genel talep oluşturun.
@@ -386,6 +441,50 @@ onMounted(load);
           <button type="button" class="prt__primary" @click="sendReply">Gönder</button>
         </div>
       </div>
+    </section>
+
+    <!-- API KEYS -->
+    <section v-else class="prt__section">
+      <p class="prt__hint">
+        Programatik erişim için API anahtarları. Anahtarı sunucu-tarafı entegrasyonunuzda
+        <code>X-API-Key</code> başlığı olarak gönderin. Anahtar yalnızca oluşturma anında
+        bir kez gösterilir; kaybederseniz iptal edip yenisini üretin.
+      </p>
+
+      <div v-if="oneTimeApiKey" class="prt__creds-once ui-card">
+        <p class="prt__warn">⚠ Bu anahtar yalnızca <strong>bir kez</strong> gösterilecek:</p>
+        <code class="prt__key">{{ oneTimeApiKey }}</code>
+        <button type="button" class="prt__primary" @click="clearOneTimeApiKey">Anladım, kapat</button>
+      </div>
+
+      <div class="prt__new-key ui-card">
+        <label>
+          <span>Anahtar Adı</span>
+          <input
+            v-model="newApiKeyName"
+            class="prt__input"
+            placeholder="Örn. Yayın Otomasyonu"
+            maxlength="120"
+          >
+        </label>
+        <button type="button" class="prt__primary" @click="issueApiKey">+ Anahtar Oluştur</button>
+      </div>
+
+      <div v-if="apiKeys.length" class="prt__keys ui-card">
+        <div v-for="k in apiKeys" :key="k.id" class="prt__key-row">
+          <div class="prt__key-info">
+            <strong>{{ k.name }}</strong>
+            <code>{{ k.key_prefix }}…</code>
+            <small>
+              Oluşturma {{ fmtTime(k.created_at) }}
+              <template v-if="k.last_used_at"> · Son kullanım {{ fmtTime(k.last_used_at) }}</template>
+              <template v-if="k.last_used_ip"> ({{ k.last_used_ip }})</template>
+            </small>
+          </div>
+          <button type="button" class="prt__revoke" @click="revokeApiKey(k.id)">İptal</button>
+        </div>
+      </div>
+      <p v-else class="prt__empty">Aktif API anahtarınız yok.</p>
     </section>
 
     <p v-if="loading" class="prt__loading">Yükleniyor…</p>
@@ -916,6 +1015,94 @@ onMounted(load);
     grid-template-columns: 1fr;
     gap: 4px;
   }
+  .prt__key-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* ---- API keys ---- */
+.prt__creds-once {
+  padding: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prt__warn {
+  margin: 0;
+  font-size: 12px;
+  color: var(--c-warn);
+}
+.prt__key {
+  display: block;
+  padding: 10px 12px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  word-break: break-all;
+  user-select: all;
+}
+.prt__new-key {
+  padding: 14px;
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.prt__new-key label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+.prt__keys {
+  padding: 6px 12px;
+}
+.prt__key-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--c-line);
+  align-items: center;
+}
+.prt__key-row:last-child {
+  border-bottom: none;
+}
+.prt__key-info strong {
+  color: var(--c-text);
+  margin-right: 8px;
+}
+.prt__key-info code {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--c-info);
+}
+.prt__key-info small {
+  display: block;
+  margin-top: 2px;
+  color: var(--c-text-3);
+  font-size: 11px;
+}
+.prt__revoke {
+  padding: 6px 12px;
+  border: 1px solid var(--c-bad);
+  background: transparent;
+  color: var(--c-bad);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.prt__revoke:hover {
+  background: rgba(251, 113, 133, 0.1);
 }
 
 /* ---- Mobile (≤390px) ---- */
