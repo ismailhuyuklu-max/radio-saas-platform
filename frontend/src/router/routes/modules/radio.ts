@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           perm: 'sponsors:view',
           icon: 'mdi:badge-account-horizontal-outline',
-          title: 'Sponsors',
+          title: 'Sponsorlar',
           keepAlive: true,
           authCode: 'radio:sponsors:view',
         },
@@ -78,7 +78,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           perm: 'stations:view',
           icon: 'mdi:radio-tower',
-          title: 'Stations',
+          title: 'İstasyonlar',
           keepAlive: true,
           authCode: 'radio:stations:view',
         },

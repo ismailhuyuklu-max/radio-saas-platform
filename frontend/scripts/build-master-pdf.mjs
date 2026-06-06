@@ -350,12 +350,16 @@ const SCREENS = [
 // =============================================================================
 // Chapter assembly
 // =============================================================================
-function chapterShell(num, title, body) {
+function chapterShell(num, title, body, subtitle = '') {
+  const padded = String(num).padStart(2, '0');
   return `
     <section class="chapter" id="c${num}">
       <header class="chapter-head">
-        <span class="chapter-num">Bölüm ${num}</span>
-        <h1>${title}</h1>
+        <div class="chapter-num">${padded}</div>
+        <div>
+          <h1>${title}</h1>
+          ${subtitle ? `<p class="subtitle">${subtitle}</p>` : ''}
+        </div>
       </header>
       ${body}
     </section>
@@ -560,46 +564,48 @@ function codeBlock(lang, content) {
 function screenshotPage(screen, shotData) {
   const data = shotData[`${screen.role}/${screen.key}`] || {};
   const route = screen.role === 'partner' ? '/portal' : '/radio-platform/' + screen.key.replace(/^\d+-/, '');
-  const title = (vp, sub) => `
+  const isPartner = screen.role === 'partner';
+  const tag = isPartner ? 'PARTNER' : 'ADMIN';
+  const header = `
     <header class="screen-header">
-      <span class="screen-tag">${screen.role === 'partner' ? 'PARTNER' : 'ADMIN'}</span>
+      <span class="screen-tag ${isPartner ? 'partner' : ''}">${tag}</span>
       <h2>${screen.title}</h2>
-      <p class="screen-route"><code>${route}</code> · ${sub}</p>
+      <span class="route">${route}</span>
     </header>
   `;
-  const full = (key, viewport, klass) =>
+
+  const frame = (key, label, klass) =>
     data[key]
-      ? `<figure class="shot-full ${klass}"><img src="${data[key]}" alt="${screen.title} - ${viewport}"/><figcaption>${viewport}</figcaption></figure>`
-      : `<div class="shot-full missing">— ${viewport} ekran görüntüsü yok —</div>`;
+      ? `<figure class="shot-frame ${klass}"><img src="${data[key]}" alt="${screen.title} — ${label}"/><figcaption>${label}</figcaption></figure>`
+      : `<div class="shot-frame ${klass}" style="padding:18mm;background:#f1f5f9;color:#94a3b8;text-align:center;font-size:9pt">— ${label} ekran görüntüsü yok —</div>`;
+
+  // Page 1 — visual: full-width desktop hero + tablet/mobile row + concise intro.
+  // Page 2 — meta künye (Amaç / Senaryo / Roller / İş Akışı + Teknik / Veri /
+  // API / Performans / Geliştirme).
   return `
-    <section class="screen-page" id="screen-${screen.key}-desktop">
-      ${title('Desktop 1440 × 900', 'Desktop görünümü (full)')}
-      ${full('desktop', 'Desktop 1440 × 900', 'is-desktop')}
-    </section>
-    <section class="screen-page" id="screen-${screen.key}-tablet">
-      ${title('Tablet 820 × 1180', 'Tablet görünümü')}
-      ${full('tablet', 'Tablet 820 × 1180', 'is-tablet')}
-    </section>
-    <section class="screen-page" id="screen-${screen.key}-mobile">
-      ${title('Mobile 390 × 844', 'Mobil görünüm (iPhone / Pixel sınıfı)')}
-      <div style="display:flex;justify-content:center">
-        <div style="width:100mm">${full('mobile', 'Mobile 390 × 844', 'is-mobile')}</div>
+    <section class="screen-pack">
+      ${header}
+      ${frame('desktop', 'Desktop 1440 × 900', 'is-desktop')}
+      <div class="shot-row-two">
+        ${frame('tablet', 'Tablet 820 × 1180', 'is-tablet')}
+        ${frame('mobile', 'Mobile 390 × 844', 'is-mobile')}
       </div>
     </section>
-    <section class="screen-page" id="screen-${screen.key}-meta">
-      ${title('Ekran Künyesi', 'Amaç · Senaryo · Roller · İş Akışı · Teknik · Veri · API · Performans · Öneriler')}
-      <table class="meta">
-        <tr><th>Ekran Adı</th><td>${screen.title}</td></tr>
-        <tr><th>Ekranın Amacı</th><td>${screen.purpose}</td></tr>
-        <tr><th>Kullanım Senaryosu</th><td>${screen.scenario}</td></tr>
-        <tr><th>Yetkili Roller</th><td>${screen.roles}</td></tr>
-        <tr><th>İş Akışı</th><td>${screen.workflow}</td></tr>
-        <tr><th>Teknik Açıklama</th><td>${screen.technical}</td></tr>
-        <tr><th>Veri Kaynakları</th><td>${screen.data}</td></tr>
-        <tr><th>API Bağlantıları</th><td><code>${screen.apis}</code></td></tr>
-        <tr><th>Performans Notları</th><td>${screen.perf}</td></tr>
-        <tr><th>Geliştirme Önerileri</th><td>${screen.recommendations}</td></tr>
-      </table>
+
+    <section class="screen-pack">
+      ${header}
+      <div class="meta-grid">
+        <div class="full"><strong>Ekranın Amacı</strong>${screen.purpose}</div>
+        <div class="full"><strong>Kullanım Senaryosu</strong>${screen.scenario}</div>
+        <div class="lbl">Yetkili Roller</div><div class="val">${screen.roles}</div>
+        <div class="lbl last">Rota</div><div class="val last"><code>${route}</code></div>
+        <div class="full"><strong>İş Akışı</strong>${screen.workflow}</div>
+        <div class="full"><strong>Teknik Açıklama</strong>${screen.technical}</div>
+        <div class="full"><strong>Veri Kaynakları</strong>${screen.data}</div>
+        <div class="full"><strong>API Bağlantıları</strong><code>${screen.apis}</code></div>
+        <div class="full"><strong>Performans Notları</strong>${screen.perf}</div>
+        <div class="full last"><strong>Geliştirme Önerileri</strong>${screen.recommendations}</div>
+      </div>
     </section>
   `;
 }
@@ -1920,102 +1926,338 @@ async function buildHtml() {
   <meta charset="UTF-8" />
   <title>Aircast Broadcast Platform — Master Documentation</title>
   <style>
-    @page { size: A4; margin: 18mm 14mm 22mm 14mm; }
+    /* Page setup. Cover keeps zero margin so the gradient bleeds full A4;
+       every other page reserves room for the chrome header + footer. */
+    @page { size: A4; margin: 22mm 14mm 22mm 14mm; }
     @page :first { margin: 0; }
+
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      color: #111827;
-      line-height: 1.5;
-      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.55;
+      font-size: 10.5pt;
       margin: 0;
+      -webkit-print-color-adjust: exact;
     }
-    h1, h2, h3, h4 { color: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif; }
-    h1 { font-size: 28pt; margin-top: 0; line-height: 1.1; }
-    h2 { font-size: 18pt; margin: 18px 0 8px; }
-    h3 { font-size: 13pt; margin: 12px 0 6px; color: #e11d48; }
+    h1, h2, h3, h4 { color: #0b1224; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; letter-spacing: -0.01em; }
+    h1 { font-size: 26pt; margin-top: 0; line-height: 1.12; }
+    h2 { font-size: 16pt; margin: 14px 0 6px; }
+    h3 { font-size: 12pt; margin: 10px 0 4px; color: #b91c4b; text-transform: uppercase; letter-spacing: 0.06em; }
     p, li, td, th { font-size: 10pt; }
-    code { font-family: 'Fira Code', Consolas, monospace; font-size: 9pt; color: #0f172a; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+    p { margin: 6px 0; }
+    code { font-family: 'Fira Code', Consolas, monospace; font-size: 9pt; color: #0b1224; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; }
+    a { color: #b91c4b; text-decoration: none; }
     table { border-collapse: collapse; width: 100%; margin: 8px 0; }
-    th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; vertical-align: top; }
-    th { background: #f1f5f9; font-weight: 700; }
+    th, td { border: 1px solid #e2e8f0; padding: 6px 9px; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #0b1224; }
     ul { padding-left: 20px; margin: 6px 0; }
     li { margin: 2px 0; }
+    hr { border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0; }
+
+    /* ===== Cover ===== */
     .cover {
       page-break-after: always;
+      position: relative;
       height: 297mm;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #e11d48 100%);
+      width: 210mm;
+      background:
+        radial-gradient(circle at 92% 8%, rgba(225, 29, 72, 0.55) 0%, rgba(225, 29, 72, 0) 42%),
+        radial-gradient(circle at 12% 92%, rgba(56, 189, 248, 0.30) 0%, rgba(56, 189, 248, 0) 38%),
+        linear-gradient(135deg, #050a18 0%, #0b1224 55%, #1a0a18 100%);
       color: #fff;
-      padding: 36mm 20mm;
+      padding: 36mm 22mm;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      overflow: hidden;
     }
-    .cover h1 { color: #fff; font-size: 40pt; margin-bottom: 4mm; }
-    .cover .sub { color: #fb7185; font-size: 16pt; font-weight: 700; }
-    .cover .desc { color: #e2e8f0; font-size: 12pt; margin-top: 12mm; max-width: 140mm; line-height: 1.6; }
-    .cover .meta { color: #cbd5e1; font-size: 10pt; }
-    .cover .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin-top: 8mm; }
-    .toc { page-break-after: always; padding: 8mm 4mm; }
-    .toc h1 { font-size: 24pt; color: #e11d48; }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; width: 110mm; height: 297mm;
+      background: linear-gradient(180deg, rgba(225,29,72,0.0) 0%, rgba(225,29,72,0.07) 60%, rgba(225,29,72,0.18) 100%);
+      pointer-events: none;
+    }
+    .cover-grid-bg {
+      position: absolute; inset: 0; opacity: 0.12; pointer-events: none;
+    }
+    .cover-mark {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .cover-mark .logo {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+      box-shadow: 0 14px 30px rgba(225, 29, 72, 0.45);
+      display: grid; place-items: center; color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 26pt;
+    }
+    .cover-mark .word { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .cover-mark .word .brand { font-size: 18pt; font-weight: 900; letter-spacing: -0.02em; color: #fff; line-height: 1; }
+    .cover-mark .word .tag { font-size: 9pt; font-weight: 700; letter-spacing: 0.18em; color: #fb7185; text-transform: uppercase; margin-top: 4px; }
+
+    .cover .sub {
+      display: inline-block; padding: 4px 12px; border-radius: 999px;
+      background: rgba(251, 113, 133, 0.16); color: #fda4af;
+      font-size: 9pt; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+      border: 1px solid rgba(251, 113, 133, 0.4);
+    }
+    .cover h1 {
+      color: #fff;
+      font-size: 38pt;
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+      margin: 6mm 0 0;
+      max-width: 150mm;
+    }
+    .cover .h-accent { color: #fb7185; }
+    .cover .desc {
+      color: #cbd5e1; font-size: 11pt; line-height: 1.7;
+      margin-top: 10mm; max-width: 150mm;
+    }
+    .cover .kpi-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm;
+      margin-top: 10mm; max-width: 170mm;
+    }
+    .cover .kpi {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px; padding: 6mm 5mm;
+    }
+    .cover .kpi .v { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22pt; font-weight: 900; color: #fff; line-height: 1; }
+    .cover .kpi .l { font-size: 8pt; color: #94a3b8; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3mm; }
+    .cover .meta-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm;
+      padding-top: 10mm; margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 9pt; color: #cbd5e1;
+    }
+    .cover .meta-row strong { display: block; color: #fff; font-weight: 700; margin-bottom: 2mm; letter-spacing: 0.04em; font-size: 8pt; text-transform: uppercase; }
+
+    /* ===== TOC ===== */
+    .toc { page-break-after: always; padding: 4mm 4mm; }
+    .toc h1 { font-size: 24pt; color: #b91c4b; border-bottom: 3px solid #b91c4b; padding-bottom: 6mm; margin-bottom: 8mm; }
     .toc ol { list-style: none; padding: 0; counter-reset: chap; }
-    .toc li { counter-increment: chap; margin: 4px 0; font-size: 11pt; padding-left: 8mm; position: relative; }
-    .toc li::before { content: counter(chap) ". "; position: absolute; left: 0; color: #e11d48; font-weight: 800; }
-    .chapter { page-break-before: always; padding: 4mm 0; }
-    .chapter-head { border-bottom: 3px solid #e11d48; padding-bottom: 4mm; margin-bottom: 8mm; }
-    .chapter-num { display: inline-block; padding: 2px 10px; background: #e11d48; color: #fff; font-size: 9pt; font-weight: 800; border-radius: 4px; letter-spacing: 0.06em; margin-bottom: 2mm; }
-    .chapter h1 { font-size: 24pt; }
-    .block { margin: 8mm 0; }
-    .block h3 { border-left: 4px solid #e11d48; padding-left: 8px; }
+    .toc li {
+      counter-increment: chap; margin: 4px 0; font-size: 10.5pt; padding: 4px 4px 4px 14mm;
+      position: relative; border-bottom: 1px dotted #e2e8f0;
+    }
+    .toc li::before {
+      content: counter(chap, decimal-leading-zero);
+      position: absolute; left: 0; top: 4px;
+      color: #b91c4b; font-weight: 900; font-size: 11pt; width: 12mm;
+    }
+
+    /* ===== Chapter shells (regular) ===== */
+    .chapter { page-break-before: always; padding: 0; }
+    .chapter-head {
+      display: flex; gap: 6mm; align-items: flex-start;
+      border-bottom: 3px solid #b91c4b;
+      padding-bottom: 5mm; margin-bottom: 8mm;
+    }
+    .chapter-num {
+      flex: 0 0 auto;
+      width: 24mm; height: 24mm;
+      background: linear-gradient(135deg, #fb7185 0%, #b91c4b 100%);
+      color: #fff;
+      border-radius: 14px;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 22pt;
+      box-shadow: 0 8px 20px rgba(185, 28, 75, 0.18);
+    }
+    .chapter h1 { font-size: 22pt; margin: 0 0 2mm; }
+    .chapter .subtitle { color: #64748b; font-size: 11pt; margin: 0; max-width: 145mm; }
+    .block { margin: 6mm 0; page-break-inside: avoid; }
+    .block h3 { border-left: 4px solid #b91c4b; padding-left: 10px; }
     .ktable { font-size: 9pt; }
-    .ktable th { background: #1e293b; color: #fff; }
-    .screen { page-break-before: always; margin: 0; padding-bottom: 8mm; }
-    .screen-page { page-break-before: always; padding: 4mm 0; }
-    .screen-header { border-bottom: 2px solid #e11d48; padding-bottom: 3mm; margin-bottom: 6mm; }
-    .screen-header h2 { color: #0f172a; margin: 2mm 0 1mm; }
-    .screen-tag { display: inline-block; padding: 2px 8px; background: #e11d48; color: #fff; font-size: 8pt; font-weight: 800; border-radius: 4px; letter-spacing: 0.06em; }
-    .shot-full img { width: 100%; max-height: 235mm; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #0f172a; }
-    .shot-full figcaption { font-size: 9pt; color: #64748b; text-align: center; margin-top: 3mm; font-weight: 600; }
-    .shot-pair { display: grid; grid-template-columns: 1fr 60mm; gap: 6mm; }
-    .shot-pair .shot-full img { max-height: 220mm; }
-    .codeblock { background: #0f172a; color: #e2e8f0; padding: 6mm; border-radius: 4px; font-family: 'Fira Code', Consolas, monospace; font-size: 8.5pt; line-height: 1.45; overflow-wrap: break-word; white-space: pre-wrap; page-break-inside: avoid; }
+    .ktable th { background: #0f172a; color: #fff; }
+
+    /* ===== Screens (compact 2-page layout per screen) =====
+       Page 1: large desktop + tablet/mobile side-by-side + screen header
+       Page 2: full metadata card (Künye) + technical details */
+    .screen-pack { page-break-before: always; }
+    .screen-header {
+      display: flex; align-items: center; gap: 4mm;
+      background: linear-gradient(90deg, #0b1224 0%, #1a1f33 100%);
+      color: #fff;
+      padding: 4mm 6mm;
+      border-radius: 8px;
+      margin-bottom: 6mm;
+    }
+    .screen-tag {
+      display: inline-block; padding: 3px 10px;
+      background: #b91c4b; color: #fff;
+      font-size: 8pt; font-weight: 900; letter-spacing: 0.1em;
+      border-radius: 999px; text-transform: uppercase;
+    }
+    .screen-tag.partner { background: #1d4ed8; }
+    .screen-header h2 {
+      color: #fff; margin: 0; font-size: 14pt;
+      letter-spacing: -0.01em;
+    }
+    .screen-header .route {
+      margin-left: auto; font-family: 'Fira Code', Consolas, monospace;
+      font-size: 9pt; color: #cbd5e1; background: rgba(255,255,255,0.06);
+      padding: 4px 10px; border-radius: 6px;
+    }
+
+    .shot-frame {
+      background: #0b1224; border: 1px solid #1f2937; border-radius: 10px;
+      padding: 6px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      page-break-inside: avoid;
+    }
+    .shot-frame img {
+      width: 100%; display: block; border-radius: 6px;
+      max-height: 170mm; object-fit: contain;
+    }
+    .shot-frame.is-tablet img,
+    .shot-frame.is-mobile img { max-height: 110mm; }
+    .shot-frame figcaption {
+      color: #94a3b8; font-size: 8pt; text-align: center;
+      margin-top: 4px; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    .shot-row-two {
+      display: grid; grid-template-columns: 1fr 60mm; gap: 5mm;
+      margin-top: 5mm;
+    }
+    .shot-row-two .shot-frame.is-mobile img { max-height: 105mm; }
+
+    .meta-grid {
+      display: grid; grid-template-columns: 38mm 1fr 38mm 1fr;
+      gap: 0; margin-top: 6mm; border: 1px solid #e2e8f0; border-radius: 8px;
+      overflow: hidden;
+    }
+    .meta-grid .lbl {
+      background: #f1f5f9; padding: 6px 10px; font-size: 9pt; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase; color: #475569;
+      border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;
+    }
+    .meta-grid .val {
+      padding: 6px 10px; font-size: 9.5pt; line-height: 1.55;
+      border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;
+      color: #1f2937;
+    }
+    .meta-grid .lbl.last, .meta-grid .val.last { border-bottom: none; }
+    .meta-grid .val.last { border-right: none; }
+    .meta-grid .full {
+      grid-column: 1 / -1; padding: 6px 10px; font-size: 9.5pt; line-height: 1.55;
+      border-bottom: 1px solid #e2e8f0; color: #1f2937; background: #fff;
+    }
+    .meta-grid .full.last { border-bottom: none; }
+    .meta-grid .full strong {
+      display: block; font-size: 8.5pt; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #b91c4b; margin-bottom: 2px;
+    }
+
+    .codeblock {
+      background: #0b1224; color: #e2e8f0; padding: 6mm;
+      border-radius: 8px; font-family: 'Fira Code', Consolas, monospace;
+      font-size: 8.5pt; line-height: 1.5; overflow-wrap: break-word;
+      white-space: pre-wrap; page-break-inside: avoid;
+      border: 1px solid #1f2937;
+    }
     .codeblock code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
-    .screen h2 { color: #e11d48; }
-    .screen-route { font-size: 9pt; color: #64748b; margin-top: 0; }
-    .shots { margin: 6mm 0; }
-    .shots .shot { margin: 4mm 0; page-break-inside: avoid; }
-    .shots .shot img { width: 100%; max-height: 130mm; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; }
-    .shots .shot figcaption { font-size: 8pt; color: #64748b; text-align: center; margin-top: 2px; }
-    .shots .shot.missing { padding: 16mm; background: #f1f5f9; border: 1px dashed #cbd5e1; color: #64748b; font-size: 9pt; text-align: center; }
-    .shot-row { display: flex; gap: 4mm; }
-    .shot-row .shot { flex: 1; }
-    .shot-row .shot img { max-height: 90mm; }
-    .meta { font-size: 9pt; }
-    .meta th { width: 30mm; background: #f1f5f9; }
+
+    /* KPI / metric strip used in chapters 1/5/17/etc. */
+    .kpi-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm;
+      margin: 6mm 0;
+    }
+    .kpi-card {
+      background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 5mm; text-align: center;
+    }
+    .kpi-card .v { font-size: 18pt; font-weight: 900; color: #b91c4b; line-height: 1; }
+    .kpi-card .l { font-size: 8pt; color: #475569; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3mm; }
   </style>
 </head>
 <body>
   <!-- Cover -->
   <section class="cover">
-    <div>
-      <div class="sub">AIRCAST PRO · BROADCAST PLATFORM</div>
-      <h1>Enterprise Broadcast Management Platform</h1>
-      <h1 style="font-size: 22pt; color: #fb7185;">Master Documentation</h1>
-      <p class="desc">
-        Türkiye genelinde 7 bölge, 81 il ve 500+ partner radyo için
-        haber, spor, ekonomi, hava durumu, sponsor takdimi ve ticari reklamların
-        merkezi olarak planlandığı, üretildiği ve dağıtıldığı multi-tenant SaaS
-        platformunun yatırımcı, ürün, mimari, kullanıcı, sistem yöneticisi,
-        API ve kalite dokümantasyonunun tek dosya halinde sunumu.
-      </p>
-    </div>
-    <div class="meta">
-      <div class="meta-grid">
-        <div><strong>Doküman Türü</strong><br/>Master Technical &amp; Investor Documentation</div>
-        <div><strong>Sürüm</strong><br/>1.0 — ${new Date().toISOString().slice(0, 10)}</div>
-        <div><strong>Gizlilik</strong><br/>Şirket İçi · Yatırımcıya Açık</div>
-        <div><strong>Hedef Kitle</strong><br/>Yatırımcılar · Ürün · Teknik · Satış · QA · DevOps</div>
+    <!-- SVG decoration: faint grid + waveform suggests broadcast audio -->
+    <svg class="cover-grid-bg" viewBox="0 0 210 297" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="6" height="6" patternUnits="userSpaceOnUse">
+          <path d="M 6 0 L 0 0 0 6" fill="none" stroke="#ffffff" stroke-width="0.15" />
+        </pattern>
+      </defs>
+      <rect width="210" height="297" fill="url(#grid)" />
+      <!-- Stylized broadcast waveform across the lower third -->
+      <g stroke="#fb7185" stroke-width="0.6" stroke-linecap="round" opacity="0.55">
+        <line x1="14" y1="210" x2="14" y2="218" />
+        <line x1="20" y1="206" x2="20" y2="222" />
+        <line x1="26" y1="200" x2="26" y2="228" />
+        <line x1="32" y1="208" x2="32" y2="220" />
+        <line x1="38" y1="196" x2="38" y2="232" />
+        <line x1="44" y1="186" x2="44" y2="242" />
+        <line x1="50" y1="200" x2="50" y2="228" />
+        <line x1="56" y1="208" x2="56" y2="220" />
+        <line x1="62" y1="190" x2="62" y2="238" />
+        <line x1="68" y1="178" x2="68" y2="250" />
+        <line x1="74" y1="194" x2="74" y2="234" />
+        <line x1="80" y1="204" x2="80" y2="224" />
+        <line x1="86" y1="188" x2="86" y2="240" />
+        <line x1="92" y1="182" x2="92" y2="246" />
+        <line x1="98" y1="200" x2="98" y2="228" />
+        <line x1="104" y1="210" x2="104" y2="218" />
+        <line x1="110" y1="196" x2="110" y2="232" />
+        <line x1="116" y1="186" x2="116" y2="242" />
+        <line x1="122" y1="200" x2="122" y2="228" />
+        <line x1="128" y1="208" x2="128" y2="220" />
+        <line x1="134" y1="190" x2="134" y2="238" />
+        <line x1="140" y1="178" x2="140" y2="250" />
+        <line x1="146" y1="194" x2="146" y2="234" />
+        <line x1="152" y1="204" x2="152" y2="224" />
+        <line x1="158" y1="188" x2="158" y2="240" />
+        <line x1="164" y1="200" x2="164" y2="228" />
+        <line x1="170" y1="210" x2="170" y2="218" />
+        <line x1="176" y1="196" x2="176" y2="232" />
+        <line x1="182" y1="186" x2="182" y2="242" />
+        <line x1="188" y1="200" x2="188" y2="228" />
+        <line x1="194" y1="208" x2="194" y2="220" />
+      </g>
+      <!-- Türkiye outline silhouette, abstract -->
+      <path d="M 138 36 L 152 32 L 168 36 L 178 42 L 184 50 L 188 60 L 184 70 L 178 74 L 168 76 L 158 74 L 148 70 L 142 64 L 138 56 Z"
+            fill="none" stroke="#fb7185" stroke-width="0.4" opacity="0.45" />
+    </svg>
+
+    <!-- Brand mark -->
+    <div class="cover-mark">
+      <div class="logo">A</div>
+      <div class="word">
+        <div class="brand">Aircast Pro</div>
+        <div class="tag">Broadcast Platform</div>
       </div>
+    </div>
+
+    <!-- Title + descriptor -->
+    <div>
+      <span class="sub">Enterprise Master Documentation · v1.0</span>
+      <h1>Türkiye'nin Yayıncılık Omurgası<br/><span class="h-accent">Tek Dosyada Tüm Sistem</span></h1>
+      <p class="desc">
+        7 bölge, 81 il ve 500+ partner radyo için haber, spor, ekonomi, hava durumu,
+        sponsor takdimleri ve ticari reklamların merkezden planlanıp üretildiği
+        ve dağıtıldığı multi-tenant SaaS platformunun yatırımcı, ürün, mimari,
+        kullanıcı, sistem yöneticisi, API ve kalite belgesi.
+      </p>
+
+      <!-- KPI strip — facts you can see at a glance -->
+      <div class="kpi-strip">
+        <div class="kpi"><div class="v">29</div><div class="l">Faz · Sıfırdan Üretim</div></div>
+        <div class="kpi"><div class="v">500+</div><div class="l">Partner Radyo</div></div>
+        <div class="kpi"><div class="v">7</div><div class="l">Bölge · 81 İl</div></div>
+        <div class="kpi"><div class="v">157</div><div class="l">E2E Test</div></div>
+      </div>
+    </div>
+
+    <!-- Bottom meta row -->
+    <div class="meta-row">
+      <div><strong>Doküman Türü</strong>Master Technical &amp; Investor Documentation</div>
+      <div><strong>Sürüm</strong>1.0 · ${new Date().toISOString().slice(0, 10)}</div>
+      <div><strong>Gizlilik</strong>Şirket İçi · Yatırımcıya Açık</div>
+      <div><strong>Hedef Kitle</strong>Yatırımcı · Ürün · Teknik · Satış · QA · DevOps</div>
     </div>
   </section>
 
@@ -2082,9 +2324,21 @@ async function main() {
     printBackground: true,
     margin: { top: '18mm', right: '14mm', bottom: '22mm', left: '14mm' },
     displayHeaderFooter: true,
-    headerTemplate: '<div></div>',
+    headerTemplate:
+      `<div style="font-size:7.5pt;color:#94a3b8;width:100%;padding:0 16mm;display:flex;justify-content:space-between;align-items:center;font-family:'Plus Jakarta Sans',Inter,sans-serif;">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="display:inline-block;width:8px;height:8px;background:#e11d48;border-radius:2px"></span>
+          <strong style="color:#0f172a;letter-spacing:0.04em">AIRCAST PRO</strong>
+          <span>·</span>
+          <span>Broadcast Platform Master Documentation</span>
+        </span>
+        <span style="color:#94a3b8">v1.0 · ${new Date().toISOString().slice(0, 10)}</span>
+      </div>`,
     footerTemplate:
-      '<div style="font-size:8pt;color:#94a3b8;width:100%;padding:0 16mm;display:flex;justify-content:space-between;"><span>Aircast Broadcast Platform · Master Documentation</span><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+      `<div style="font-size:7.5pt;color:#94a3b8;width:100%;padding:0 16mm;display:flex;justify-content:space-between;align-items:center;font-family:'Plus Jakarta Sans',Inter,sans-serif;border-top:1px solid #e2e8f0;padding-top:3mm">
+        <span>© Aircast — Şirket İçi · Yatırımcıya Açık</span>
+        <span><span class="pageNumber" style="color:#0f172a;font-weight:700"></span> / <span class="totalPages"></span></span>
+      </div>`,
   });
   await browser.close();
   console.log(`  PDF:  ${OUT_PDF}`);

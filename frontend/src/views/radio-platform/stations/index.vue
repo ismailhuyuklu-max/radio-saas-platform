@@ -363,7 +363,7 @@ onMounted(loadStations);
                   :checked="s.is_active ?? s.status === 'active'"
                   @change="(c: unknown) => toggleActive(s, c === true)"
                 />
-                <button class="stn__lnk" type="button" @click="openLink(s)">Link</button>
+                <button class="stn__lnk" type="button" @click="openLink(s)">Bağlantı</button>
                 <button class="stn__lnk" type="button" @click="openEdit(s)">Düzenle</button>
                 <Popconfirm title="İstasyonu silmek istiyor musunuz?" ok-text="Sil" cancel-text="Vazgeç" @confirm="removeStation(s.id)">
                   <button class="stn__lnk is-danger" type="button">Sil</button>
@@ -398,8 +398,8 @@ onMounted(loadStations);
             <span>{{ (s.is_active ?? s.status === 'active') ? 'Aktif' : 'Pasif' }}</span>
           </label>
           <div class="stn__card-actions">
-            <button class="stn__lnk" type="button" @click="openLink(s)">Link</button>
-            <button class="stn__lnk" type="button" @click="openPartner(s)">Portal</button>
+            <button class="stn__lnk" type="button" @click="openLink(s)">Bağlantı</button>
+            <button class="stn__lnk" type="button" @click="openPartner(s)">Panel</button>
             <button class="stn__lnk" type="button" @click="openEdit(s)">Düzenle</button>
             <Popconfirm title="Silinsin mi?" ok-text="Sil" cancel-text="Vazgeç" @confirm="removeStation(s.id)">
               <button class="stn__lnk is-danger" type="button">Sil</button>

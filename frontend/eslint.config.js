@@ -14,6 +14,9 @@ export default [
       'test-results/**',
       'storybook-static/**',
       'src/vendor/vben/**/*.ts',
+      // One-shot tooling scripts run in Node, not in the browser bundle;
+      // they don't need to share the strict TS+Vue rules.
+      'scripts/**',
     ],
   },
   eslint.configs.recommended,
