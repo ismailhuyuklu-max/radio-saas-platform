@@ -59,20 +59,26 @@ const filteredProvinces = computed(() => {
   return PROVINCES.filter((p) => !q || p.name.toLocaleLowerCase('tr-TR').includes(q));
 });
 
-// resolve the current targeting to region codes + station ids
+// resolve the current targeting to region codes / province names / station ids
 const resolvedRegions = computed<string[]>(() => {
   if (scope.value === 'all') return [...REGION_LIST];
   if (scope.value === 'region') return selectedRegions.value;
-  if (scope.value === 'province') return provincesToRegions(selectedProvinces.value);
   return [];
 });
+// İl scope sends real province names → backend writes il-keyed plans and runs
+// the il-level conflict engine (not a whole-region fallback).
+const resolvedProvinces = computed<string[]>(() =>
+  scope.value === 'province' ? selectedProvinces.value : [],
+);
 const resolvedStationIds = computed<string[]>(() =>
   scope.value === 'station' ? selectedStations.value : [],
 );
 
-const targetCount = computed(() =>
-  scope.value === 'station' ? resolvedStationIds.value.length : resolvedRegions.value.length,
-);
+const targetCount = computed(() => {
+  if (scope.value === 'station') return resolvedStationIds.value.length;
+  if (scope.value === 'province') return resolvedProvinces.value.length;
+  return resolvedRegions.value.length;
+});
 const estimate = computed(() => targetCount.value * slots.value.length * Math.max(1, repeatDays.value));
 
 const canSubmit = computed(() => targetCount.value > 0 && slots.value.length > 0 && !submitting.value);
@@ -118,6 +124,7 @@ async function submit() {
   try {
     const res = await bulkPlan({
       target_regions: resolvedRegions.value,
+      target_provinces: resolvedProvinces.value,
       station_ids: resolvedStationIds.value,
       slots: slots.value,
       start_date: startDate.value.format('YYYY-MM-DD'),
@@ -200,7 +207,7 @@ onMounted(async () => {
                 {{ p.name }}
               </button>
             </div>
-            <p class="tc__hint">{{ selectedProvinces.length }} il seçildi → {{ resolvedRegions.length }} bölge</p>
+            <p class="tc__hint">{{ selectedProvinces.length }} il seçildi → {{ provincesToRegions(selectedProvinces).length }} bölge kapsanıyor</p>
           </div>
 
           <div v-else class="tc__chips tc__chips--scroll">
