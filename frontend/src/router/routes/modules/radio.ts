@@ -188,6 +188,19 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // Aircast Radio Partner Portal — single-page tenant view a partner radio
+  // operator sees after login. Lives outside /radio-platform/* so it can run
+  // without the admin chrome (sidebar, NOC, etc.) and stays mobile-friendly.
+  {
+    path: '/portal',
+    name: 'RadioPartnerPortal',
+    component: () => import('#/views/portal/index.vue'),
+    meta: {
+      perm: 'portal:view',
+      title: 'Radyo Paneli',
+      authCode: 'radio:portal:view',
+    },
+  },
 ];
 
 export default routes;

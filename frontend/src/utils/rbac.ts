@@ -6,12 +6,15 @@
  * permission map in sync with backend/src/Service/Rbac.php.
  */
 
-export type Role = 'super' | 'radio_manager' | 'editor' | 'viewer';
+export type Role = 'super' | 'radio_manager' | 'editor' | 'viewer' | 'station_user';
 
+// Note: ANY deliberately excludes station_user — partners must not see
+// admin-wide read endpoints. Tenant routes live under PARTNERS.
 const ANY: Role[] = ['super', 'radio_manager', 'editor', 'viewer'];
 const CONTENT_WRITERS: Role[] = ['super', 'radio_manager', 'editor'];
 const MANAGERS: Role[] = ['super', 'radio_manager'];
 const ADMINS: Role[] = ['super'];
+const PARTNERS: Role[] = ['station_user', 'super', 'radio_manager'];
 
 export const PERMISSIONS: Record<string, Role[]> = {
   'matrix:view': ANY,
@@ -30,7 +33,14 @@ export const PERMISSIONS: Record<string, Role[]> = {
   'monitoring:view': MANAGERS,
   'reports:view': MANAGERS,
   'users:manage': ADMINS,
+  // Partner Portal — station_user (own tenant) + admin override.
+  'portal:view': PARTNERS,
+  'portal:download': PARTNERS,
+  'partner:provision': MANAGERS,
 };
+
+export const isPartner = (userRoles: string[] | undefined): boolean =>
+  (userRoles ?? []).includes('station_user');
 
 /** True when any of the user's roles grants the permission. */
 export function allows(userRoles: string[] | undefined, permission: string): boolean {
@@ -50,8 +60,9 @@ export function primaryRoleLabel(userRoles: string[] | undefined): string {
     radio_manager: 'Radyo Yöneticisi',
     editor: 'Editör',
     viewer: 'İzleyici',
+    station_user: 'Partner Radyo',
   };
-  const order: Role[] = ['super', 'radio_manager', 'editor', 'viewer'];
+  const order: Role[] = ['super', 'radio_manager', 'editor', 'viewer', 'station_user'];
   const found = order.find((r) => (userRoles ?? []).includes(r));
   return found ? labels[found] : 'Kullanıcı';
 }
