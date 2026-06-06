@@ -10,8 +10,10 @@ import {
   bulkPlan,
   createStationGroup,
   deleteStationGroup,
+  getAdTraffic,
   getStationGroups,
   getStations,
+  type AdCampaign,
   type BulkPlanResult,
   type RegionCode,
   type StationGroup,
@@ -49,6 +51,12 @@ const slots = ref<SlotRow[]>([
 
 const startDate = ref<Dayjs>(dayjs());
 const repeatDays = ref(7);
+const campaigns = ref<AdCampaign[]>([]);
+const selectedCampaign = ref<string>('');
+
+// Whether the current schedule contains any ad spot (campaign link is only
+// meaningful then).
+const hasAdSlot = computed(() => slots.value.some((s) => s.part_code === 'ad'));
 
 const submitting = ref(false);
 const result = ref<BulkPlanResult | null>(null);
@@ -213,6 +221,7 @@ async function submit() {
       target_provinces: resolvedProvinces.value,
       station_ids: resolvedStationIds.value,
       group_ids: resolvedGroupIds.value,
+      campaign_id: selectedCampaign.value || undefined,
       slots: slots.value,
       start_date: startDate.value.format('YYYY-MM-DD'),
       repeat_days: repeatDays.value,
@@ -234,6 +243,12 @@ onMounted(async () => {
     /* ignore */
   }
   await loadGroups();
+  try {
+    const t = await getAdTraffic();
+    campaigns.value = t?.campaigns ?? [];
+  } catch {
+    /* ignore */
+  }
 });
 </script>
 
@@ -376,6 +391,17 @@ onMounted(async () => {
             <div class="tc__repeat">
               <button v-for="n in [1, 7, 14, 30]" :key="n" type="button" class="tc__rep" :class="{ 'is-on': repeatDays === n }" @click="setRepeat(n)">{{ n }} gün</button>
             </div>
+          </label>
+
+          <label class="tc__field">
+            <span>Kampanya (reklam spotları için)</span>
+            <select v-model="selectedCampaign" class="tc__campaign">
+              <option value="">— Kampanya bağlama —</option>
+              <option v-for="c in campaigns" :key="c.id" :value="c.id">{{ c.advertiser_name }}</option>
+            </select>
+            <span v-if="selectedCampaign && !hasAdSlot" class="tc__campaign-warn">
+              ⚠ Kuşaklarda reklam (ad) yok — kampanya bağı yalnızca reklam spotlarında anlamlı.
+            </span>
           </label>
 
           <div class="tc__summary">
@@ -743,6 +769,20 @@ onMounted(async () => {
   font-size: var(--t-xs);
   font-weight: 700;
   color: var(--c-text-2);
+}
+.tc__campaign {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--t-sm);
+}
+.tc__campaign-warn {
+  margin-top: 6px;
+  font-size: var(--t-xs);
+  color: var(--c-warn);
 }
 .tc__repeat {
   display: flex;
