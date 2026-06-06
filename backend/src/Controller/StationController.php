@@ -40,8 +40,12 @@ final class StationController
             'offset' => $_GET['offset'] ?? null,
         ];
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($this->stationRepository->listStations($filters), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Faz H2-2: unified zarf
+        $this->respond([
+            'code' => 0,
+            'result' => $this->stationRepository->listStations($filters),
+            'message' => 'Success',
+        ]);
     }
 
     public function store(): void
@@ -204,13 +208,17 @@ final class StationController
         $this->stationRepository->updateStreamToken($stationId, $token['raw_token']);
         $this->auditLogRepository->log('admin', 'generate_token', 'station', $stationId, ['token_prefix' => $token['prefix']]);
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'station_id' => $stationId,
-            'station_token' => $token['raw_token'],
-            'stream_token' => $token['raw_token'],
-            'token_prefix' => $token['prefix'],
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Faz H2-2: unified zarf
+        $this->respond([
+            'code' => 0,
+            'result' => [
+                'station_id' => $stationId,
+                'station_token' => $token['raw_token'],
+                'stream_token' => $token['raw_token'],
+                'token_prefix' => $token['prefix'],
+            ],
+            'message' => 'Success',
+        ]);
     }
 
     private function guard(string $permission): void

@@ -197,11 +197,16 @@ final class PlanningController
             $byDate[$d] = ($byDate[$d] ?? 0) + 1;
         }
 
+        // Faz H2-2: unified zarf
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
-            'plans' => $plans,
-            'counts' => $byDate,
-            'range' => ['start' => $start, 'end' => $end],
+            'code' => 0,
+            'result' => [
+                'plans' => $plans,
+                'counts' => $byDate,
+                'range' => ['start' => $start, 'end' => $end],
+            ],
+            'message' => 'Success',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
@@ -378,11 +383,16 @@ final class PlanningController
         $plans = $this->planRepository->listPlans($filters);
         $calendar = $this->planRepository->listCalendar($filters);
 
+        // Faz H2-2: unified zarf
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
-            'plans' => $plans,
-            'calendar' => $calendar,
-            'filters' => $filters,
+            'code' => 0,
+            'result' => [
+                'plans' => $plans,
+                'calendar' => $calendar,
+                'filters' => $filters,
+            ],
+            'message' => 'Success',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 

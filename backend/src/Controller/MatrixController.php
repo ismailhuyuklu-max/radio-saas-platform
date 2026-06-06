@@ -26,15 +26,14 @@ final class MatrixController
     public function regions(): void
     {
         $this->guard('matrix:view');
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($this->matrixRepository->listRegions(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Faz H2-2: unified zarf
+        $this->respond(['code' => 0, 'result' => $this->matrixRepository->listRegions(), 'message' => 'Success']);
     }
 
     public function matrix(): void
     {
         $this->guard('matrix:view');
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($this->matrixRepository->buildMatrix(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->respond(['code' => 0, 'result' => $this->matrixRepository->buildMatrix(), 'message' => 'Success']);
     }
 
     public function assignSponsor(): void
@@ -103,11 +102,14 @@ final class MatrixController
         }
 
         http_response_code(201);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'sponsor_id' => $sponsorIds[0] ?? null,
-            'sponsor_ids' => $sponsorIds,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->respond([
+            'code' => 0,
+            'result' => [
+                'sponsor_id' => $sponsorIds[0] ?? null,
+                'sponsor_ids' => $sponsorIds,
+            ],
+            'message' => 'Success',
+        ]);
     }
 
     public function sponsors(): void
@@ -139,8 +141,7 @@ final class MatrixController
             ];
         }, $rows);
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->respond(['code' => 0, 'result' => $out, 'message' => 'Success']);
     }
 
     public function deleteSponsor(string $id): void
@@ -150,15 +151,13 @@ final class MatrixController
         $this->matrixRepository->deleteSponsor($id);
         $this->auditLogRepository->log('admin', 'delete', 'sponsor', $id, []);
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['deleted' => true, 'sponsor_id' => $id], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->respond(['code' => 0, 'result' => ['deleted' => true, 'sponsor_id' => $id], 'message' => 'Success']);
     }
 
     public function refresh(): void
     {
         $this->guard('matrix:refresh');
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['refreshed' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->respond(['code' => 0, 'result' => ['refreshed' => true], 'message' => 'Success']);
     }
 
     public function live(): void
@@ -233,15 +232,24 @@ final class MatrixController
             $slotTimes
         );
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'region' => [
-                'code' => (string) $region['code'],
-                'name' => (string) $region['name'],
+        $this->respond([
+            'code' => 0,
+            'result' => [
+                'region' => [
+                    'code' => (string) $region['code'],
+                    'name' => (string) $region['name'],
+                ],
+                'slots' => $slots,
+                'active_stations' => $activeStations,
             ],
-            'slots' => $slots,
-            'active_stations' => $activeStations,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            'message' => 'Success',
+        ]);
+    }
+
+    private function respond(array $data): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     private function guard(string $permission): void

@@ -22,8 +22,8 @@ final class AccessController
     public function users(): void
     {
         $this->guard('users:manage');
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($this->userRepository->listUsers(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Faz H2-2: unified zarf — frontend artık tek noktadan unwrap eder.
+        $this->respond(['code' => 0, 'result' => $this->userRepository->listUsers(), 'message' => 'Success']);
     }
 
     public function updateRoles(string $userId): void
@@ -139,8 +139,20 @@ final class AccessController
             return;
         }
 
+        // Faz H2-2: unified zarf. Listenin tipi `logs` adı altında çıkar
+        // ki NOC + dashboard + access aynı normalizeList('logs') ile okusun.
+        $this->respond([
+            'code' => 0,
+            'result' => ['logs' => $this->auditLogRepository->listLogs($filters, $limit)],
+            'message' => 'Success',
+        ]);
+    }
+
+    /** Faz H2-2: ortak JSON respond helper. */
+    private function respond(array $data): void
+    {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($this->auditLogRepository->listLogs($filters, $limit), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     private function guard(string $permission): void

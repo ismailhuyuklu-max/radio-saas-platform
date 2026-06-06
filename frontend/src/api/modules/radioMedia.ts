@@ -1,6 +1,7 @@
 import { notifyUnauthorized, readCsrfToken } from '@vben/request';
 
 import { requestClient } from '#/api/request';
+import { normalizeList, unwrap } from '#/utils/api-envelope';
 
 export type RegionCode =
   | 'marmara'
@@ -535,13 +536,18 @@ export function normalizeMatrixPayload(payload: MatrixPayloadInput): MatrixGridC
  * Bölge/icerik matris durumunu cek.
  */
 export function getMatrixStatus() {
-  return requestClient.get<MatrixPayloadInput>('/media/matrix');
+  // Faz H2-2: zarflı/zarfsız ikisini de destekle (geriye uyumlu)
+  return requestClient
+    .get<MatrixPayloadInput | { code: number; result: MatrixPayloadInput }>('/media/matrix')
+    .then((r) => unwrap<MatrixPayloadInput>(r));
 }
 
 export function getMatrixLive(region: RegionCode) {
-  return requestClient.get<MatrixLiveResponse>('/media/matrix/live', {
-    params: { region },
-  });
+  return requestClient
+    .get<MatrixLiveResponse | { code: number; result: MatrixLiveResponse }>('/media/matrix/live', {
+      params: { region },
+    })
+    .then((r) => unwrap<MatrixLiveResponse>(r));
 }
 
 /**
@@ -602,7 +608,11 @@ export function getStations(params?: GetStationsParams) {
     query.status = params.status;
   }
 
-  return requestClient.get<StationItem[]>('/stations', { params: query });
+  // Faz H2-2: backend artık unified zarf döndürüyor; unwrap geriye uyumlu —
+  // zarflıysa result, değilse ham yanıt.
+  return requestClient
+    .get<StationItem[] | { code: number; result: StationItem[] }>('/stations', { params: query })
+    .then((r) => unwrap<StationItem[]>(r));
 }
 
 export function getFeed(stationSlug: string, partCode: PartCode, format: FeedFormat = 'json') {
@@ -656,7 +666,10 @@ export function saveSponsor(payload: SponsorPayload) {
  * Kaydedilmiş sponsor reklamlarını veritabanından listele.
  */
 export function getSponsors() {
-  return requestClient.get<SponsorListItem[]>('/sponsors');
+  // Faz H2-2: backend zarflıysa unwrap, zarfsızsa olduğu gibi
+  return requestClient
+    .get<SponsorListItem[] | { code: number; result: SponsorListItem[] }>('/sponsors')
+    .then((r) => unwrap<SponsorListItem[]>(r));
 }
 
 /**
@@ -774,7 +787,13 @@ export interface StationGroup {
 }
 
 export function getStationGroups() {
-  return requestClient.get<{ groups: StationGroup[] }>('/traffic/groups');
+  // Faz H2-2: backend artık `{code,result:{groups:[]}}`; legacy `{groups:[]}`'i
+  // de destekle. normalizeList ile sıfır-elemana güvenle düş.
+  return requestClient
+    .get<{ groups: StationGroup[] } | { code: number; result: { groups: StationGroup[] } }>(
+      '/traffic/groups',
+    )
+    .then((r) => ({ groups: normalizeList<StationGroup>(r, 'groups') }));
 }
 export function createStationGroup(payload: {
   name: string;
@@ -912,7 +931,15 @@ export function getAuditLogs(filters: AuditLogFilters = {}) {
     params.date_to = filters.date_to;
   }
 
-  return requestClient.get<AuditLogItem[]>('/audit/logs', { params });
+  // Faz H2-2: backend artık `{code, result:{logs:[]}}` döner; legacy düz dizi
+  // de destekleniyor. normalizeList her iki durumu da AuditLogItem[]'a düşürür.
+  return requestClient
+    .get<
+      | AuditLogItem[]
+      | { logs: AuditLogItem[] }
+      | { code: number; result: { logs: AuditLogItem[] } }
+    >('/audit/logs', { params })
+    .then((r) => normalizeList<AuditLogItem>(r, 'logs'));
 }
 
 export async function exportAuditLogsCsv(filters: AuditLogFilters = {}) {

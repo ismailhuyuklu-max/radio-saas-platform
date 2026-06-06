@@ -17,6 +17,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    # Faz H2-3: PG en kritik servis; çok fazla bellek vermek > host'u öldürür
+    mem_limit: 1g
+    mem_reservation: 256m
+    cpus: 2.0
+    # Faz H2-1+H2-3: log dosyalarının disk dolduramaması için cap
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
       - radio_network
 
@@ -24,6 +34,14 @@ services:
     image: minio/minio
     container_name: radio-minio
     restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 256m
+    cpus: 1.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
@@ -51,6 +69,13 @@ services:
       context: ./docker/backup
     container_name: radio-backup
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB:-radio_saas}
@@ -94,6 +119,15 @@ services:
       dockerfile: docker/php/Dockerfile.prod
     container_name: radio-php
     restart: unless-stopped
+    # Faz H2-3: PHP-FPM 5 worker × ~256MB = 1.5GB ceiling
+    mem_limit: 1g
+    mem_reservation: 256m
+    cpus: 2.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_KEY: ${APP_KEY:-}
@@ -125,6 +159,15 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+    # Faz H2-1: FPM process var + PHP CLI çalışıyor = sağlıklı. Gerçek
+    # bağlantı testi yapmak yerine ucuz bir liveness probe; PG/MinIO için
+    # ayrı healthcheck'ler zaten var.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f php-fpm >/dev/null && php -v >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       radio_network:
         aliases:
@@ -159,6 +202,16 @@ services:
       dockerfile: docker/php/Dockerfile.prod
     container_name: radio-worker
     restart: unless-stopped
+    # Faz H2-3: worker FFmpeg sponsor injection yapar — render zirvesinde
+    # 800MB+ rezerv eder. host'u öldürmesin diye sert tavan: 1GB.
+    mem_limit: 1g
+    mem_reservation: 256m
+    cpus: 2.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_KEY: ${APP_KEY:-}
@@ -190,6 +243,13 @@ services:
       minio-init:
         condition: service_completed_successfully
     command: ["php", "bin/queue-worker.php"]
+    # Faz H2-1: worker süreci canlı mı?
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f queue-worker.php >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - radio_network
 
@@ -197,6 +257,13 @@ services:
     image: nginx:1.27-alpine
     container_name: radio-nginx
     restart: unless-stopped
+    mem_limit: 128m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "30m"
+        max-file: "5"
     ports:
       - "8080:80"
     volumes:
@@ -204,8 +271,17 @@ services:
       - ./backend:/var/www/backend:ro
       - ./docker/nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
+      # Faz H2-1: php-fpm sağlıklı olmadan nginx trafiği almasın — başlangıç
+      # anında 502 patlamasını engeller.
       php-fpm:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      # nginx kendine HEAD atar; binary canlı + config yüklü ise 200/301/404 döner.
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - radio_network
 
@@ -242,6 +318,13 @@ services:
       dockerfile: docker/liquidsoap/Dockerfile
     container_name: radio-liquidsoap
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "30m"
+        max-file: "5"
     environment:
       TZ: Europe/Istanbul
       SOURCE_ROOT: /var/media
@@ -255,6 +338,13 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+    # Faz H2-1: liquidsoap process canlı mı?
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep liquidsoap >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - radio_network
 

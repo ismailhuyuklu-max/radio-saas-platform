@@ -27,7 +27,12 @@ final class TrafficMetaController
     public function provinces(): void
     {
         $this->guard('plans:view');
-        $this->json(['provinces' => $this->provinceRepository->listAll()]);
+        // Faz H2-2: unified zarf + iç şey `provinces` adlı tut.
+        $this->json([
+            'code' => 0,
+            'result' => ['provinces' => $this->provinceRepository->listAll()],
+            'message' => 'Success',
+        ]);
     }
 
     public function groups(): void
@@ -38,7 +43,11 @@ final class TrafficMetaController
             $group['station_ids'] = $this->stationGroupRepository->memberStationIds((string) $group['id']);
         }
         unset($group);
-        $this->json(['groups' => $groups]);
+        $this->json([
+            'code' => 0,
+            'result' => ['groups' => $groups],
+            'message' => 'Success',
+        ]);
     }
 
     public function createGroup(): void
@@ -98,7 +107,11 @@ final class TrafficMetaController
             'region_code' => $s['region_code'] ?? null,
             'group_id' => $s['group_id'] ?? null,
         ], $stations);
-        $this->json(['stations' => $slim]);
+        $this->json([
+            'code' => 0,
+            'result' => ['stations' => $slim],
+            'message' => 'Success',
+        ]);
     }
 
     private function guard(string $permission): void
