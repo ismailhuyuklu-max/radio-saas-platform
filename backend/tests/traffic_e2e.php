@@ -266,6 +266,24 @@ try {
     }
     check($hasSponsor, 'smart placement suggests a sponsor read for the 08:00 news');
 
+    // Faz 11: pre-flight preview — same engine on an unsaved candidate set.
+    [$code, $body] = api('POST', $base . '/plans/suggest-preview', $token, [
+        'slots' => [
+            ['slot_time' => '08:00', 'part_code' => 'news'],
+            ['slot_time' => '10:00', 'part_code' => 'ad'],
+            ['slot_time' => '12:00', 'part_code' => 'ad'],
+        ],
+    ]);
+    check($code === 200, "POST /plans/suggest-preview → 200 (got {$code})");
+    $hasPreviewSponsor = false;
+    foreach (($body['result']['suggestions'] ?? []) as $s) {
+        if (($s['part_code'] ?? '') === 'sponsor' && ($s['slot_time'] ?? '') === '08:00') {
+            $hasPreviewSponsor = true;
+        }
+    }
+    check($hasPreviewSponsor, 'preview suggests sponsor for the news slot');
+    check(count($body['result']['warnings'] ?? []) >= 1, 'preview warns about adjacent ads (10:00 & 12:00)');
+
     // Bulk move: shift İstanbul plan by +1 slot (08:00 → 10:00).
     $idRow = $pdo->prepare(
         "SELECT id FROM content_plans WHERE plan_date = :d AND province = 'İstanbul' LIMIT 1"

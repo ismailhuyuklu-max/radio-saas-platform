@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { DatePicker, Modal, Popconfirm, message } from 'ant-design-vue';
@@ -13,8 +13,10 @@ import {
   getAdTraffic,
   getStationGroups,
   getStations,
+  previewPlanSuggestions,
   type AdCampaign,
   type BulkPlanResult,
+  type PlacementResult,
   type RegionCode,
   type StationGroup,
   type StationItem,
@@ -208,6 +210,46 @@ function setRepeat(n: number) {
   repeatDays.value = n;
 }
 
+// --- Faz 11: pre-flight smart placement preview ---------------------------
+const placement = ref<PlacementResult | null>(null);
+let placementTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function refreshPlacement() {
+  if (!slots.value.length) {
+    placement.value = null;
+    return;
+  }
+  try {
+    const res = await previewPlanSuggestions(
+      slots.value.map((s) => ({ slot_time: s.slot_time, part_code: s.part_code })),
+    );
+    placement.value = res?.result ?? null;
+  } catch {
+    placement.value = null;
+  }
+}
+function schedulePlacement() {
+  if (placementTimer) clearTimeout(placementTimer);
+  placementTimer = setTimeout(refreshPlacement, 350);
+}
+
+// Debounced re-check when the slot list changes (time/type/title or count).
+watch(
+  () => slots.value.map((s) => `${s.slot_time}|${s.part_code}`).join(','),
+  schedulePlacement,
+  { immediate: true },
+);
+
+function applySuggestion(s: PlacementResult['suggestions'][number]) {
+  slots.value.push({
+    slot_time: s.slot_time,
+    part_code: s.part_code,
+    content_title: s.content_title,
+    status: 'published',
+  });
+  message.success(`${s.slot_time} ${s.content_title} eklendi.`);
+}
+
 async function submit() {
   if (!canSubmit.value) {
     message.warning('Hedef ve en az bir kuşak seçin.');
@@ -375,6 +417,30 @@ onMounted(async () => {
             </div>
             <button type="button" class="tc__add" @click="addSlot">+ Kuşak ekle</button>
           </div>
+        </section>
+
+        <!-- Faz 11: smart placement preview -->
+        <section
+          v-if="placement && (placement.suggestions.length || placement.warnings.length)"
+          class="ui-card tc__card tc__placement"
+        >
+          <div class="tc__step"><span>💡</span> Akıllı Yerleştirme Önizlemesi</div>
+
+          <div v-if="placement.warnings.length" class="tc__pl-warns">
+            <div v-for="(w, i) in placement.warnings" :key="`w${i}`" class="tc__pl-warn">
+              ⚠ {{ w.message }}
+            </div>
+          </div>
+
+          <ul v-if="placement.suggestions.length" class="tc__pl-list">
+            <li v-for="(s, i) in placement.suggestions" :key="`s${i}`" class="tc__pl-item">
+              <div class="tc__pl-info">
+                <strong>{{ s.slot_time }} · {{ s.content_title }}</strong>
+                <span>{{ s.reason }}</span>
+              </div>
+              <button type="button" class="tc__pl-add" @click="applySuggestion(s)">+ Ekle</button>
+            </li>
+          </ul>
         </section>
       </div>
 
@@ -752,6 +818,70 @@ onMounted(async () => {
 .tc__add:hover {
   color: var(--c-brand);
   border-color: var(--c-brand);
+}
+
+.tc__placement {
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  background: rgba(96, 165, 250, 0.06);
+}
+.tc__pl-warns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--sp-3);
+}
+.tc__pl-warn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  color: var(--c-warn);
+  font-size: var(--t-sm);
+}
+.tc__pl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tc__pl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+}
+.tc__pl-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tc__pl-info strong {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--c-text);
+}
+.tc__pl-info span {
+  font-size: var(--t-xs);
+  color: var(--c-text-3);
+}
+.tc__pl-add {
+  border: 1px solid var(--c-info);
+  background: transparent;
+  color: var(--c-info);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc__pl-add:hover {
+  background: rgba(96, 165, 250, 0.14);
 }
 
 .tc__side {

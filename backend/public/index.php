@@ -625,6 +625,12 @@ try {
         return;
     }
 
+    // Pre-flight smart placement on a candidate slot set.
+    if ($method === 'POST' && $path === '/api/v1/plans/suggest-preview') {
+        $planningController->suggestPreview();
+        return;
+    }
+
     if ($method === 'POST' && $path === '/api/v1/plans/bulk-delete') {
         $planningController->bulkDelete();
         return;

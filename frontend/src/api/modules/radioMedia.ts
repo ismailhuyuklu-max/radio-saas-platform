@@ -827,6 +827,16 @@ export function getPlanSuggestions(filters: { date?: string; region?: RegionCode
   });
 }
 
+/**
+ * Pre-flight smart placement: send a candidate slot set, get sponsor/spacing/
+ * cap suggestions BEFORE running the bulk planner.
+ */
+export function previewPlanSuggestions(slots: Array<{ slot_time: string; part_code: string }>) {
+  return requestClient.post<{ code: number; result: PlacementResult }>('/plans/suggest-preview', {
+    slots,
+  });
+}
+
 export function bulkDeletePlans(ids: string[]) {
   return requestClient.post<{ code: number; result: { deleted: number } }>('/plans/bulk-delete', {
     ids,

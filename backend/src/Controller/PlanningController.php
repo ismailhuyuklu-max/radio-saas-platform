@@ -206,6 +206,39 @@ final class PlanningController
     }
 
     /**
+     * Pre-flight smart placement: same engine as suggest(), but applied to a
+     * candidate slot set sent by the client BEFORE the bulk planner writes
+     * anything. Lets the traffic-center preview sponsor/spacing/cap warnings
+     * for an unsaved schedule.
+     */
+    public function suggestPreview(): void
+    {
+        $this->guard('plans:view');
+        $payload = $this->readJsonPayload();
+        $slots = $this->asArray($payload['slots'] ?? []);
+
+        // Normalize each slot to the shape SmartPlacement expects.
+        $plans = [];
+        foreach ($slots as $s) {
+            if (!is_array($s)) {
+                continue;
+            }
+            $plans[] = [
+                'slot_time' => (string) ($s['slot_time'] ?? '08:00'),
+                'part_code' => (string) ($s['part_code'] ?? 'news'),
+            ];
+        }
+        $result = SmartPlacement::suggest($plans);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'code' => 0,
+            'result' => $result,
+            'message' => 'Success',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
      * Smart placement: read a region/day's plans and propose sponsor reads, ad
      * spacing fixes and prime-gap fills. Read-only (no DB writes).
      */
