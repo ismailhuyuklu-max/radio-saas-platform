@@ -1,0 +1,72 @@
+# =============================================================================
+# Aircast Pro — Caddy TLS terminator (Faz H3-5)
+# =============================================================================
+# Caddy:
+#   - HTTPS dinler (443), HTTP/3 destekler (UDP 443).
+#   - Let's Encrypt'ten otomatik sertifika alır (ACME email .env'den okunur).
+#   - HTTP isteklerini HTTPS'e 308 ile redirect eder.
+#   - HSTS, secure headers, gzip + zstd compression default açık.
+#   - Tüm trafiği dahili nginx:80'e proxy yapar.
+#
+# Production gereksinim:
+#   - 80 + 443 dış dünyaya açık olmalı (LE HTTP-01 challenge için).
+#   - APP_URL'in domain'i bu host'a A/AAAA ile çözmüş olmalı.
+#   - ACME_EMAIL geçerli (sertifika expiry uyarıları + LE TOS).
+# =============================================================================
+
+{
+	# ACME hesabı için iletişim e-postası. LE expiry / TOS değişikliği uyarıları.
+	email {$ACME_EMAIL}
+
+	# default 'auto' — TLS-ALPN-01 + HTTP-01 challenge zinciri.
+	# servers { ... } default güvenli ayarlarla gelir.
+
+	# H2/H3 ve servers default protokoller açıktır; ek tweak gerekmiyor.
+
+	admin off  # Admin API'sini kapat — gereksiz attack surface.
+}
+
+# Ana site bloğu — APP_URL env'inden okunur.
+{$APP_URL} {
+	# TLS otomatik (production LE).
+	# Local test için: tls internal  → self-signed.
+	encode zstd gzip
+
+	# Güvenlik header'ları (nginx zaten ekliyor ama TLS layer'da da
+	# pekiştirelim — defense-in-depth).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "SAMEORIGIN"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		# Caddy default Server: header'ı siler — version disclosure azaltır.
+		-Server
+	}
+
+	# Tüm istekleri nginx'e ilet. nginx aynı network'te.
+	# X-Forwarded-* header'larını Caddy otomatik ekler — backend RequestContext
+	# bu IP'yi TRUSTED_PROXY_IPS env'inde görmeli (caddy IP'si).
+	reverse_proxy nginx:80 {
+		# Caddy'nin Host header'ı korumasını aç — APP_URL'i nginx'e doğru
+		# header ile gönderir.
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port 443
+
+		# Faz H4-2: deep health endpoint — PG + MinIO + disk kontrol eder.
+		# 503 dönerse Caddy bu upstream'i unhealthy sayar; orchestrator
+		# (compose restart_policy) container'ı yeniden başlatabilir.
+		health_uri      /api/v1/healthz/deep
+		health_interval 30s
+		health_timeout  10s
+	}
+
+	# Erişim logu (JSON formatında stderr'a).
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+}

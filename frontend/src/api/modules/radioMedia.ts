@@ -737,7 +737,10 @@ export function getPlanning(filters?: { date?: string; region?: RegionCode; stat
   if (filters?.region) query.region = filters.region;
   if (filters?.status) query.status = filters.status;
 
-  return requestClient.get<PlanningResponse>('/plans', { params: query });
+  // Faz H2-5 / HOTFIX: backend H2-2 sonrası {code,result:{...}} zarflıyor.
+  return requestClient
+    .get<PlanningResponse>('/plans', { params: query })
+    .then((r) => unwrap<PlanningResponse>(r));
 }
 
 export function savePlanning(payload: PlanningSavePayload) {
@@ -755,7 +758,10 @@ export interface PlanRangeResponse {
 export function getPlanRange(filters: { start: string; end: string; region?: RegionCode }) {
   const params: Record<string, string> = { start: filters.start, end: filters.end };
   if (filters.region) params.region = filters.region;
-  return requestClient.get<PlanRangeResponse>('/plans/range', { params });
+  // Faz H2-5 / HOTFIX: backend H2-2 zarfını çöz.
+  return requestClient
+    .get<PlanRangeResponse>('/plans/range', { params })
+    .then((r) => unwrap<PlanRangeResponse>(r));
 }
 
 // --- Faz 6: reporting breakdowns (il / müşteri) -----------------------------
@@ -800,18 +806,19 @@ export function createStationGroup(payload: {
   description?: string;
   station_ids: string[];
 }) {
-  return requestClient.post<{ code: number; result: StationGroup }>('/traffic/groups', payload);
+  return requestClient
+    .post<StationGroup>('/traffic/groups', payload)
+    .then((r) => unwrap<StationGroup>(r));
 }
 export function updateStationGroupMembers(id: string, stationIds: string[]) {
-  return requestClient.put<{ code: number; result: { station_ids: string[] } }>(
-    `/traffic/groups/${id}/members`,
-    { station_ids: stationIds },
-  );
+  return requestClient
+    .put<{ station_ids: string[] }>(`/traffic/groups/${id}/members`, { station_ids: stationIds })
+    .then((r) => unwrap<{ station_ids: string[] }>(r));
 }
 export function deleteStationGroup(id: string) {
-  return requestClient.delete<{ code: number; result: { deleted: boolean } }>(
-    `/traffic/groups/${id}`,
-  );
+  return requestClient
+    .delete<{ deleted: boolean }>(`/traffic/groups/${id}`)
+    .then((r) => unwrap<{ deleted: boolean }>(r));
 }
 
 export function getProvinceBreakdown() {
@@ -844,7 +851,10 @@ export interface BulkPlanResult {
 }
 
 export function bulkPlan(payload: BulkPlanPayload) {
-  return requestClient.post<{ code: number; result: BulkPlanResult }>('/plans/bulk', payload);
+  // HOTFIX: zarf unwrap — caller `res?.created` bekliyor.
+  return requestClient
+    .post<BulkPlanResult>('/plans/bulk', payload)
+    .then((r) => unwrap<BulkPlanResult>(r));
 }
 
 // --- Faz 4: smart placement + timeline bulk operations ----------------------
@@ -868,9 +878,9 @@ export function getPlanSuggestions(filters: { date?: string; region?: RegionCode
   const params: Record<string, string> = {};
   if (filters.date) params.date = filters.date;
   if (filters.region) params.region = filters.region;
-  return requestClient.get<{ code: number; result: PlacementResult }>('/plans/suggest', {
-    params,
-  });
+  return requestClient
+    .get<PlacementResult>('/plans/suggest', { params })
+    .then((r) => unwrap<PlacementResult>(r));
 }
 
 /**
@@ -878,15 +888,15 @@ export function getPlanSuggestions(filters: { date?: string; region?: RegionCode
  * cap suggestions BEFORE running the bulk planner.
  */
 export function previewPlanSuggestions(slots: Array<{ slot_time: string; part_code: string }>) {
-  return requestClient.post<{ code: number; result: PlacementResult }>('/plans/suggest-preview', {
-    slots,
-  });
+  return requestClient
+    .post<PlacementResult>('/plans/suggest-preview', { slots })
+    .then((r) => unwrap<PlacementResult>(r));
 }
 
 export function bulkDeletePlans(ids: string[]) {
-  return requestClient.post<{ code: number; result: { deleted: number } }>('/plans/bulk-delete', {
-    ids,
-  });
+  return requestClient
+    .post<{ deleted: number }>('/plans/bulk-delete', { ids })
+    .then((r) => unwrap<{ deleted: number }>(r));
 }
 
 export interface BulkMovePayload {
@@ -896,10 +906,9 @@ export interface BulkMovePayload {
   copy?: boolean;
 }
 export function bulkMovePlans(payload: BulkMovePayload) {
-  return requestClient.post<{
-    code: number;
-    result: { written: number; skipped: number; copy: boolean };
-  }>('/plans/bulk-move', payload);
+  return requestClient
+    .post<{ written: number; skipped: number; copy: boolean }>('/plans/bulk-move', payload)
+    .then((r) => unwrap<{ written: number; skipped: number; copy: boolean }>(r));
 }
 
 export function updatePlanning(planId: string, payload: PlanningSavePayload) {
@@ -1160,7 +1169,8 @@ export function getMetrics() {
 }
 
 export function getUsers() {
-  return requestClient.get<UserAdminItem[]>('/users');
+  // /users → zarflı (H2-2). unwrap ile array dön.
+  return requestClient.get<UserAdminItem[]>('/users').then((r) => unwrap<UserAdminItem[]>(r));
 }
 
 export function updateUserRoles(userId: string, roles: string[]) {

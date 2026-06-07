@@ -94,7 +94,8 @@ try {
     // --- Provinces metadata -------------------------------------------------
     [$code, $body] = api('GET', $base . '/traffic/provinces', $token);
     check($code === 200, "GET /traffic/provinces → 200 (got {$code})");
-    $provinces = $body['provinces'] ?? [];
+    // Faz H2-2 zarf: {code, result:{provinces:[]}} — eski {provinces:[]} de destekle.
+    $provinces = $body['result']['provinces'] ?? $body['provinces'] ?? [];
     check(count($provinces) === 81, 'provinces returns all 81 il (got ' . count($provinces) . ')');
     $names = array_column($provinces, 'name');
     check(in_array('İstanbul', $names, true), 'İstanbul present (Turkish UTF-8 intact)');
@@ -138,8 +139,10 @@ try {
         $token
     );
     check($code === 200, "GET /plans/range → 200 (got {$code})");
-    check(($body['counts'][$planDate] ?? 0) >= 1, 'range feed returns per-day counts for the marmara İstanbul plan');
-    check(is_array($body['plans'] ?? null), 'range feed returns plans array');
+    // Faz H2-2 zarf: {code,result:{counts,plans}} — eski {counts,plans} de destekle.
+    $rangeResult = $body['result'] ?? $body;
+    check(($rangeResult['counts'][$planDate] ?? 0) >= 1, 'range feed returns per-day counts for the marmara İstanbul plan');
+    check(is_array($rangeResult['plans'] ?? null), 'range feed returns plans array');
 
     // --- Campaign link ------------------------------------------------------
     // Create a dedicated campaign so planned/aired/missed are fully controlled

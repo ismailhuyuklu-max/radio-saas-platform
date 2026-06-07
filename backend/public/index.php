@@ -37,13 +37,24 @@ function radio_error_response(int $status, string $message, ?string $debug = nul
 }
 
 set_exception_handler(static function (Throwable $e): void {
-    error_log(sprintf(
-        '[PHP-FATAL] %s: %s in %s:%d',
-        get_class($e),
-        $e->getMessage(),
-        $e->getFile(),
-        $e->getLine()
-    ));
+    // Faz H4-1: Logger sınıfı autoload öncesi gelebilir çünkü autoload
+    // başarısız olabilir. Bu yüzden class_exists guard'ı.
+    if (class_exists(\RadioSaaS\Service\Logger::class, false)) {
+        \RadioSaaS\Service\Logger::error('uncaught exception', [
+            'class' => get_class($e),
+            'where' => $e->getFile() . ':' . $e->getLine(),
+            'trace_head' => substr($e->getTraceAsString(), 0, 800),
+            'detail' => $e->getMessage(),
+        ]);
+    } else {
+        error_log(sprintf(
+            '[PHP-FATAL] %s: %s in %s:%d',
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine()
+        ));
+    }
     radio_error_response(500, 'Internal Server Error', $e->getMessage());
 });
 
@@ -75,6 +86,8 @@ register_shutdown_function(static function (): void {
     radio_error_response(500, 'Internal Server Error', $err['message']);
 });
 
+use RadioSaaS\Controller\HealthController;
+use RadioSaaS\Controller\MetricsExposeController;
 use RadioSaaS\Controller\FeedController;
 use RadioSaaS\Controller\AuthController;
 use RadioSaaS\Controller\AccessController;
@@ -138,6 +151,12 @@ if (!$demoMode && !is_file($vendorAutoload)) {
 
 if (!$demoMode) {
     require $vendorAutoload;
+    // Faz H4-1: autoload geldi, Logger'ı initialize et + X-Request-Id ekle.
+    // İstemci tracing zincirini koruması için header'da yankıla.
+    $rid = \RadioSaaS\Service\Logger::init();
+    if (!headers_sent()) {
+        header('X-Request-Id: ' . $rid);
+    }
 }
 
 // Production safety net: surface insecure default secrets in the server log.
@@ -608,9 +627,26 @@ $adTrafficController = new AdTrafficController($adminAuthenticator, $adCampaignR
 $monitoringController = new MonitoringController($adminAuthenticator, $pdo);
 $mediaLibraryController = new MediaLibraryController($adminAuthenticator, $mediaRepository, $sponsorRepository, $storage, $auditLogRepository);
 $reportController = new ReportController($adminAuthenticator, $adCampaignRepository, $planRepository, $stationRepository, $auditLogRepository);
+// Faz H4-2 — Auth-bypass deep health endpoint.
+$healthController = new HealthController($pdo);
+// Faz H5-1 — Prometheus metrics endpoint (scraper IP whitelist nginx'te).
+$metricsExposeController = new MetricsExposeController($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+// Faz H4-2: Deep health endpoint — auth/CSRF zincirinden ÖNCE çalışır.
+// Orchestrator (Caddy/k8s/docker) buraya cookie ya da Authorization göndermez.
+if ($method === 'GET' && $path === '/api/v1/healthz/deep') {
+    $healthController->deep();
+    return;
+}
+
+// Faz H5-1: Prometheus metrics — auth-bypass; nginx allow-list ile koru.
+if ($method === 'GET' && $path === '/api/v1/metrics') {
+    $metricsExposeController->expose();
+    return;
+}
 
 // Detect cookie-based auth BEFORE promoting the cookie to a Bearer header.
 $authViaCookie = empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session']);
@@ -1170,12 +1206,28 @@ try {
                     'method' => $method,
                     'class' => get_class($exception),
                     'message' => $exception->getMessage(),
+                    // Faz H4-1: audit ile log arası ilişkilendirme.
+                    'request_id' => \RadioSaaS\Service\Logger::requestId(),
                 ]
             );
         } catch (Throwable) {
             // The error handler must not throw — silently drop audit failure.
         }
     }
+
+    // Faz H4-1: tüm hata yolları yapısal log'a dönüşür.
+    \RadioSaaS\Service\Logger::log(
+        $status >= 500 ? 'error' : 'warning',
+        'request failed',
+        [
+            'path' => $path,
+            'method' => $method,
+            'status' => $status,
+            'duration_ms' => \RadioSaaS\Service\Logger::elapsedMs(),
+            'class' => get_class($exception),
+            'detail' => $exception->getMessage(),
+        ]
+    );
 
     // Faz H1-1: önce partial output'u temizle, sonra header'ları korumalı set et.
     // Controller'lar respond() ile zaten echo etmiş olabilir; bu durumda ob_clean

@@ -1,0 +1,10 @@
+# Faz H4-4 — PHPStan baseline.
+#
+# Bu dosya `composer stan -- --generate-baseline` ile üretilir.
+# Mevcut tipsizlikleri geçici olarak whitelist'e atar; yeni eklenen
+# kod katı kontrol altında kalır.
+#
+# Boş bırakıldığında PHPStan her hata için CI'ı kırar — istenen davranış.
+# CI bu dosyayı bulamazsa phpstan.neon'da include koşulu null kalır.
+parameters:
+    ignoreErrors: []

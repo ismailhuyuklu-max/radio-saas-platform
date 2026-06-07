@@ -186,6 +186,21 @@ final class AuthController
         $this->throttleRepository?->reset($username);
         $this->throttleRepository?->reset($ipKey);
 
+        // Faz H3-5 — sessiz cost yükseltmesi. Kullanıcı eski cost=10
+        // hash ile geldi ve env'de BCRYPT_COST=12 ise burada
+        // yeniden hashleyip kaydet — kullanıcı bir şey hissetmez.
+        if (\RadioSaaS\Service\PasswordHasher::needsRehash((string) $user['password_hash'])) {
+            try {
+                $this->userRepository->updatePassword(
+                    (string) $user['id'],
+                    \RadioSaaS\Service\PasswordHasher::hash($password)
+                );
+            } catch (\Throwable $ignored) {
+                // Rehash başarısız olursa login akışını kesme; bir sonraki
+                // girişte tekrar denenir.
+            }
+        }
+
         // Two-factor: if enabled, defer the session until a valid TOTP code is
         // supplied. Return a short-lived signed challenge instead of a session.
         if (filter_var($user['mfa_enabled'] ?? false, FILTER_VALIDATE_BOOL)) {
@@ -361,7 +376,8 @@ final class AuthController
             $this->respond(['code' => 1, 'result' => null, 'message' => 'Mevcut şifre hatalı.'], 400);
         }
 
-        $this->userRepository->updatePassword((string) $user['id'], password_hash($next, PASSWORD_BCRYPT));
+        // Faz H3-5: konfig edilebilir bcrypt cost.
+        $this->userRepository->updatePassword((string) $user['id'], \RadioSaaS\Service\PasswordHasher::hash($next));
         // Invalidate every other session after a password change.
         $token = (string) $this->extractToken();
         $this->sessionRepository->revokeAllForUserExcept((string) $user['id'], $token);
@@ -488,15 +504,10 @@ final class AuthController
 
     private function clientIp(): string
     {
-        $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-        if ($fwd !== '') {
-            // First hop is the original client when set by a trusted proxy (nginx).
-            $first = trim(explode(',', $fwd)[0]);
-            if ($first !== '') {
-                return substr($first, 0, 45);
-            }
-        }
-        return substr((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
+        // Faz H3-4 — RequestContext TRUSTED_PROXY_IPS uygular; spoof
+        // edilmiş XFF login throttle'u bypass edemez.
+        $ip = \RadioSaaS\Service\RequestContext::clientIp() ?? 'unknown';
+        return substr($ip, 0, 45);
     }
 
     private function challengeSecret(): string

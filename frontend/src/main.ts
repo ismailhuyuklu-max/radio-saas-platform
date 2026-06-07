@@ -14,6 +14,8 @@ import { clearAuthSession } from '#/api/modules/auth';
 
 import App from './App.vue';
 import router from './router';
+import { installGlobalErrorHandlers } from '#/utils/error-boundary';
+import { installA11y } from '#/utils/a11y';
 
 // When any API call returns 401 (e.g. the HttpOnly session cookie expired),
 // drop the stale local profile and send the user back to the login screen.
@@ -28,4 +30,9 @@ onUnauthorized(() => {
 // NOTE: ant-design-vue is NOT registered globally (app.use(Antd)) on purpose —
 // that pulls the entire library (~475KB gzip). Each screen imports only the
 // components it uses, so Vite tree-shakes the bundle.
-createApp(App).use(router).mount('#app');
+const app = createApp(App).use(router);
+// Faz H4-3: Vue render + window + promise hatalarını merkezi yakala.
+installGlobalErrorHandlers(app);
+// Faz H5-4: skip-link + route announcement + focus main.
+installA11y(router);
+app.mount('#app');

@@ -85,6 +85,10 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      # Faz H5-3: audit_logs retention (gün). Master prompt yasal saklama
+      # gereği için 180 gün, üstü silinir. backup-postgres.sh her döngüde
+      # prune-yap.
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-180}
       TZ: Europe/Istanbul
     volumes:
       - backup_data:/backups
@@ -159,11 +163,11 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
-    # Faz H2-1: FPM process var + PHP CLI çalışıyor = sağlıklı. Gerçek
-    # bağlantı testi yapmak yerine ucuz bir liveness probe; PG/MinIO için
-    # ayrı healthcheck'ler zaten var.
+    # Faz H2-1 / HOTFIX: PHP CLI çalışıyor + PID 1 master (CMD ["php-fpm"])
+    # var = sağlıklı. `pgrep` Debian-slim'de yok (procps yüklü değil); bu
+    # yüzden `/proc/1/comm` üzerinden master process'i doğruluyoruz.
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f php-fpm >/dev/null && php -v >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "grep -q php-fpm /proc/1/comm && php -v >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -243,13 +247,67 @@ services:
       minio-init:
         condition: service_completed_successfully
     command: ["php", "bin/queue-worker.php"]
-    # Faz H2-1: worker süreci canlı mı?
+    # Faz H2-1 / HOTFIX: PID 1 = `php` (queue-worker.php). pgrep yok image'da;
+    # /proc/1/cmdline'da queue-worker.php'yi arıyoruz.
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f queue-worker.php >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "grep -q queue-worker.php /proc/1/cmdline || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 30s
+    networks:
+      - radio_network
+
+  # =====================================================================
+  # Faz H3-5 — Caddy TLS sidecar (opsiyonel)
+  #
+  # Aktif etmek için:
+  #   docker compose --env-file .env.production \
+  #     -f docker-compose.prod.yml --profile tls up -d
+  #
+  # Caddy önde durur, ACME ile Let's Encrypt sertifikası alır, nginx'e
+  # plaintext HTTP olarak proxy yapar. nginx port 8080'i artık dışarı
+  # publish ETMEMELİDİR — Caddy aynı network'ten erişir.
+  #
+  # Konfigürasyon (.env.production):
+  #   APP_URL=https://radio.example.com       (Caddy bu domain için cert alır)
+  #   ACME_EMAIL=ops@example.com              (Let's Encrypt zorunlu)
+  #
+  # Sertifika ve session datası volume'da kalır → restart'ta yeniden
+  # cert üretmez (LE rate limit).
+  # =====================================================================
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: radio-caddy
+    profiles: ["tls"]
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"     # HTTP/3
+    environment:
+      APP_URL: ${APP_URL:-https://radio.example.com}
+      ACME_EMAIL: ${ACME_EMAIL:-ops@example.com}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - radio_network
 
@@ -265,6 +323,8 @@ services:
         max-size: "30m"
         max-file: "5"
     ports:
+      # Caddy profile aktifse 8080 publish edilmesi PROD'da kapatılmalı:
+      # nginx Caddy ardında dahili kalır. Şimdilik geri-uyumluluk için bırakıyoruz.
       - "8080:80"
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
@@ -354,6 +414,10 @@ volumes:
   media_work:
   frontend_node_modules:
   backup_data:
+  # Faz H3-5: Caddy ACME sertifikaları + state. Restart'ta LE rate-limit
+  # tetiklememek için kalıcı volume şart.
+  caddy_data:
+  caddy_config:
 
 networks:
   radio_network:

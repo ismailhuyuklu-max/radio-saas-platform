@@ -36,7 +36,8 @@ final class PartnerAdminController
      */
     public function rotateTokens(string $stationId): void
     {
-        $this->guard('partner:provision');
+        // Faz H3-2: token rotation operasyonel — manager yapabilir.
+        $this->guard('partner:manage');
         $payload = $this->readJsonPayload();
         $opts = [];
         if (isset($payload['ip'])) {
@@ -110,7 +111,8 @@ final class PartnerAdminController
 
     public function updateProfile(string $stationId): void
     {
-        $this->guard('partner:provision');
+        // Faz H3-2: profil düzenleme (kullanıcı yaratmıyor) — manager yapabilir.
+        $this->guard('partner:manage');
         $payload = $this->readJsonPayload();
         $station = $this->stationRepository->updateProfile($stationId, $payload);
         if ($station === null) {

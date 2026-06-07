@@ -40,20 +40,12 @@ final class AuditLogRepository
     }
 
     /**
-     * Best-guess client IP — prefers the first X-Forwarded-For hop when behind
-     * a trusted reverse proxy, otherwise falls back to REMOTE_ADDR.
+     * Faz H3-4 — RequestContext::clientIp() TRUSTED_PROXY_IPS env'ini
+     * dikkate alır; spoof'lanmış X-Forwarded-For artık güvenilmez.
      */
     private function clientIp(): ?string
     {
-        $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-        if (is_string($fwd) && $fwd !== '') {
-            $first = trim((string) explode(',', $fwd)[0]);
-            if ($first !== '') {
-                return $first;
-            }
-        }
-        $remote = $_SERVER['REMOTE_ADDR'] ?? null;
-        return is_string($remote) ? $remote : null;
+        return \RadioSaaS\Service\RequestContext::clientIp();
     }
 
     /**

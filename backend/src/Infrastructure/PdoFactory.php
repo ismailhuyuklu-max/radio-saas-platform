@@ -19,12 +19,22 @@ final class PdoFactory
 
         $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s', $host, $port, $name);
 
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+
+        // Faz H5-2 — Slow query log opt-in. DB_SLOW_QUERY_MS=200 set
+        // edilirse PDO subclass döner; aksi halde stock PDO (sıfır overhead).
+        $slowMs = (int) (getenv('DB_SLOW_QUERY_MS') ?: 0);
+
         try {
-            $pdo = new PDO($dsn, $user, $password, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]);
+            if ($slowMs > 0) {
+                $pdo = new LoggingPdo($dsn, $user, $password, $options, $slowMs);
+            } else {
+                $pdo = new PDO($dsn, $user, $password, $options);
+            }
         } catch (PDOException $exception) {
             throw new PDOException('Database connection failed: ' . $exception->getMessage(), (int) $exception->getCode(), $exception);
         }

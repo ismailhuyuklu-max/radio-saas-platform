@@ -96,7 +96,8 @@ final class AccessController
         if ($user === null) {
             throw new RuntimeException('User not found.');
         }
-        $this->userRepository->updatePassword($userId, password_hash($next, PASSWORD_BCRYPT));
+        // Faz H3-5: konfig edilebilir bcrypt cost (env BCRYPT_COST).
+        $this->userRepository->updatePassword($userId, \RadioSaaS\Service\PasswordHasher::hash($next));
         $this->auditLogRepository->log('admin', 'reset_password', 'user', $userId, []);
 
         header('Content-Type: application/json; charset=utf-8');

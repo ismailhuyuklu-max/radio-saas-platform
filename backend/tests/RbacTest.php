@@ -57,6 +57,28 @@ check(!Rbac::allows(['viewer'], 'audit:view'), 'viewer cannot view audit');
 // multi-role union
 check(Rbac::allows(['viewer', 'editor'], 'plans:write'), 'viewer+editor union can write plans');
 
+// --------------------------------------------------------------------
+// Faz H3-2: Partner provisioning granularity
+//
+// partner:provision  → SUPER only (yeni kullanıcı yarat / şifre rotate)
+// partner:manage     → MANAGER ve üstü (operasyonel: token rotate, profil)
+// partner:api-key    → SUPER only (kalıcı X-API-Key issue/revoke)
+// --------------------------------------------------------------------
+check(Rbac::allows(['super'], 'partner:provision'), 'super can provision partners');
+check(!Rbac::allows(['radio_manager'], 'partner:provision'), 'H3-2: manager CANNOT provision (super-only)');
+check(!Rbac::allows(['editor'], 'partner:provision'), 'editor cannot provision');
+check(!Rbac::allows(['viewer'], 'partner:provision'), 'viewer cannot provision');
+
+check(Rbac::allows(['super'], 'partner:manage'), 'super can manage partners');
+check(Rbac::allows(['radio_manager'], 'partner:manage'), 'manager can manage partners (token rotate, profile)');
+check(!Rbac::allows(['editor'], 'partner:manage'), 'editor cannot manage partners');
+check(!Rbac::allows(['viewer'], 'partner:manage'), 'viewer cannot manage partners');
+
+check(Rbac::allows(['super'], 'partner:api-key'), 'super can issue api keys');
+check(!Rbac::allows(['radio_manager'], 'partner:api-key'), 'H3-2: manager CANNOT issue api keys (super-only)');
+check(!Rbac::allows(['editor'], 'partner:api-key'), 'editor cannot issue api keys');
+check(!Rbac::allows(['station_user'], 'partner:api-key'), 'station_user cannot use admin api-key endpoint');
+
 // role sanitisation
 check(
     Rbac::sanitizeRoles(['super', 'bogus', 'viewer', 'viewer']) === ['super', 'viewer'],

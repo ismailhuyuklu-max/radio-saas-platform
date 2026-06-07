@@ -50,7 +50,7 @@ final class RadioCredentialService
 
         $user = $this->userRepository->insert([
             'username' => $username,
-            'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+            'password_hash' => PasswordHasher::hash($password), // Faz H3-5
             'real_name' => (string) ($station['name'] ?? $username),
             'roles' => [Rbac::ROLE_STATION_USER],
             'station_id' => $stationId,
@@ -81,7 +81,7 @@ final class RadioCredentialService
         PasswordPolicy::assertStrong($password);
         $this->userRepository->updatePassword(
             (string) $station['user_id'],
-            password_hash($password, PASSWORD_BCRYPT)
+            PasswordHasher::hash($password) // Faz H3-5
         );
 
         return ['password' => $password, 'user_id' => (string) $station['user_id']];

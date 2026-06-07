@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
 
   backend:
-    name: Backend (lint · unit tests)
+    name: Backend (lint · unit tests · static analysis)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,9 +38,16 @@ jobs:
         with:
           php-version: '8.2'
           extensions: pdo_pgsql, mbstring, zip, curl
+          tools: composer:v2
       - name: Lint all PHP sources
         run: |
           find src public bin -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      # Faz H4-4: PHPStan dev dependency. Composer install only if vendor
+      # missing — speedup on cached runs.
+      - name: Composer install (dev)
+        run: composer install --no-interaction --prefer-dist --no-progress
+
       - name: Run unit test suite (no DB required)
         run: |
           php tests/RbacTest.php
@@ -55,6 +62,15 @@ jobs:
           php tests/TrafficPlannerTest.php
           php tests/SmartPlacementTest.php
           php tests/PasswordPolicyTest.php
+          php tests/RequestContextTest.php
+          php tests/PasswordHasherTest.php
+          php tests/LoggerTest.php
+
+      # Faz H4-4: PHPStan static analysis. Non-blocking initially; later flip
+      # to required when baseline is stable. `|| true` removed once green.
+      - name: PHPStan static analysis (level 5)
+        run: composer stan
+        continue-on-error: true
 
   e2e:
     name: E2E (Playwright)

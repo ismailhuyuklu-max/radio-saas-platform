@@ -1,0 +1,48 @@
+# Faz H4-4 — PHPStan statik analiz konfigürasyonu.
+#
+# Çalıştırma:
+#   cd backend && composer stan
+#
+# Level neden 5?
+#   - 0: temel syntax
+#   - 4: dead code, return type uyumsuzlukları
+#   - 5: argument type uyumsuzlukları (en pratik gerçek-bug katmanı)
+#   - 6: missing typehints (büyük baseline gerekir)
+#   - 8: strict nullables (en katı)
+# 5 → gerçek tip hataları yakalar, hatalı dönüş tipi, missing param, fakat
+# legacy "array<string,mixed>" gibi opaque tiplere takılmaz. CI'da yeşil.
+#
+# Baseline:
+#   `composer stan -- --generate-baseline` ile mevcut tipsizlikleri
+#   geçici whitelist'e atar (phpstan-baseline.neon). Yeni eklenen kod
+#   katı kalır; legacy dosyaları tek tek temizleyebiliriz.
+parameters:
+    level: 5
+    paths:
+        - src
+        - public
+        - bin
+    excludePaths:
+        # Vendor + test fixtures dışarıda.
+        - vendor
+        - tests/fixtures/*
+    # Faz H4-1 sonrası: ob_start, set_exception_handler vb. native PHP
+    # global'ları zaten core stubs ile tipli; ekstra ignore gerekmez.
+    treatPhpDocTypesAsCertain: false
+    # Mevcut bilinçli tasarımları es geç:
+    ignoreErrors:
+        # Controller'lar respond() içinde her şeyi handle ediyor; missing return
+        # tipi mocks/tests dışında olmayacak.
+        -
+            message: '#Method .* has no return type specified#'
+            paths:
+                - src/Controller
+                - src/Service
+                - src/Repository
+        # Faz H1-1 hata zarflarında throw'lar string-typed exception alır;
+        # bilinçli geri-uyumluluk.
+        -
+            message: '#Catch statement with .*Throwable\\?#'
+    # Baseline dosyası eğer varsa otomatik dahil edilir.
+includes:
+    - phpstan-baseline.neon

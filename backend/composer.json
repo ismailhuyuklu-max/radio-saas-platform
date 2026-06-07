@@ -10,6 +10,9 @@
     "ext-pdo": "*",
     "ext-pdo_pgsql": "*"
   },
+  "require-dev": {
+    "phpstan/phpstan": "^1.11"
+  },
   "autoload": {
     "psr-4": {
       "RadioSaaS\\": "src/"
@@ -18,6 +21,9 @@
   "scripts": {
     "worker": [
       "php bin/queue-worker.php"
+    ],
+    "stan": [
+      "vendor/bin/phpstan analyse --memory-limit=512M"
     ],
     "test": [
       "php tests/RbacTest.php",
@@ -31,7 +37,10 @@
       "php tests/BroadcastSlotTest.php",
       "php tests/TrafficPlannerTest.php",
       "php tests/SmartPlacementTest.php",
-      "php tests/PasswordPolicyTest.php"
+      "php tests/PasswordPolicyTest.php",
+      "php tests/RequestContextTest.php",
+      "php tests/PasswordHasherTest.php",
+      "php tests/LoggerTest.php"
     ],
     "test:e2e": [
       "php tests/rbac_e2e.php",

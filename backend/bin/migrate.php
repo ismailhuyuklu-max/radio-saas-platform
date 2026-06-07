@@ -9,6 +9,41 @@ require __DIR__ . '/../vendor/autoload.php';
 $migrationsPath = getenv('MIGRATIONS_PATH') ?: '/var/migrations';
 $pdo = PdoFactory::fromEnv();
 
+/**
+ * Faz H3-3 — Advisory lock + atomik koşum.
+ *
+ * İki farklı node (php-fpm + worker; ya da CI deploy çakışması) aynı anda
+ * migrate.php çalıştırırsa:
+ *   - aynı ALTER TABLE ADD COLUMN iki kez tetiklenebilir → "column already exists"
+ *   - INSERT province'ler unique violation üretir
+ *   - schema_migrations'a duplicate insert atılır
+ * pg_try_advisory_lock SADECE bir koşumcunun ilerlemesine izin verir; ikincisi
+ * hemen çıkar ("another migration in progress"), kuyruğa girmez (deadlock yok).
+ *
+ * Lock key: 16 byte'lık sabit ("radio-saas-mig" CRC32 truncated) → 9_876_543_210
+ * Aynı cluster içinde başka iş bu key'i kullanmamalı.
+ */
+const MIGRATION_LOCK_KEY = 9_876_543_210;
+
+$lockStmt = $pdo->prepare('SELECT pg_try_advisory_lock(:key) AS got');
+$lockStmt->execute(['key' => MIGRATION_LOCK_KEY]);
+$lockRow = $lockStmt->fetch();
+if (!$lockRow || $lockRow['got'] !== true) {
+    fwrite(STDERR, "[migrate] Another migration is already in progress on this database (advisory lock {" . MIGRATION_LOCK_KEY . "} held). Refusing to run.\n");
+    exit(2);
+}
+
+// Lock'u her exit yolunda salıver — exception/fatal/regular exit hepsinde.
+register_shutdown_function(static function () use ($pdo): void {
+    try {
+        $pdo->exec('SELECT pg_advisory_unlock(' . MIGRATION_LOCK_KEY . ')');
+    } catch (Throwable $ignored) {
+        // Connection zaten kopmuşsa PG kilidi otomatik bırakır.
+    }
+});
+
+try {
+
 $pdo->exec(
     'CREATE TABLE IF NOT EXISTS schema_migrations (
         version varchar(191) PRIMARY KEY,
@@ -437,6 +472,12 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_api_keys_station ON partner_api_keys 
 $pdo->exec('ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address varchar(64) NULL');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs (ip_address, created_at DESC)');
 
+// Faz H5-3 — Eksik kompozit index'ler. Audit listesi en sık
+// action ve actor_username üzerinden filtrelenir; her ikisi de
+// created_at DESC ile birleştiğinde index-only scan'e izin verir.
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_action_created ON audit_logs (action, created_at DESC)');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_actor_created ON audit_logs (actor_username, created_at DESC)');
+
 /**
  * Faz 22 — Ulusal yetkili radyolar. Master prompt: "Ulusal yetkili radyolar
  * tüm Türkiye içeriklerini görebilir". Default false: bölge kilidi devam.
@@ -466,3 +507,19 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_content_plans_province ON content_pla
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_content_plans_campaign ON content_plans (campaign_id)');
 
 echo "Migrations complete.\n";
+
+} catch (Throwable $e) {
+    // Faz H3-3 — Aktif transaction varsa rollback; partial state'i temizle.
+    if ($pdo->inTransaction()) {
+        try {
+            $pdo->rollBack();
+            fwrite(STDERR, "[migrate] Active transaction rolled back due to: " . $e->getMessage() . "\n");
+        } catch (Throwable $rollbackErr) {
+            fwrite(STDERR, "[migrate] Rollback failed: " . $rollbackErr->getMessage() . "\n");
+        }
+    }
+    fwrite(STDERR, "[migrate] FATAL " . $e::class . ": " . $e->getMessage() . "\n");
+    fwrite(STDERR, $e->getTraceAsString() . "\n");
+    // Lock shutdown handler tarafından bırakılacak.
+    exit(1);
+}

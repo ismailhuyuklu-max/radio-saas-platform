@@ -29,7 +29,8 @@ final class PartnerApiKeyController
 
     public function adminList(string $stationId): void
     {
-        $this->authenticator->authorize($this->token(), 'partner:provision');
+        // Faz H3-2: API anahtarı SUPER-only — kalıcı erişim jetonu.
+        $this->authenticator->authorize($this->token(), 'partner:api-key');
         $this->respond([
             'code' => 0,
             'result' => ['keys' => $this->repo->listForStation($stationId)],
@@ -38,7 +39,8 @@ final class PartnerApiKeyController
 
     public function adminIssue(string $stationId): void
     {
-        $user = $this->authenticator->authorize($this->token(), 'partner:provision');
+        // Faz H3-2: API anahtarı SUPER-only — kalıcı erişim jetonu.
+        $user = $this->authenticator->authorize($this->token(), 'partner:api-key');
         $payload = $this->readJsonPayload();
         $name = (string) ($payload['name'] ?? '');
         $scopes = $this->normaliseScopes($payload['scopes'] ?? []);
@@ -67,7 +69,8 @@ final class PartnerApiKeyController
 
     public function adminRevoke(string $stationId, string $keyId): void
     {
-        $user = $this->authenticator->authorize($this->token(), 'partner:provision');
+        // Faz H3-2: API anahtarı SUPER-only — kalıcı erişim jetonu.
+        $user = $this->authenticator->authorize($this->token(), 'partner:api-key');
         $ok = $this->repo->revoke($keyId, $stationId);
         if (!$ok) {
             $this->respond(['code' => 1, 'message' => 'Anahtar bulunamadı.'], 404);

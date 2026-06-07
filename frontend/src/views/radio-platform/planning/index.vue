@@ -356,7 +356,8 @@ async function runBulkMove(shift: number, copy = false, targetDate?: string) {
       copy,
       target_date: targetDate,
     });
-    const r = res?.result;
+    // HOTFIX: unwrap edilmiş — direkt erişim.
+    const r = res as { written: number; skipped: number; copy: boolean } | null;
     const verb = copy ? 'kopyalandı' : 'taşındı';
     message.success(`${r?.written ?? 0} plan ${verb}${r?.skipped ? `, ${r.skipped} çakışma atlandı` : ''}.`);
     clearSelection();
@@ -378,7 +379,8 @@ async function runBulkDelete() {
   busy.value = true;
   try {
     const res = await bulkDeletePlans([...selected.value]);
-    message.success(`${res?.result?.deleted ?? 0} plan silindi.`);
+    // HOTFIX: unwrap sonrası direkt erişim — geri uyumluluk için optional chain.
+    message.success(`${(res as { deleted?: number })?.deleted ?? 0} plan silindi.`);
     clearSelection();
     await reload();
   } catch (error) {
@@ -402,7 +404,8 @@ async function openSuggestions() {
       date: selectedDate.value.format('YYYY-MM-DD'),
       region: regionFilter.value,
     });
-    suggestResult.value = res?.result ?? { suggestions: [], warnings: [] };
+    // HOTFIX: unwrap edilmiş PlacementResult direkt geliyor.
+    suggestResult.value = (res as PlacementResult) ?? { suggestions: [], warnings: [] };
   } catch (error) {
     message.error(extractApiError(error) ?? 'Öneriler alınamadı.');
     suggestResult.value = { suggestions: [], warnings: [] };

@@ -35,7 +35,9 @@ final class SignedFeedController
 
     public function show(string $stationId, string $token, string $purpose, string $format): void
     {
-        $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        // Faz H3-4 — trusted proxy aware; IP kısıtlamalı stream token'lar artık
+        // sahte XFF ile bypass edilemez.
+        $clientIp = \RadioSaaS\Service\RequestContext::clientIp();
         $referer = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? null;
         try {
             $row = $this->tokenService->verify($stationId, $purpose, $token, $clientIp, $referer);

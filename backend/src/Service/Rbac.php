@@ -96,8 +96,16 @@ final class Rbac
             self::ROLE_EDITOR,
         ],
         'support:manage' => self::MANAGERS,
-        // Admin-only provisioning of partner accounts and credential rotation.
-        'partner:provision' => self::MANAGERS,
+        // Faz H3-2 — Granular partner ops.
+        // partner:provision = yeni kullanıcı yarat + şifre rotation. Yeni
+        // kullanıcı yaratmak security-sensitive: SUPER-only.
+        'partner:provision' => self::ADMINS,
+        // partner:manage = stream token rotate + profil düzenleme.
+        // Operasyonel iş (yeni kullanıcı yaratmıyor) — manager yapabilir.
+        'partner:manage' => self::MANAGERS,
+        // partner:api-key = X-API-Key issue/revoke — kalıcı erişim
+        // jetonu olduğu için SUPER-only.
+        'partner:api-key' => self::ADMINS,
     ];
 
     /**

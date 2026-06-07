@@ -224,7 +224,8 @@ async function refreshPlacement() {
     const res = await previewPlanSuggestions(
       slots.value.map((s) => ({ slot_time: s.slot_time, part_code: s.part_code })),
     );
-    placement.value = res?.result ?? null;
+    // HOTFIX: unwrap edilmiş PlacementResult.
+    placement.value = (res as PlacementResult) ?? null;
   } catch (e) {
     // Önizleme her keystroke'ta tetiklenir; toast atmak gürültü olur.
     // Sessizce sıfırla ama dev'de debug için warn et.
@@ -272,8 +273,9 @@ async function submit() {
       start_date: startDate.value.format('YYYY-MM-DD'),
       repeat_days: repeatDays.value,
     });
-    result.value = res.result;
-    message.success(`${res.result.created} plan oluşturuldu.`);
+    // HOTFIX: bulkPlan unwrap edilmiş BulkPlanResult döner.
+    result.value = res as BulkPlanResult;
+    message.success(`${(res as BulkPlanResult).created} plan oluşturuldu.`);
   } catch {
     message.error('Toplu planlama başarısız.');
   } finally {

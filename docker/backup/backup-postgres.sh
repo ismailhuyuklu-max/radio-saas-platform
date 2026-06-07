@@ -48,4 +48,18 @@ echo "[backup] $(date) - mirrored to MinIO radio-backup/postgres/"
 find "$BACKUP_DIR" -name 'db_*.dump.gz' -type f -mtime +30 -print -delete
 echo "[backup] $(date) - retention sweep complete"
 
+# --- Faz H5-3: audit_logs retention (default 180 gün) ---
+# AuditLogRepository::pruneOlderThan'ın saf SQL eşdeğeri — PHP container
+# gerekmez. audit_logs tablosunda yoksa veya boşsa sessizce 0 etkiler.
+AUDIT_DAYS="${AUDIT_RETENTION_DAYS:-180}"
+echo "[backup] $(date) - audit retention sweep (older than ${AUDIT_DAYS} days)"
+
+# psql exit code'unu yutmadan kontrol et; tablo yoksa "relation does not exist"
+# yetkisiz fail değil → || true ile saf SQL'i geçirelim.
+PRUNED=$(PGPASSWORD="$POSTGRES_PASSWORD" psql \
+    -h "$PG_HOST" -U "$PG_USER" -d "$PG_DB" -tA \
+    -c "DELETE FROM audit_logs WHERE created_at < now() - interval '${AUDIT_DAYS} days' RETURNING 1;" \
+    2>/dev/null | wc -l || echo 0)
+echo "[backup] $(date) - pruned ${PRUNED} audit rows"
+
 echo "[backup] $(date) - SUCCESS"
