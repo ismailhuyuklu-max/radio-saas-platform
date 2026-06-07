@@ -74,6 +74,16 @@ else
   echo "  ✓ Docker zaten var"
 fi
 
+# ---------- 4b. Node.js 20 LTS (frontend build için) ----------
+echo "[4b/10] Node.js 20 LTS..."
+if ! command -v node &>/dev/null || [[ $(node --version | sed 's/v//' | cut -d. -f1) -lt 18 ]]; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
+  apt-get install -y -qq nodejs
+  echo "  ✓ Node $(node --version), npm $(npm --version)"
+else
+  echo "  ✓ Node $(node --version) zaten var"
+fi
+
 # Docker daemon log rotation
 cat > /etc/docker/daemon.json <<'EOF'
 {
