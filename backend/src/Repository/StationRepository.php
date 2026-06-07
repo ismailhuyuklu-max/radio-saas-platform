@@ -12,6 +12,12 @@ final class StationRepository
     {
     }
 
+    /** Faz CTO-19: ETag helper'ı için PDO erişimi. */
+    public function pdo(): PDO
+    {
+        return $this->pdo;
+    }
+
     public function listActiveByRegion(string $regionCode): array
     {
         $stmt = $this->pdo->prepare(

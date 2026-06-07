@@ -10,7 +10,9 @@ namespace RadioSaaS\Service;
  */
 final class Pagination
 {
-    public const DEFAULT_LIMIT = 500;
+    // Faz CTO-18: DEFAULT 500→100 — 500 row payload P95 2.3s'e çıkıyordu.
+    // 100 row ~50KB JSON, P95 hedef ~500ms. Explicit ?limit ile override.
+    public const DEFAULT_LIMIT = 100;
     public const MAX_LIMIT = 1000;
 
     /**

@@ -31,6 +31,23 @@ final class StationController
     {
         $this->guard('stations:view');
 
+        // Faz CTO-19: ETag — filtre/limit yoksa weak ETag ile 304 mümkün.
+        // Filtre varsa hash key'i değişir; ETag yine doğru çalışır.
+        $filterKey = http_build_query([
+            'q' => $_GET['keyword'] ?? '',
+            'r' => $_GET['region'] ?? '',
+            's' => $_GET['status'] ?? '',
+            'a' => $_GET['is_active'] ?? '',
+            'l' => $_GET['limit'] ?? '',
+            'o' => $_GET['offset'] ?? '',
+        ]);
+        $tableEtag = \RadioSaaS\Service\EtagCache::tableEtag($this->stationRepository->pdo(), 'stations');
+        $etag = $tableEtag . ':' . substr(md5($filterKey), 0, 8);
+
+        if (\RadioSaaS\Service\EtagCache::check($etag)) {
+            return;  // 304 sent, no body
+        }
+
         $filters = [
             'keyword' => $_GET['keyword'] ?? null,
             'region' => $_GET['region'] ?? null,
