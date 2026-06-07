@@ -29,3 +29,13 @@ Thumbs.db
 # Docker / runtime data
 media_work/
 docs/doc-sessions.json
+
+# .NET / Visual Studio build artifacts (sync-client)
+sync-client/**/bin/
+sync-client/**/obj/
+sync-client/**/*.user
+sync-client/**/*.suo
+sync-client/.vs/
+sync-client/**/TestResults/
+sync-client/**/Properties/launchSettings.json
+sync-client/**/Properties/PublishProfiles/
