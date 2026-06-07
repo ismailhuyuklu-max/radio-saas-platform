@@ -464,11 +464,17 @@ onUnmounted(() => {
 
 <style scoped>
 /* Faz UX-noc: tüm sayfa 1080p ekrana scroll'suz sığacak şekilde
-   sıkılaştırıldı (KPI strip + services + events + gauges + footer). */
+   sıkılaştırıldı. Footer ekranın altına yapışsın, içerik ile altındaki
+   boş arka plan arası kapatılır. */
 .noc {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* topbar 44 + app-content padding 14 üst + 14 alt = 72 px */
+  min-height: calc(100vh - 72px);
+}
+.noc.is-wall {
+  min-height: 100vh;
 }
 
 /* ===== Header ===== */
@@ -975,7 +981,9 @@ onUnmounted(() => {
 
 /* ===== Footer ===== */
 .noc__foot {
-  margin: 0;
+  /* margin-top:auto + .noc min-height = ekran altına yapışır,
+     içerik kısa olursa arada boş kalmaz görsel olarak.  */
+  margin: auto 0 0;
   font-size: 10px;
   color: var(--c-text-3);
   padding: 4px 10px;
