@@ -26,14 +26,18 @@ final class MatrixController
     public function regions(): void
     {
         $this->guard('matrix:view');
-        // Faz H2-2: unified zarf
-        $this->respond(['code' => 0, 'result' => $this->matrixRepository->listRegions(), 'message' => 'Success']);
+        // Faz CTO-20: ETag + 304 cache
+        $body = ['code' => 0, 'result' => $this->matrixRepository->listRegions(), 'message' => 'Success'];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->respond($body);
     }
 
     public function matrix(): void
     {
         $this->guard('matrix:view');
-        $this->respond(['code' => 0, 'result' => $this->matrixRepository->buildMatrix(), 'message' => 'Success']);
+        $body = ['code' => 0, 'result' => $this->matrixRepository->buildMatrix(), 'message' => 'Success'];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->respond($body);
     }
 
     public function assignSponsor(): void
@@ -141,7 +145,10 @@ final class MatrixController
             ];
         }, $rows);
 
-        $this->respond(['code' => 0, 'result' => $out, 'message' => 'Success']);
+        // Faz CTO-20: ETag + 304 cache
+        $body = ['code' => 0, 'result' => $out, 'message' => 'Success'];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->respond($body);
     }
 
     public function deleteSponsor(string $id): void

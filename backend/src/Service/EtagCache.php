@@ -70,6 +70,28 @@ final class EtagCache
     }
 
     /**
+     * Pragmatic shortcut: hesaplanmış body array'inden ETag üret + check.
+     * - Body JSON encode edilir, SHA1 alınır
+     * - If-None-Match eşleşirse 304 + boş gövde dönülür
+     * - Aksi halde ETag response header'a set edilir, caller body'i yollar
+     *
+     * Repository PDO accessor gerektirmez — basit pattern.
+     * Network tasarrufu var (304: 0 byte body), backend query maliyeti
+     * yine ödenir (tableEtag fully cache hit; bodyEtag sadece emit cache).
+     *
+     * @return bool true = 304 sent, caller exit etmeli; false = devam et
+     */
+    public static function checkBody(array $body): bool
+    {
+        $json = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            return false;
+        }
+        $etag = self::bodyEtag($json);
+        return self::check($etag);
+    }
+
+    /**
      * Verilen etag client'ın If-None-Match'i ile eşleşiyorsa 304 + exit.
      * Aksi halde response header'ında ETag'i set eder.
      *

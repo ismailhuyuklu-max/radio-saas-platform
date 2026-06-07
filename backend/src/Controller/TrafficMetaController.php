@@ -27,12 +27,14 @@ final class TrafficMetaController
     public function provinces(): void
     {
         $this->guard('plans:view');
-        // Faz H2-2: unified zarf + iç şey `provinces` adlı tut.
-        $this->json([
+        // Faz CTO-20: ETag + 304. 81 il statik veri — yüksek 304 hit oranı.
+        $body = [
             'code' => 0,
             'result' => ['provinces' => $this->provinceRepository->listAll()],
             'message' => 'Success',
-        ]);
+        ];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->json($body);
     }
 
     public function groups(): void
@@ -43,11 +45,13 @@ final class TrafficMetaController
             $group['station_ids'] = $this->stationGroupRepository->memberStationIds((string) $group['id']);
         }
         unset($group);
-        $this->json([
+        $body = [
             'code' => 0,
             'result' => ['groups' => $groups],
             'message' => 'Success',
-        ]);
+        ];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->json($body);
     }
 
     public function createGroup(): void
@@ -107,11 +111,14 @@ final class TrafficMetaController
             'region_code' => $s['region_code'] ?? null,
             'group_id' => $s['group_id'] ?? null,
         ], $stations);
-        $this->json([
+        // Faz CTO-20: ETag + 304 cache
+        $body = [
             'code' => 0,
             'result' => ['stations' => $slim],
             'message' => 'Success',
-        ]);
+        ];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->json($body);
     }
 
     private function guard(string $permission): void

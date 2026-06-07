@@ -478,6 +478,13 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs (ip_address, c
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_action_created ON audit_logs (action, created_at DESC)');
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_audit_actor_created ON audit_logs (actor_username, created_at DESC)');
 
+// Faz CTO-22 — stations.listStations() ORDER BY created_at DESC LIMIT N
+// idx kullanım oranı %2.2 idi (29K seq scan). Bu index ile %95+ idx hedef.
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_stations_created_at ON stations (created_at DESC)');
+
+// Faz CTO-22 — admin_sessions cleanup: expires_at < now() yoğun seq.
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions (expires_at) WHERE revoked_at IS NULL');
+
 /**
  * Faz 22 — Ulusal yetkili radyolar. Master prompt: "Ulusal yetkili radyolar
  * tüm Türkiye içeriklerini görebilir". Default false: bölge kilidi devam.

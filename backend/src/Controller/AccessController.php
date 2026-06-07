@@ -22,8 +22,10 @@ final class AccessController
     public function users(): void
     {
         $this->guard('users:manage');
-        // Faz H2-2: unified zarf — frontend artık tek noktadan unwrap eder.
-        $this->respond(['code' => 0, 'result' => $this->userRepository->listUsers(), 'message' => 'Success']);
+        // Faz CTO-20: ETag + 304 cache
+        $body = ['code' => 0, 'result' => $this->userRepository->listUsers(), 'message' => 'Success'];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->respond($body);
     }
 
     public function updateRoles(string $userId): void
@@ -142,11 +144,14 @@ final class AccessController
 
         // Faz H2-2: unified zarf. Listenin tipi `logs` adı altında çıkar
         // ki NOC + dashboard + access aynı normalizeList('logs') ile okusun.
-        $this->respond([
+        // Faz CTO-20: ETag + 304 cache
+        $body = [
             'code' => 0,
             'result' => ['logs' => $this->auditLogRepository->listLogs($filters, $limit)],
             'message' => 'Success',
-        ]);
+        ];
+        if (\RadioSaaS\Service\EtagCache::checkBody($body)) return;
+        $this->respond($body);
     }
 
     /** Faz H2-2: ortak JSON respond helper. */
