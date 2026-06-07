@@ -463,47 +463,20 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Faz UX-noc: viewport-fit. Doğru reserved hesabı —
-   AppShell .app-content padding bp'lerine göre değişiyor (mobile 14,
-   tablet 20, desktop 26/28/40); topbar mobile 58 / tablet+desktop 62.
-   En basit ve sağlam: .app-content default padding'ini NOC için 0 yap
-   ve NOC kendi içinde tüm padding'i tutsun. Böylece tek formül:
-   height = 100vh - topbar. */
+/* Faz PAGE-FIT: NOC artık global .page-fit pattern'ine uyumlu.
+   AppShell topbar 44 + padding 14×2 = 72 → 100dvh - 72.
+   Margin trick'e gerek yok; AppShell padding artık uniform. */
 .noc {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* AppShell padding'ini neutralize et — NOC kendi padding'ini içeride */
-  margin: -14px;
-  padding: 10px;
-  /* mobile topbar 58 */
-  height: calc(100dvh - 58px);
+  height: calc(100dvh - 72px);
   overflow: hidden;
   box-sizing: border-box;
 }
-@media (min-width: 768px) {
-  .noc {
-    margin: -20px;
-    padding: 12px;
-    /* tablet topbar 62 */
-    height: calc(100dvh - 62px);
-  }
-}
-@media (min-width: 1024px) {
-  .noc {
-    /* desktop AppShell padding 26/28/40 → tamamen sıfırla */
-    margin: -26px -28px -40px;
-    padding: 12px 14px;
-    /* desktop topbar 62 */
-    height: calc(100dvh - 62px);
-  }
-}
 .noc.is-wall {
-  margin: 0;
   height: 100dvh;
 }
-/* Header/banner/KPI/gauges/footer kendi boylarını alır;
-   .noc__row hepsinden kalan alanı doldurur. */
 .noc > .noc__row {
   flex: 1 1 auto;
   min-height: 0;

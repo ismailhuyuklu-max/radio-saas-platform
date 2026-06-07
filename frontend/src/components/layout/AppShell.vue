@@ -204,9 +204,11 @@ watch(() => route.fullPath, () => {
 <style scoped>
 .app-shell {
   /* Faz UX-sidebar: 248 → 220 — daha sıkı dikey alan kazandırmaz ama
-     yatay alanda %11 ekran geri verir. Nav label'ları ("Yayın Trafik
-     Merkezi") halen tek satır sığar. */
+     yatay alanda %11 ekran geri verir. */
   --sidebar-w: 220px;
+  /* Faz PAGE-FIT: tüm view'lar bu değeri referans alarak height
+     hesaplayabilsin. */
+  --topbar-h: 44px;
   min-height: 100vh;
   width: 100%;
 }
@@ -437,9 +439,9 @@ watch(() => route.fullPath, () => {
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 58px;
-  padding: 0 14px;
+  gap: 10px;
+  height: var(--topbar-h, 44px);
+  padding: 0 10px;
   background: rgba(9, 13, 22, 0.86);
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   backdrop-filter: blur(14px);
@@ -469,7 +471,7 @@ watch(() => route.fullPath, () => {
   flex: 1;
   margin: 0;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #f8fafc;
@@ -487,23 +489,19 @@ watch(() => route.fullPath, () => {
 
 .app-content {
   flex: 1;
-  padding: 14px;
+  /* Faz PAGE-FIT: uniform padding tüm bp'lerde — sayfa içeriği
+     viewport hesabını tek bir değerden yapabilsin. */
+  padding: 12px;
   min-width: 0;
 }
 
 /* ---------- Tablet ---------- */
 @media (min-width: 768px) {
   .app-content {
-    padding: 20px;
+    padding: 14px;
   }
-
-  .app-topbar {
-    height: 62px;
-    padding: 0 20px;
-  }
-
   .app-topbar__title {
-    font-size: 19px;
+    font-size: 15px;
   }
 }
 
@@ -536,7 +534,7 @@ watch(() => route.fullPath, () => {
   }
 
   .app-content {
-    padding: 26px 28px 40px;
+    padding: 14px;
   }
 }
 </style>

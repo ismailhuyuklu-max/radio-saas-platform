@@ -100,6 +100,63 @@ select {
   display: block;
 }
 
+/* =========================================================================
+   Faz PAGE-FIT — viewport-fit sayfa kalıbı.
+   Tüm sayfalar bu class'ı root'a alır → AppShell topbar (44 px) ve
+   .app-content padding (14 px) dışında kalan TÜM alanı doldurur.
+   Sayfa scroll'u oluşmaz; uzun listeler .page-fit__body içinde scroll.
+   ========================================================================= */
+.page-fit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* AppShell padding 14 (top+bottom) + topbar 44 = 72 → 100dvh - 72 */
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Page filter/header bar — sayfa üstüne sabit yapışır, scroll etmez */
+.page-fit__head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(18, 27, 46, 0.76);
+  border: 1px solid var(--radio-border);
+}
+.page-fit__head h1,
+.page-fit__head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--radio-text);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Main content area — kalan alanı doldurur, içinde scroll mümkün */
+.page-fit__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* Yatay scroll yalnız ihtiyaç olursa (tablo geniş kolonlar) */
+  overflow-x: auto;
+}
+
+/* Footer bar (opsiyonel) — alt sabit, scroll etmez */
+.page-fit__foot {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--radio-text-muted);
+  border-top: 1px solid var(--radio-border);
+}
+
 .ant-btn {
   border-radius: 12px;
 }
