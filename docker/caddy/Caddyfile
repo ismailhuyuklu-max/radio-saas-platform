@@ -33,12 +33,18 @@
 	encode zstd gzip
 
 	# Güvenlik header'ları (nginx zaten ekliyor ama TLS layer'da da
-	# pekiştirelim — defense-in-depth).
+	# pekiştirelim — defense-in-depth). Faz CTO-4: tam OWASP ASVS L2 seti.
 	header {
+		# Transport security — HSTS preload listesi için (gerçek prod için)
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options    "nosniff"
 		X-Frame-Options           "SAMEORIGIN"
 		Referrer-Policy           "strict-origin-when-cross-origin"
+		# Cihaz API izinleri default kapalı
+		Permissions-Policy        "camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=()"
+		# Cross-origin izolasyon (Spectre + iframe + window.opener)
+		Cross-Origin-Opener-Policy   "same-origin"
+		Cross-Origin-Resource-Policy "same-site"
 		# Caddy default Server: header'ı siler — version disclosure azaltır.
 		-Server
 	}

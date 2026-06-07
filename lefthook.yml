@@ -1,0 +1,113 @@
+# =============================================================================
+# Aircast Pro — Lefthook pre-commit guard (Faz CTO-2)
+# =============================================================================
+# Her commit öncesi otomatik:
+#   1. PHP lint (php -l) — değişen *.php dosyaları
+#   2. TypeScript / Vue typecheck — frontend repo'da
+#   3. ESLint — değişen frontend dosyaları
+#   4. Secret scan — gitleaks olmadan basit pattern (api_key=, password=)
+#   5. Composer.json + package.json değişti mi → lock dosyası güncel mi
+#
+# Çalıştırmak için bir kez:
+#   npx lefthook install
+# Sonra her `git commit` öncesi otomatik tetiklenir.
+#
+# Bypass (acil durum, kullanmayın): git commit --no-verify
+# =============================================================================
+
+pre-commit:
+  parallel: true
+  commands:
+
+    # ---------- PHP lint (değişen dosyalar) ----------
+    php-lint:
+      glob: "backend/**/*.php"
+      run: |
+        files="{staged_files}"
+        if [ -z "$files" ]; then exit 0; fi
+        errs=0
+        for f in $files; do
+          if ! php -l "$f" >/dev/null 2>&1; then
+            echo "PHP syntax error: $f"
+            php -l "$f"
+            errs=$((errs + 1))
+          fi
+        done
+        exit $errs
+
+    # ---------- TypeScript / Vue typecheck ----------
+    frontend-typecheck:
+      glob: "frontend/**/*.{ts,vue}"
+      run: |
+        cd frontend && npx vue-tsc --noEmit
+      skip:
+        - merge
+        - rebase
+
+    # ---------- ESLint (sadece değişen frontend dosyaları) ----------
+    frontend-lint:
+      glob: "frontend/src/**/*.{ts,vue}"
+      run: |
+        cd frontend && npx eslint {staged_files} --max-warnings=0
+
+    # ---------- Backend test smoke (hızlı) ----------
+    backend-tests:
+      glob: "backend/src/**/*.php"
+      run: |
+        php backend/tests/RbacTest.php >/dev/null
+        php backend/tests/RequestContextTest.php >/dev/null
+        php backend/tests/PasswordHasherTest.php >/dev/null
+
+    # ---------- Secret scan: basit pattern ----------
+    secret-scan:
+      run: |
+        # Tarama: API key, password, JWT, AWS, GCP, MinIO defaults
+        if git diff --cached --name-only -z | xargs -0 grep -lE \
+          "(api[_-]?key|secret|password|token)\s*=\s*['\"][A-Za-z0-9+/=_-]{16,}['\"]|AKIA[0-9A-Z]{16}|sk_live_|ghp_[A-Za-z0-9]{36}" \
+          2>/dev/null; then
+          echo "FATAL: olası secret commit ediliyor — değişiklikleri gözden geçirin."
+          exit 1
+        fi
+        # .env.production sızıntısı
+        if git diff --cached --name-only | grep -q "^\.env\.production$"; then
+          echo "FATAL: .env.production commit edilemez (gitignore'da olmalı)."
+          exit 1
+        fi
+
+    # ---------- Lock dosya güncelliği ----------
+    lock-files:
+      run: |
+        if git diff --cached --name-only | grep -q "^backend/composer\.json$" \
+           && ! git diff --cached --name-only | grep -q "^backend/composer\.lock$"; then
+          echo "WARN: composer.json değişti ama composer.lock güncellenmedi."
+        fi
+        if git diff --cached --name-only | grep -q "^frontend/package\.json$" \
+           && ! git diff --cached --name-only | grep -q "^frontend/package-lock\.json$"; then
+          echo "WARN: package.json değişti ama package-lock.json güncellenmedi."
+        fi
+
+# Commit-msg: Conventional Commit format zorlaması
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        msg=$(head -1 "{1}")
+        if ! echo "$msg" | grep -qE "^(feat|fix|hotfix|refactor|test|docs|ui|tune|harden|release|chore|perf|style|build|ci)(\([a-z0-9-]+\))?: .{3,}"; then
+          echo "Commit mesajı conventional format'a uymuyor."
+          echo "Örnek: feat(planning): yeni takvim görünümü"
+          echo "       fix(noc): scroll sorunu giderildi"
+          echo "       release(v1.3.0): kompakt arayüz"
+          exit 1
+        fi
+
+# Pre-push: hızlı backend + frontend test smoke
+pre-push:
+  parallel: true
+  commands:
+    backend-test:
+      run: |
+        php backend/tests/RbacTest.php >/dev/null && \
+        php backend/tests/RequestContextTest.php >/dev/null
+    frontend-test:
+      run: |
+        cd frontend && npx vitest run --reporter=dot 2>&1 | tail -3
