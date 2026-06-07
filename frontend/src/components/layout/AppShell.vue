@@ -136,16 +136,15 @@ watch(() => route.fullPath, () => {
     <!-- Sidebar (desktop) / Drawer (mobile) -->
     <aside class="app-sidebar" :class="{ 'is-open': drawerOpen }">
       <div class="app-brand">
-        <!-- REBRAND: gerçek PNG logo (frontend/public/adcastpro-logo.png) -->
+        <!-- REBRAND: gerçek PNG logo wordmark (1554×519 — wide format).
+             Logo zaten "Ad Cast Pro" yazısını içerdiği için yanına ek başlık
+             koymuyoruz; alt-text "Yayın Yönetimi" tek satır olarak kalıyor. -->
         <img
           src="/adcastpro-logo.png"
           alt="AdCast Pro"
           class="app-brand__mark"
-          width="32"
-          height="32"
         />
         <div class="app-brand__text">
-          <strong>AdCast Pro</strong>
           <span>Yayın Yönetimi</span>
         </div>
       </div>
@@ -249,38 +248,41 @@ watch(() => route.fullPath, () => {
 /* Faz UX-sidebar: tüm 13 nav item + brand + foot 720p ekrana sığar.
    Yalnız sidebar dokunuldu; sayfa içerikleri ve diğer her şey aynı. */
 .app-brand {
+  /* REBRAND: wide-format wordmark → column layout (logo üstte, alt-text altta).
+     Önceden row + emoji + iki satır text vardı; logo zaten "Ad Cast Pro"
+     wordmark'ını içeriyor. */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 2px 6px 6px;
+  gap: 4px;
+  padding: 4px 8px 10px;
 }
 
 .app-brand__mark {
-  /* REBRAND: img element — emoji font-size yerine width/height */
-  width: 32px;
-  height: 32px;
+  /* REBRAND: wordmark — doğal aspect ratio (~3:1) ile yükseklik bazlı.
+     Sidebar genişliğine sığsın diye max-width %100. Transparent PNG,
+     drop-shadow ile brand-red glow korunur. */
+  display: block;
+  height: 40px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(225, 29, 72, 0.3));
+  filter: drop-shadow(0 2px 8px rgba(225, 29, 72, 0.35));
 }
 
 .app-brand__text {
   display: flex;
   flex-direction: column;
   line-height: 1.1;
-}
-
-.app-brand__text strong {
-  color: #f8fafc;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  margin-top: 2px;
 }
 
 .app-brand__text span {
   color: rgba(148, 163, 184, 0.9);
   font-size: 10px;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .app-nav {

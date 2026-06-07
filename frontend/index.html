@@ -37,9 +37,10 @@
          replaced the moment Vue mounts into #app. -->
     <style>
       html,body{margin:0;background:#090d16;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
-      #app-splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-      #app-splash .s-logo{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(225,29,72,0.3))}
-      #app-splash .s-name{font-size:18px;font-weight:800;letter-spacing:-0.02em}
+      #app-splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px}
+      /* REBRAND: wide wordmark — yükseklik bazlı, max-width 78vw mobil için */
+      #app-splash .s-logo{height:120px;width:auto;max-width:78vw;object-fit:contain;filter:drop-shadow(0 6px 22px rgba(225,29,72,0.35))}
+      #app-splash .s-name{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
       #app-splash .s-bar{width:120px;height:3px;border-radius:3px;background:rgba(148,163,184,.18);overflow:hidden}
       #app-splash .s-bar::after{content:'';display:block;height:100%;width:40%;border-radius:3px;background:#e11d48;animation:s-load 1s infinite}
       @keyframes s-load{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}

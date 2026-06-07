@@ -1,41 +1,41 @@
 <script lang="ts" setup>
 // REBRAND: Aircast Pro → AdCast Pro
-// PNG gerçek logo (frontend/public/adcastpro-logo.png — 344 KB yüksek çözünürlük)
-// Vite tree-shake yapamaz public dosyaları, ama nginx 30d immutable cache eder.
+// PNG wordmark logo (frontend/public/adcastpro-logo.png — 1554×519, 344 KB,
+// transparent RGBA). Logo zaten "Ad Cast Pro" yazısını içerdiği için yanına
+// ayrı text duplicate olur — kaldırıldı. compact prop API uyumluluğu için
+// korunuyor (yükseklik ölçeği etkiler).
 
 interface Props {
+  /** Compact mode: küçük yükseklik (matrix gibi yoğun ekranlarda) */
   compact?: boolean;
-  /** Logo height in pixels (mark only — text auto-scales) */
+  /** Logo height in pixels — overrides compact */
   size?: number;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   compact: false,
-  size: 56,
+  size: 0,
 });
+
+// size > 0 verilirse onu kullan; yoksa compact ise 32px, değilse 56px
+const resolvedHeight = (): number => {
+  if (props.size > 0) return props.size;
+  return props.compact ? 32 : 56;
+};
 </script>
 
 <template>
-  <div
-    class="adcast-pro-logo"
-    :class="{ 'is-compact': compact }"
-    aria-label="AdCast Pro"
-  >
+  <div class="adcast-pro-logo" :class="{ 'is-compact': compact }" aria-label="AdCast Pro">
     <img
       src="/adcastpro-logo.png"
       alt="AdCast Pro"
       class="adcast-pro-logo-mark"
-      :style="{ height: `${size}px`, width: 'auto' }"
+      :style="{ height: `${resolvedHeight()}px` }"
       loading="eager"
       decoding="async"
-      width="120"
-      height="120"
+      width="240"
+      height="80"
     />
-
-    <div v-if="!compact" class="adcast-pro-logo-copy">
-      <strong>AdCast Pro</strong>
-      <small>Yayın Yönetim Paneli</small>
-    </div>
   </div>
 </template>
 
@@ -43,48 +43,16 @@ withDefaults(defineProps<Props>(), {
 .adcast-pro-logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
   color: #f8fafc;
 }
 
-.adcast-pro-logo.is-compact {
-  gap: 0.5rem;
-}
-
 .adcast-pro-logo-mark {
+  /* Wide wordmark — yükseklik bazlı, genişlik aspect-ratio'ya göre auto.
+     Transparent PNG, drop-shadow ile brand-red glow. */
   display: block;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
-  /* Soft glow — koyu temada PNG'nin etrafında ince bir aura */
-  filter: drop-shadow(0 4px 12px rgba(225, 29, 72, 0.25));
-}
-
-.adcast-pro-logo-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-  line-height: 1;
-}
-
-.adcast-pro-logo-copy strong {
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.adcast-pro-logo-copy small {
-  color: rgba(248, 250, 252, 0.72);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .adcast-pro-logo-copy strong {
-    font-size: 0.95rem;
-  }
-
-  .adcast-pro-logo-copy small {
-    font-size: 0.72rem;
-  }
+  filter: drop-shadow(0 4px 14px rgba(225, 29, 72, 0.3));
 }
 </style>
-

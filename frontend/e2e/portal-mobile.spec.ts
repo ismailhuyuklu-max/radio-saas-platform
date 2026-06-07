@@ -21,7 +21,7 @@ test.use({
 test.describe('Mobile (390px) responsive smoke', () => {
   test('login form renders within the 390px viewport without overflow', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('heading', { name: 'AdCast Pro' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'AdCast Pro' })).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
     // No horizontal scroll: documentElement.scrollWidth must equal viewport

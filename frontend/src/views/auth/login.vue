@@ -97,12 +97,12 @@ async function handleSubmit() {
   <div class="login-page">
     <div class="login-card">
       <div class="login-brand">
-        <!-- REBRAND: gerçek logo -->
-        <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo" width="64" height="64" />
-        <div>
-          <h1>AdCast Pro</h1>
-          <p>Bölgesel Radyo Yönetim Paneli</p>
-        </div>
+        <!-- REBRAND: wide-format wordmark logo (1554×519). Logo zaten
+             "Ad Cast Pro" yazısını içerdiği için ayrı h1 duplicate olur —
+             a11y için heading'i visually-hidden olarak koruyoruz. -->
+        <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo" />
+        <h1 class="visually-hidden">AdCast Pro</h1>
+        <p class="login-tagline">Bölgesel Radyo Yönetim Paneli</p>
       </div>
 
       <form v-if="!mfaToken" class="login-form" @submit.prevent="handleSubmit">
@@ -166,7 +166,7 @@ async function handleSubmit() {
 }
 
 .login-card {
-  width: min(92vw, 400px);
+  width: min(92vw, 440px);
   display: grid;
   gap: 22px;
   padding: 32px;
@@ -178,30 +178,46 @@ async function handleSubmit() {
 }
 
 .login-brand {
+  /* REBRAND: wordmark logo center-aligned, alt-text altta */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  padding-top: 4px;
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
+  /* Wide wordmark — doğal aspect ratio (~3:1) ile yükseklik bazlı,
+     card içine sığsın diye max-width %100. */
+  display: block;
+  height: 88px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 4px 14px rgba(225, 29, 72, 0.3));
+  filter: drop-shadow(0 6px 18px rgba(225, 29, 72, 0.35));
 }
 
-.login-brand h1 {
+.login-tagline {
   margin: 0;
-  color: #f8fafc;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  color: rgba(226, 232, 240, 0.75);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
-.login-brand p {
-  margin: 2px 0 0;
-  color: rgba(226, 232, 240, 0.7);
-  font-size: 13px;
+/* a11y: heading sayfa hiyerarşisi için var, ama görsel olarak logo zaten
+   "AdCast Pro" gösteriyor — screen reader'a sunup ekranda gizliyoruz. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .login-form {

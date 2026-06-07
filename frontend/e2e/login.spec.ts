@@ -8,8 +8,8 @@ test.describe('Login page', () => {
   test('renders the brand and login form', async ({ page }) => {
     await page.goto('/login');
 
-    // Brand
-    await expect(page.getByRole('heading', { name: 'AdCast Pro' })).toBeVisible();
+    // Brand — wordmark logo görünür (h1 a11y için visually-hidden, e2e img'ı doğrular)
+    await expect(page.getByRole('img', { name: 'AdCast Pro' })).toBeVisible();
 
     // Form fields + submit
     await expect(page.getByPlaceholder('admin')).toBeVisible();
