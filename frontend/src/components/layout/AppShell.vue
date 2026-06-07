@@ -203,7 +203,10 @@ watch(() => route.fullPath, () => {
 
 <style scoped>
 .app-shell {
-  --sidebar-w: 248px;
+  /* Faz UX-sidebar: 248 → 220 — daha sıkı dikey alan kazandırmaz ama
+     yatay alanda %11 ekran geri verir. Nav label'ları ("Yayın Trafik
+     Merkezi") halen tek satır sığar. */
+  --sidebar-w: 220px;
   min-height: 100vh;
   width: 100%;
 }
@@ -213,13 +216,14 @@ watch(() => route.fullPath, () => {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 60;
-  width: min(82vw, 300px);
+  width: min(82vw, 260px);
   transform: translateX(-102%);
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 14px 16px;
+  gap: 2px;
+  /* Faz UX-sidebar: dış padding minimal, nav alanına maks. yer */
+  padding: 10px 8px 8px;
   background: linear-gradient(180deg, #0c1426 0%, #0a1120 100%);
   border-right: 1px solid rgba(148, 163, 184, 0.12);
   box-shadow: 0 30px 80px rgba(2, 6, 23, 0.6);
@@ -237,15 +241,17 @@ watch(() => route.fullPath, () => {
   backdrop-filter: blur(2px);
 }
 
+/* Faz UX-sidebar: tüm 13 nav item + brand + foot 720p ekrana scroll'suz
+   sığar. Yalnızca sidebar dokunuldu; sayfa içerikleri büyük kalır. */
 .app-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 6px 8px 14px;
+  gap: 8px;
+  padding: 2px 6px 6px;
 }
 
 .app-brand__mark {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .app-brand__text {
@@ -257,14 +263,14 @@ watch(() => route.fullPath, () => {
 .app-brand__text strong {
   color: #f8fafc;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
 
 .app-brand__text span {
   color: rgba(148, 163, 184, 0.9);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -272,37 +278,51 @@ watch(() => route.fullPath, () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 6px;
   overflow-y: auto;
+  /* Faz UX-sidebar: scrollbar gerek kalmazsa görsel temizliği koru;
+     gerekli ise ince ve tatlı çizgi olarak görünsün. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+.app-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.app-nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 2px;
+}
+.app-nav::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .app-nav__group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
 }
 
 .app-nav__title {
-  margin: 4px 10px 4px;
+  margin: 2px 8px 2px;
   color: rgba(148, 163, 184, 0.7);
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .app-nav__item {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
   width: 100%;
-  padding: 11px 12px;
+  padding: 5px 9px;
   border: 1px solid transparent;
-  border-radius: 13px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(203, 213, 225, 0.86);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -322,8 +342,8 @@ watch(() => route.fullPath, () => {
 }
 
 .app-nav__icon {
-  width: 19px;
-  height: 19px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
@@ -331,9 +351,9 @@ watch(() => route.fullPath, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 8px 4px;
-  margin-top: 6px;
+  gap: 6px;
+  padding: 6px 4px 2px;
+  margin-top: 4px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -347,13 +367,13 @@ watch(() => route.fullPath, () => {
 .app-user__avatar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  border-radius: 11px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #e11d48, #fb7185);
   color: #fff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -373,7 +393,7 @@ watch(() => route.fullPath, () => {
 
 .app-user__meta strong {
   color: #f1f5f9;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -382,18 +402,18 @@ watch(() => route.fullPath, () => {
 
 .app-user__meta span {
   color: rgba(148, 163, 184, 0.85);
-  font-size: 11px;
+  font-size: 10px;
   text-transform: capitalize;
 }
 
 .app-logout {
   flex-shrink: 0;
-  padding: 7px 14px;
+  padding: 4px 10px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.6);
   color: rgba(226, 232, 240, 0.9);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
