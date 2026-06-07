@@ -641,11 +641,13 @@ $syncManifestService = new SyncManifestService($pdo);
 $syncController = new SyncController(
     $userRepository,
     $jwtService,
+    $refreshTokenRepository,
     $syncClientRepository,
     $stationRepository,
     $mediaRepository,
     $auditLogRepository,
-    $syncManifestService
+    $syncManifestService,
+    $storage
 );
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';

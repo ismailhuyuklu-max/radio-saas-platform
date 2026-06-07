@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace RadioSaaS\Controller;
 
+use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\MediaContentRepository;
+use RadioSaaS\Repository\RefreshTokenRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\SyncClientRepository;
 use RadioSaaS\Repository\UserRepository;
@@ -46,14 +48,19 @@ final class SyncController
     /** Download signed URL TTL (saniye) — kısa olsun, replay attack koruması */
     private const DOWNLOAD_URL_TTL = 300;
 
+    /** Refresh token TTL (saniye) — 30 gün */
+    private const REFRESH_TTL = 2592000;
+
     public function __construct(
         private readonly UserRepository $users,
         private readonly JwtService $jwt,
+        private readonly RefreshTokenRepository $refreshTokens,
         private readonly SyncClientRepository $syncClients,
         private readonly StationRepository $stations,
         private readonly MediaContentRepository $media,
         private readonly AuditLogRepository $audit,
-        private readonly SyncManifestService $manifestService
+        private readonly SyncManifestService $manifestService,
+        private readonly MinioStorage $minio
     ) {
     }
 
@@ -112,8 +119,11 @@ final class SyncController
             stationId: $user['radio_id'] !== null ? (string)$user['radio_id'] : null
         );
         $refreshToken = $this->jwt->issueRefresh();
-        // F1.5 TODO: refresh token DB'ye hash'lenip kaydedilmeli (RefreshTokenRepository).
-        // Şimdilik client tarafında saklanır, server-side revoke yok.
+        $this->refreshTokens->insert(
+            userId: (string)$user['id'],
+            tokenHash: hash('sha256', $refreshToken),
+            ttlSeconds: self::REFRESH_TTL
+        );
 
         $this->audit->record('sync_login_success', $user['id'], [
             'ip' => $clientIp,
@@ -162,13 +172,50 @@ final class SyncController
             return;
         }
 
-        // F1.5 TODO: refresh token DB'de hash'lenmiş olarak saklanmalı (RefreshTokenRepository).
-        // Şimdilik: client validate edip aynı kullanıcıya yeni access token üretir.
-        // Production'a almadan önce server-side rotation + revocation gerek.
-        // PartnerApiKey pattern'i bu iş için adapte edilebilir.
-        $this->respond(501, [
-            'code' => 501,
-            'message' => 'Refresh token endpoint henüz tam implementation değil (F1.5 TODO)',
+        // Refresh token rotation (AuthController pattern):
+        // 1. Token'ı hash'le, DB'de geçerli mi kontrol et
+        // 2. Eski refresh'i revoke et (one-time-use)
+        // 3. Yeni access + refresh üret, yeni hash'i kaydet
+        $hash = hash('sha256', $refresh);
+        $row = $this->refreshTokens->findValid($hash);
+        if ($row === null) {
+            $this->audit->record('sync_refresh_invalid', null, ['ip' => RequestContext::clientIp()]);
+            $this->respond(401, ['code' => 401, 'message' => 'Refresh token geçersiz veya süresi dolmuş']);
+            return;
+        }
+
+        $user = $this->users->findById((string)$row['user_id']);
+        if ($user === null) {
+            $this->respond(401, ['code' => 401, 'message' => 'Kullanıcı bulunamadı']);
+            return;
+        }
+
+        // Rotation — eski refresh'i hemen revoke et (replay attack koruması)
+        $this->refreshTokens->revoke($hash);
+
+        $roles = isset($user['role']) ? [(string)$user['role']] : ['partner'];
+        $newAccess = $this->jwt->issueAccess(
+            userId: (string)$user['id'],
+            roles: $roles,
+            stationId: $user['radio_id'] !== null ? (string)$user['radio_id'] : null
+        );
+        $newRefresh = $this->jwt->issueRefresh();
+        $this->refreshTokens->insert(
+            userId: (string)$user['id'],
+            tokenHash: hash('sha256', $newRefresh),
+            ttlSeconds: self::REFRESH_TTL
+        );
+
+        $this->audit->record('sync_refresh_success', $user['id'], ['ip' => RequestContext::clientIp()]);
+
+        $this->respond(200, [
+            'code' => 0,
+            'result' => [
+                'access_token' => $newAccess,
+                'refresh_token' => $newRefresh,
+                'expires_in' => 3600,
+            ],
+            'message' => 'Token yenilendi',
         ]);
     }
 
@@ -291,12 +338,22 @@ final class SyncController
             return;
         }
 
-        // F1.6 TODO: MinIO presigned URL üretimi (AWS SDK S3 client).
-        // Şimdilik: media-stream endpoint'ine yönlendir (zaten Faz 23'te
-        // mevcut, kullanıcı JWT'siyle MediaStreamController doğrular).
-        // Bu workaround production'a alınmadan önce gerçek presigned URL ile değiştirilmeli.
-        $signedUrl = '/api/v1/media-stream/content/' . urlencode($fileId)
-            . '?format=mp3&t=' . urlencode((string)$claims['sub']);
+        // MinIO presigned URL — 5 dakika valid, replay attack koruması
+        try {
+            $signedUrl = $this->minio->presignGetObject(
+                bucket: (string)$file['bucket'],
+                key: (string)$file['key'],
+                ttlSeconds: self::DOWNLOAD_URL_TTL
+            );
+        } catch (\Throwable $e) {
+            $this->audit->record('sync_download_signed_url_failed', $claims['sub'], [
+                'file_id' => $fileId,
+                'radio_id' => $radioId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->respond(500, ['code' => 500, 'message' => 'Download URL üretilemedi']);
+            return;
+        }
 
         $this->audit->record('sync_download', $claims['sub'], [
             'file_id' => $fileId,
