@@ -140,6 +140,60 @@ services:
     networks:
       - radio_network
 
+  # ============================================================================
+  # Faz CTO-16 — PgBouncer transaction pooler.
+  # PHP-FPM her request'te yeni PG connection açıyordu (~50-100ms latency).
+  # PgBouncer pool'lar açık bekletir → PG'ye bağlanma zamanı sıfıra iner.
+  #
+  # Mode: transaction (PHP-FPM her request bir transaction = pool entry).
+  # Default pool_size: 20 (PG max_connections=50 içinden 20'ye yetki).
+  # PHP-FPM bağlantısı: DB_HOST=pgbouncer DB_PORT=6432 (postgres yerine).
+  # ============================================================================
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: radio-pgbouncer
+    restart: unless-stopped
+    mem_limit: 128m
+    mem_reservation: 32m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Backend Postgres bağlantısı (gerçek DB — pgbouncer'ın UPSTREAM'i)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-radio_saas}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-radio_saas_password}
+      DB_NAME: ${POSTGRES_DB:-radio_saas}
+      # PgBouncer kendisi 6432 dinler (PG-standart 5432 ile çakışmasın)
+      LISTEN_PORT: 6432
+      # PgBouncer modu — transaction = en yüksek throughput, session affinity yok
+      POOL_MODE: transaction
+      # Pool ayarları
+      MAX_CLIENT_CONN: 200       # PHP-FPM toplam paralel client (~3 worker × 50)
+      DEFAULT_POOL_SIZE: 20       # PG'ye kalıcı 20 conn
+      MIN_POOL_SIZE: 4
+      RESERVE_POOL_SIZE: 4
+      RESERVE_POOL_TIMEOUT: 5
+      # Auth: trust internal network (Docker bridge zaten izolasyonu sağlar)
+      AUTH_TYPE: scram-sha-256
+      # Stats için admin user (PgBouncer dahili)
+      ADMIN_USERS: ${POSTGRES_USER:-radio_saas}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=${POSTGRES_PASSWORD:-radio_saas_password} psql -h localhost -p 6432 -U ${POSTGRES_USER:-radio_saas} -d pgbouncer -c 'SHOW POOLS;' >/dev/null 2>&1 || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - radio_network
+
   php-fpm:
     build:
       context: .
@@ -159,8 +213,8 @@ services:
       APP_ENV: ${APP_ENV:-local}
       APP_KEY: ${APP_KEY:-}
       APP_DEBUG: ${APP_DEBUG:-0}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: pgbouncer
+      DB_PORT: 6432
       DB_NAME: ${POSTGRES_DB:-radio_saas}
       DB_USER: ${POSTGRES_USER:-radio_saas}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-radio_saas_password}
@@ -207,8 +261,8 @@ services:
     container_name: radio-migrate
     restart: "no"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: pgbouncer
+      DB_PORT: 6432
       DB_NAME: ${POSTGRES_DB:-radio_saas}
       DB_USER: ${POSTGRES_USER:-radio_saas}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-radio_saas_password}
@@ -242,8 +296,8 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_KEY: ${APP_KEY:-}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: pgbouncer
+      DB_PORT: 6432
       DB_NAME: ${POSTGRES_DB:-radio_saas}
       DB_USER: ${POSTGRES_USER:-radio_saas}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-radio_saas_password}

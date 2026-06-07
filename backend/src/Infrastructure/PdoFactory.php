@@ -22,7 +22,13 @@ final class PdoFactory
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
+            // Faz CTO-16: PgBouncer transaction mode native prepared statement
+            // desteklemez. PDO emulated prepares (driver-side) tüm PgBouncer
+            // pool mode'larıyla uyumlu. PG planner her execute'da plan yapar
+            // ama PgBouncer pool kazanımı (50-100 ms tasarruf) ağır basar.
+            // Direkt PG'ye bağlananlar için false yapmak istenirse env override:
+            //   DB_EMULATE_PREPARES=0
+            PDO::ATTR_EMULATE_PREPARES => (getenv('DB_EMULATE_PREPARES') ?? '1') !== '0',
         ];
 
         // Faz H5-2 — Slow query log opt-in. DB_SLOW_QUERY_MS=200 set
