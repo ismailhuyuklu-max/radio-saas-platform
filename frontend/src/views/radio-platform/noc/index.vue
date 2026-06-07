@@ -463,10 +463,46 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Faz UX-noc: SADECE NOC sayfası için viewport-fit. AppShell padding
+   ve topbar değerlerini negatif margin ile sıfırlayıp tek formül kullan:
+   height = 100dvh - topbar. Diğer sayfalar dokunulmaz. */
 .noc {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  /* AppShell mobile padding 14 → neutralize */
+  margin: -14px;
+  padding: 10px;
+  /* mobile topbar 58 */
+  height: calc(100dvh - 58px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+@media (min-width: 768px) {
+  .noc {
+    margin: -20px;
+    padding: 12px;
+    /* tablet topbar 62 */
+    height: calc(100dvh - 62px);
+  }
+}
+@media (min-width: 1024px) {
+  .noc {
+    /* desktop AppShell padding 26 top / 28 sides / 40 bottom */
+    margin: -26px -28px -40px;
+    padding: 12px 14px;
+    height: calc(100dvh - 62px);
+  }
+}
+.noc.is-wall {
+  margin: 0;
+  height: 100dvh;
+}
+/* Services + Events satırı kalan tüm alanı doldurur — sayfa scroll
+   kalkar, içerideki panel'ler kendi içinde scroll edilebilir. */
+.noc > .noc__row {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* ===== Header ===== */
@@ -690,6 +726,12 @@ onUnmounted(() => {
 
 .noc__panel {
   padding: 14px 16px;
+  /* Faz UX-noc: panel grid hücresini doldur, içerikteki liste
+     panel boyunca scroll edebilsin. */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .noc__panel-head {
   display: flex;
@@ -724,6 +766,11 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  align-content: start;
+  /* Faz UX-noc: panel flex child — kalan alanı kapla, içeride scroll */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 @media (max-width: 640px) {
   .noc__services { grid-template-columns: 1fr; }
@@ -781,7 +828,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 280px;
+  /* Faz UX-noc: max-height kaldırıldı; panel flex column içinde
+     kalan tüm alanı kaplar. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 .noc__event {
