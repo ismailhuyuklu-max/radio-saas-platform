@@ -329,19 +329,18 @@ async function retryAll(): Promise<void> {
 </template>
 
 <style scoped>
-/* Faz UX-security: izole viewport-fit. AppShell padding negatif margin
-   ile sıfırlanır; .sec kendi içinde tek scroll container (MFA + parola
-   + oturumlar kartlarının toplamı viewport'tan uzunsa içeride kayar).
-   Sayfa scroll'u (body) yok. */
+/* Faz UX-security: izole viewport-fit + FULL-WIDTH. AppShell padding
+   negatif margin ile sıfırlanır; .sec ekran genişliğini tamamen kullanır
+   (max-width: 720 kaldırıldı — sağda devasa boşluk oluşmasın).
+   Sayfa scroll'u yok; kart yığını uzunsa .sec içeride kayar. */
 .sec {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 720px;
-  margin: -14px;                       /* mobile AppShell padding'i sıfırla */
+  margin: -14px;                       /* mobile AppShell padding sıfırla */
   padding: 10px;
   height: calc(100dvh - 58px);         /* mobile topbar 58 */
-  overflow-y: auto;                    /* uzun içerik için iç scroll */
+  overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
   scrollbar-width: thin;
@@ -357,15 +356,38 @@ async function retryAll(): Promise<void> {
 @media (min-width: 768px) {
   .sec {
     margin: -20px;
-    padding: 12px;
+    padding: 14px;
     height: calc(100dvh - 62px);       /* tablet topbar 62 */
   }
 }
 @media (min-width: 1024px) {
   .sec {
     margin: -26px -28px -40px;         /* desktop padding 26/28/40 */
-    padding: 12px 14px;
+    padding: 16px;
     height: calc(100dvh - 62px);
+  }
+}
+
+/* Faz UX-security: kart yapısı 2 sütunlu grid ile yan yana
+   yerleştirilir — MFA + Şifre üstte yan yana, Oturumlar altta full.
+   Böylece daha az dikey alan, geniş ekranı verimli kullanır. */
+@media (min-width: 1024px) {
+  .sec {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: min-content;
+    gap: 12px;
+    align-content: start;
+  }
+  /* Header (h1 + sub) — tam satır */
+  .sec > .sec__head,
+  .sec > header {
+    grid-column: 1 / -1;
+  }
+  /* Oturumlar tipik olarak son kart — tam satır olsun */
+  .sec > .ui-card:last-of-type,
+  .sec > section:last-of-type {
+    grid-column: 1 / -1;
   }
 }
 .sec__head h1 {
