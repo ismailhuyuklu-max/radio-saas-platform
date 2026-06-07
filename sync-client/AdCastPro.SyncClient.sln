@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdCastPro.SyncClient.UI", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdCastPro.SyncClient.UnitTests", "tests\AdCastPro.SyncClient.UnitTests\AdCastPro.SyncClient.UnitTests.csproj", "{C0000005-0000-0000-0000-000000000005}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdCastPro.SyncClient.IntegrationTests", "tests\AdCastPro.SyncClient.IntegrationTests\AdCastPro.SyncClient.IntegrationTests.csproj", "{C0000006-0000-0000-0000-000000000006}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,5 +40,9 @@ Global
 		{C0000005-0000-0000-0000-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0000005-0000-0000-0000-000000000005}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0000005-0000-0000-0000-000000000005}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0000006-0000-0000-0000-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0000006-0000-0000-0000-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0000006-0000-0000-0000-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0000006-0000-0000-0000-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
