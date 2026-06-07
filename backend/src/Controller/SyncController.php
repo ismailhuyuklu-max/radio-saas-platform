@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace RadioSaaS\Controller;
 
 use RadioSaaS\Repository\AuditLogRepository;
-use RadioSaaS\Repository\ContentPlanRepository;
 use RadioSaaS\Repository\MediaContentRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\SyncClientRepository;
-use RadioSaaS\Service\AdminAuthenticator;
+use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\JwtService;
-use RadioSaaS\Service\Logger;
-use RadioSaaS\Service\LoginThrottle;
+use RadioSaaS\Service\PasswordHasher;
 use RadioSaaS\Service\RequestContext;
+use RadioSaaS\Service\SyncManifestService;
 use RuntimeException;
 
 /**
@@ -48,15 +47,13 @@ final class SyncController
     private const DOWNLOAD_URL_TTL = 300;
 
     public function __construct(
-        private readonly AdminAuthenticator $authenticator,
+        private readonly UserRepository $users,
         private readonly JwtService $jwt,
-        private readonly LoginThrottle $throttle,
-        private readonly Logger $logger,
         private readonly SyncClientRepository $syncClients,
         private readonly StationRepository $stations,
-        private readonly ContentPlanRepository $plans,
         private readonly MediaContentRepository $media,
-        private readonly AuditLogRepository $audit
+        private readonly AuditLogRepository $audit,
+        private readonly SyncManifestService $manifestService
     ) {
     }
 
@@ -81,18 +78,13 @@ final class SyncController
 
         $clientIp = RequestContext::clientIp();
 
-        // Throttle (Faz H1-3 — IP + username başına)
-        if (!$this->throttle->canAttempt($username, $clientIp)) {
-            $this->audit->record('sync_login_throttled', null, ['username' => $username, 'ip' => $clientIp]);
-            $this->respond(429, ['code' => 429, 'message' => 'Çok fazla deneme — sonra tekrar deneyin']);
-            return;
-        }
+        // Throttle: nginx /api/v1/sync/login zone'unda 5r/s (login zone) ile
+        // ön cephede kapatılır. Backend ek throttle F1.5'te eklenebilir
+        // (LoginThrottleRepository pattern AuthController'da var).
 
-        try {
-            $user = $this->authenticator->authenticate($username, $password);
-        } catch (RuntimeException $e) {
-            $this->throttle->recordFailure($username, $clientIp);
-            $this->audit->record('sync_login_failed', null, ['username' => $username, 'ip' => $clientIp, 'reason' => $e->getMessage()]);
+        $user = $this->users->findByUsername($username);
+        if ($user === null || !PasswordHasher::verify($password, (string)($user['password_hash'] ?? ''))) {
+            $this->audit->record('sync_login_failed', null, ['username' => $username, 'ip' => $clientIp]);
             $this->respond(401, ['code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı']);
             return;
         }
@@ -113,14 +105,16 @@ final class SyncController
         // Radyo bilgisi
         $radio = $user['radio_id'] !== null ? $this->stations->find($user['radio_id']) : null;
 
-        $tokens = $this->jwt->issuePair([
-            'sub' => $user['id'],
-            'role' => $user['role'] ?? 'partner',
-            'radio_id' => $user['radio_id'] ?? null,
-            'scope' => 'sync',
-        ]);
+        $roles = isset($user['role']) ? [(string)$user['role']] : ['partner'];
+        $accessToken = $this->jwt->issueAccess(
+            userId: (string)$user['id'],
+            roles: $roles,
+            stationId: $user['radio_id'] !== null ? (string)$user['radio_id'] : null
+        );
+        $refreshToken = $this->jwt->issueRefresh();
+        // F1.5 TODO: refresh token DB'ye hash'lenip kaydedilmeli (RefreshTokenRepository).
+        // Şimdilik client tarafında saklanır, server-side revoke yok.
 
-        $this->throttle->recordSuccess($username, $clientIp);
         $this->audit->record('sync_login_success', $user['id'], [
             'ip' => $clientIp,
             'client_version' => $clientVersion,
@@ -131,9 +125,9 @@ final class SyncController
         $this->respond(200, [
             'code' => 0,
             'result' => [
-                'access_token' => $tokens['access'],
-                'refresh_token' => $tokens['refresh'],
-                'expires_in' => $tokens['expires_in'],
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'expires_in' => 3600,
                 'user' => [
                     'id' => $user['id'],
                     'username' => $user['username'],
@@ -168,21 +162,13 @@ final class SyncController
             return;
         }
 
-        try {
-            $tokens = $this->jwt->refreshPair($refresh);
-        } catch (RuntimeException $e) {
-            $this->respond(401, ['code' => 401, 'message' => 'Refresh token geçersiz veya süresi dolmuş']);
-            return;
-        }
-
-        $this->respond(200, [
-            'code' => 0,
-            'result' => [
-                'access_token' => $tokens['access'],
-                'refresh_token' => $tokens['refresh'],
-                'expires_in' => $tokens['expires_in'],
-            ],
-            'message' => 'Token yenilendi',
+        // F1.5 TODO: refresh token DB'de hash'lenmiş olarak saklanmalı (RefreshTokenRepository).
+        // Şimdilik: client validate edip aynı kullanıcıya yeni access token üretir.
+        // Production'a almadan önce server-side rotation + revocation gerek.
+        // PartnerApiKey pattern'i bu iş için adapte edilebilir.
+        $this->respond(501, [
+            'code' => 501,
+            'message' => 'Refresh token endpoint henüz tam implementation değil (F1.5 TODO)',
         ]);
     }
 
@@ -195,7 +181,7 @@ final class SyncController
         if ($claims === null) return;
 
         $userId = (string)$claims['sub'];
-        $user = $this->authenticator->findById($userId);
+        $user = $this->users->findById($userId);
         if ($user === null) {
             $this->respond(404, ['code' => 404, 'message' => 'Kullanıcı bulunamadı']);
             return;
@@ -242,25 +228,26 @@ final class SyncController
             return;
         }
 
-        $since = $_GET['since'] ?? null;
-        $now = new \DateTimeImmutable();
-        $until = $now->modify('+24 hours');
+        $since = isset($_GET['since']) ? (string)$_GET['since'] : null;
 
-        // F1 TODO: ContentPlanRepository::findScheduledForRadio($radioId, $now, $until)
-        //          + MediaContentRepository batch fetch + signed URL üretimi
-        // Şimdilik skeleton dönüyoruz — gerçek implementation Faz 2'de
-        $files = [];
+        // Real manifest — SyncManifestService 24h window içindeki haber+reklam+sponsor dosyalarını döndürür
+        $manifest = $this->manifestService->buildForRadio($radioId, $since);
+
+        // ETag desteği — büyük manifest payload tekrar inmesin (CTO-19 pattern)
+        $etag = '"' . substr(hash('sha256', (string)json_encode($manifest)), 0, 16) . '"';
+        $clientEtag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+        if ($clientEtag === $etag) {
+            header('ETag: ' . $etag);
+            http_response_code(304);
+            return;
+        }
+
+        header('ETag: ' . $etag);
+        header('Cache-Control: private, max-age=30');
 
         $this->respond(200, [
             'code' => 0,
-            'result' => [
-                'generated_at' => $now->format('c'),
-                'window_start' => $now->format('c'),
-                'window_end' => $until->format('c'),
-                'radio_id' => $radioId,
-                'files' => $files,
-                'next_poll_after' => 60, // saniye
-            ],
+            'result' => $manifest,
             'message' => 'Manifest hazır',
         ]);
     }
@@ -280,20 +267,42 @@ final class SyncController
             return;
         }
 
-        // F1 TODO: MediaContentRepository::checkAccess($fileId, $radioId) — file gerçekten bu radyoya mı atanmış?
-        //          Sonra StreamTokenService::generateSignedUrl($fileId, $radioId, TTL=300)
-        //          302 redirect issue
-        $signedUrl = null; // placeholder
-
-        if ($signedUrl === null) {
-            $this->respond(404, ['code' => 404, 'message' => 'Dosya bulunamadı veya erişim yok']);
+        // File access check — bu dosya gerçekten bu radyoya mı atanmış?
+        $file = $this->media->findPlayable($fileId);
+        if ($file === null) {
+            $this->respond(404, ['code' => 404, 'message' => 'Dosya bulunamadı']);
             return;
         }
+
+        // Manifest scope kontrolü — radio_id eşleşmeli VEYA ulusal erişim VEYA
+        // file metadata'sında bu radyo için izin işareti var.
+        // (Strict mode: dosya manifest'ten geliyorsa zaten yetkilidir, ama
+        // ekstra güvenlik için tekrar kontrol)
+        $manifest = $this->manifestService->buildForRadio($radioId);
+        $allowedIds = array_column($manifest['files'], 'file_id');
+        if (!in_array($fileId, $allowedIds, true)) {
+            $this->audit->record('sync_download_denied', $claims['sub'], [
+                'file_id' => $fileId,
+                'radio_id' => $radioId,
+                'reason' => 'not_in_manifest',
+                'ip' => RequestContext::clientIp(),
+            ]);
+            $this->respond(403, ['code' => 403, 'message' => 'Bu dosyaya erişim yok']);
+            return;
+        }
+
+        // F1.6 TODO: MinIO presigned URL üretimi (AWS SDK S3 client).
+        // Şimdilik: media-stream endpoint'ine yönlendir (zaten Faz 23'te
+        // mevcut, kullanıcı JWT'siyle MediaStreamController doğrular).
+        // Bu workaround production'a alınmadan önce gerçek presigned URL ile değiştirilmeli.
+        $signedUrl = '/api/v1/media-stream/content/' . urlencode($fileId)
+            . '?format=mp3&t=' . urlencode((string)$claims['sub']);
 
         $this->audit->record('sync_download', $claims['sub'], [
             'file_id' => $fileId,
             'radio_id' => $radioId,
             'ip' => RequestContext::clientIp(),
+            'ttl' => self::DOWNLOAD_URL_TTL,
         ]);
 
         header('Location: ' . $signedUrl);
@@ -368,7 +377,12 @@ final class SyncController
         }
         $token = substr($authHeader, 7);
         try {
-            return $this->jwt->validate($token);
+            $payload = $this->jwt->verifyAccess($token);
+            // Normalize: sid → radio_id (JWT pattern'inde station ID `sid` field'ında)
+            if (isset($payload['sid']) && !isset($payload['radio_id'])) {
+                $payload['radio_id'] = $payload['sid'];
+            }
+            return $payload;
         } catch (RuntimeException $e) {
             $this->respond(401, ['code' => 401, 'message' => 'Token geçersiz veya süresi dolmuş']);
             return null;

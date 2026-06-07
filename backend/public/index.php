@@ -103,6 +103,7 @@ use RadioSaaS\Controller\PartnerPortalController;
 use RadioSaaS\Controller\SignedFeedController;
 use RadioSaaS\Controller\StationController;
 use RadioSaaS\Controller\SupportController;
+use RadioSaaS\Controller\SyncController;
 use RadioSaaS\Controller\TrafficMetaController;
 use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Infrastructure\PdoFactory;
@@ -121,6 +122,8 @@ use RadioSaaS\Repository\SponsorAdRepository;
 use RadioSaaS\Repository\StationGroupRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\PartnerApiKeyRepository;
+use RadioSaaS\Repository\SyncClientRepository;
+use RadioSaaS\Repository\SyncActivityRepository;
 use RadioSaaS\Repository\RefreshTokenRepository;
 use RadioSaaS\Repository\StreamTokenRepository;
 use RadioSaaS\Repository\SupportTicketRepository;
@@ -130,6 +133,7 @@ use RadioSaaS\Service\ApiKeyService;
 use RadioSaaS\Service\JwtService;
 use RadioSaaS\Service\RadioCredentialService;
 use RadioSaaS\Service\StreamTokenService;
+use RadioSaaS\Service\SyncManifestService;
 use RadioSaaS\Service\MediaFeedService;
 use RadioSaaS\Service\RenderQueueService;
 use RadioSaaS\Service\TokenAuthenticator;
@@ -630,6 +634,19 @@ $reportController = new ReportController($adminAuthenticator, $adCampaignReposit
 $healthController = new HealthController($pdo);
 // Faz H5-1 — Prometheus metrics endpoint (scraper IP whitelist nginx'te).
 $metricsExposeController = new MetricsExposeController($pdo);
+// Sync Client API — Windows desktop client backend
+$syncClientRepository = new SyncClientRepository($pdo);
+$syncActivityRepository = new SyncActivityRepository($pdo);
+$syncManifestService = new SyncManifestService($pdo);
+$syncController = new SyncController(
+    $userRepository,
+    $jwtService,
+    $syncClientRepository,
+    $stationRepository,
+    $mediaRepository,
+    $auditLogRepository,
+    $syncManifestService
+);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -644,6 +661,41 @@ if ($method === 'GET' && $path === '/api/v1/healthz/deep') {
 // Faz H5-1: Prometheus metrics — auth-bypass; nginx allow-list ile koru.
 if ($method === 'GET' && $path === '/api/v1/metrics') {
     $metricsExposeController->expose();
+    return;
+}
+
+// ============================================================================
+// AdCast Pro Sync Client API — Windows desktop client endpoints
+// ============================================================================
+// login/refresh auth-bypass (token üretimi); diğerleri JWT Bearer zorunlu.
+// Rate-limit nginx tarafında: /api/v1/sync/login → login zone (5r/s),
+// diğerleri → api zone (100r/s).
+if ($method === 'POST' && $path === '/api/v1/sync/login') {
+    $syncController->login();
+    return;
+}
+if ($method === 'POST' && $path === '/api/v1/sync/refresh') {
+    $syncController->refresh();
+    return;
+}
+if ($method === 'GET' && $path === '/api/v1/sync/me') {
+    $syncController->me();
+    return;
+}
+if ($method === 'GET' && $path === '/api/v1/sync/manifest') {
+    $syncController->manifest();
+    return;
+}
+if ($method === 'GET' && preg_match('#^/api/v1/sync/download/([A-Za-z0-9._-]+)$#', $path, $m)) {
+    $syncController->download($m[1]);
+    return;
+}
+if ($method === 'POST' && $path === '/api/v1/sync/report') {
+    $syncController->report();
+    return;
+}
+if ($method === 'POST' && $path === '/api/v1/sync/heartbeat') {
+    $syncController->heartbeat();
     return;
 }
 
