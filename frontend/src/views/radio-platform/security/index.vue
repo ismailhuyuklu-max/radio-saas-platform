@@ -329,11 +329,44 @@ async function retryAll(): Promise<void> {
 </template>
 
 <style scoped>
+/* Faz UX-security: izole viewport-fit. AppShell padding negatif margin
+   ile sıfırlanır; .sec kendi içinde tek scroll container (MFA + parola
+   + oturumlar kartlarının toplamı viewport'tan uzunsa içeride kayar).
+   Sayfa scroll'u (body) yok. */
 .sec {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 10px;
   max-width: 720px;
+  margin: -14px;                       /* mobile AppShell padding'i sıfırla */
+  padding: 10px;
+  height: calc(100dvh - 58px);         /* mobile topbar 58 */
+  overflow-y: auto;                    /* uzun içerik için iç scroll */
+  overflow-x: hidden;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+.sec::-webkit-scrollbar { width: 4px; }
+.sec::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 2px;
+}
+.sec::-webkit-scrollbar-track { background: transparent; }
+
+@media (min-width: 768px) {
+  .sec {
+    margin: -20px;
+    padding: 12px;
+    height: calc(100dvh - 62px);       /* tablet topbar 62 */
+  }
+}
+@media (min-width: 1024px) {
+  .sec {
+    margin: -26px -28px -40px;         /* desktop padding 26/28/40 */
+    padding: 12px 14px;
+    height: calc(100dvh - 62px);
+  }
 }
 .sec__head h1 {
   margin: 0;
