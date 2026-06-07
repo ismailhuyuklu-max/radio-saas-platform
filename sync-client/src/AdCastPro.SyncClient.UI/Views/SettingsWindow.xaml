@@ -1,0 +1,71 @@
+<Window
+    x:Class="AdCastPro.SyncClient.UI.Views.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Ayarlar — AdCast Pro Sync"
+    Width="640"
+    Height="540"
+    Background="{StaticResource BgDark}"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="NoResize">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Klasör Ayarları" FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource FgPrimary}" Margin="0,0,0,20" />
+
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Haber Klasörü" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox Text="{Binding NewsFolder, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                         Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" Padding="8,0" VerticalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="..." Width="40" Margin="6,0,0,0" Command="{Binding BrowseNewsCommand}" />
+            </Grid>
+
+            <TextBlock Text="Reklam Klasörü" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox Text="{Binding AdsFolder, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                         Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" Padding="8,0" VerticalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="..." Width="40" Margin="6,0,0,0" Command="{Binding BrowseAdsCommand}" />
+            </Grid>
+
+            <TextBlock Text="Medya Planı Klasörü" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox Text="{Binding MediaPlansFolder, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                         Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" Padding="8,0" VerticalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="..." Width="40" Margin="6,0,0,0" Command="{Binding BrowseMediaPlansCommand}" />
+            </Grid>
+
+            <TextBlock Text="Sponsor Klasörü" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox Text="{Binding SponsorsFolder, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                         Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" Padding="8,0" VerticalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="..." Width="40" Margin="6,0,0,0" Command="{Binding BrowseSponsorsCommand}" />
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+                <TextBlock Text="Polling Interval (saniye):" Foreground="{StaticResource FgMuted}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBox Text="{Binding PollIntervalSeconds}" Width="80" Height="28"
+                         Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" Padding="6,0" VerticalContentAlignment="Center" />
+            </StackPanel>
+
+            <CheckBox Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}"
+                      IsChecked="{Binding AutoStartWithWindows}" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="İptal" Padding="20,8" Margin="0,0,8,0" Click="OnCancel"
+                    Background="{StaticResource BgCard}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" />
+            <Button Content="Kaydet" Padding="20,8" Background="{StaticResource BrandRed}" Foreground="White"
+                    BorderThickness="0" Click="OnSave" Command="{Binding SaveCommand}" />
+        </StackPanel>
+    </Grid>
+</Window>
