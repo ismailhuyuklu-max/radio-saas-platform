@@ -102,7 +102,7 @@ async function handleSubmit() {
              a11y için heading'i visually-hidden olarak koruyoruz. -->
         <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo" />
         <h1 class="visually-hidden">AdCast Pro</h1>
-        <p class="login-tagline">Bölgesel Radyo Yönetim Paneli</p>
+        <p class="login-tagline">Radyo · TV · Haber · Reklam İçerik Yönetim Platformu</p>
       </div>
 
       <form v-if="!mfaToken" class="login-form" @submit.prevent="handleSubmit">
