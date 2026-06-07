@@ -485,6 +485,12 @@ $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stations_created_at ON stations (crea
 // Faz CTO-22 — admin_sessions cleanup: expires_at < now() yoğun seq.
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions (expires_at) WHERE revoked_at IS NULL');
 
+// Faz CTO-23 — media_contents (100K+ row) sort performansı:
+//   - tek başına ORDER BY created_at DESC LIMIT N: 44 ms → ~1 ms hedef
+//   - region+part+created kompozit: bitmap heap scan + sort → index scan
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_media_created_at ON media_contents (created_at DESC)');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_media_region_part_created ON media_contents (region_id, part_code, created_at DESC)');
+
 /**
  * Faz 22 — Ulusal yetkili radyolar. Master prompt: "Ulusal yetkili radyolar
  * tüm Türkiye içeriklerini görebilir". Default false: bölge kilidi devam.

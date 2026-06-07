@@ -54,6 +54,32 @@ function toQueryString(params?: Record<string, unknown>) {
   return queryString ? `?${queryString}` : '';
 }
 
+// =============================================================================
+// Faz CTO-21 — Browser ETag / If-None-Match cache (in-memory, GET-only).
+// Backend EtagCache 304 + 0 byte body döner; bu cache, body'i client tarafında
+// tutar ve sonraki istekte gerçek 200 gibi presente eder.
+// =============================================================================
+interface EtagEntry {
+  etag: string;
+  body: unknown;
+}
+const ETAG_CACHE_MAX = 200;
+const etagStore = new Map<string, EtagEntry>();
+function etagKey(method: string, url: string): string {
+  return method.toUpperCase() + ' ' + url;
+}
+function etagPut(method: string, url: string, etag: string, body: unknown) {
+  if (method.toUpperCase() !== 'GET') return;
+  if (etagStore.size >= ETAG_CACHE_MAX) {
+    const first = etagStore.keys().next().value;
+    if (first !== undefined) etagStore.delete(first);
+  }
+  etagStore.set(etagKey(method, url), { etag, body });
+}
+function etagGet(method: string, url: string): EtagEntry | null {
+  return etagStore.get(etagKey(method, url)) ?? null;
+}
+
 export class RequestClient {
   private readonly baseURL: string;
   private readonly responseReturn: 'data' | 'response';
@@ -145,9 +171,34 @@ export class RequestClient {
       }
     }
 
+    // Faz CTO-21: GET için If-None-Match auto-send (ETag cache hit)
+    if (method.toUpperCase() === 'GET') {
+      const cached = etagGet(method, finalConfig.url);
+      if (cached) {
+        finalConfig.headers['If-None-Match'] = cached.etag;
+      }
+    }
+
     const { url: requestUrl, ...requestInit } = finalConfig;
     // Always send the HttpOnly session cookie, including for a cross-origin API base URL.
     const response = await fetch(requestUrl, { ...requestInit, credentials: 'include' });
+
+    // Faz CTO-21: 304 Not Modified → bellek'teki body'i geri ver (sentetik 200)
+    if (response.status === 304 && method.toUpperCase() === 'GET') {
+      const cached = etagGet(method, finalConfig.url);
+      if (cached) {
+        return cached.body as T;
+      }
+      // Cache hit denmiş ama bellek yok (LRU eviction olmuş olabilir) — yeniden iste
+      // (If-None-Match'i kaldırarak sonsuz döngüyü engelle)
+      delete finalConfig.headers['If-None-Match'];
+      const retry = await fetch(requestUrl, { ...requestInit, credentials: 'include' });
+      if (!retry.ok) {
+        throw new Error(`Cache miss retry failed (${retry.status})`);
+      }
+      const retryBody = await retry.json().catch(() => null);
+      return retryBody as T;
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -156,6 +207,9 @@ export class RequestClient {
       const errorText = await response.text().catch(() => '');
       throw new Error(errorText || `Request failed with status ${response.status}`);
     }
+
+    // Faz CTO-21: ETag header'ını yakala, body'yi belleğe yaz
+    const responseEtag = response.headers.get('etag') || response.headers.get('ETag');
 
     if (this.responseReturn === 'response') {
       return response as unknown as T;
@@ -167,7 +221,12 @@ export class RequestClient {
       // truncated body) caller'a açık hata vermek istiyoruz — sessizce
       // `T` yerine `undefined` döndürmek (NOC zaafiyetinin kök sebebi).
       try {
-        return (await response.json()) as T;
+        const body = (await response.json()) as T;
+        // Faz CTO-21: ETag varsa belleğe yaz (sadece GET 200)
+        if (responseEtag && method.toUpperCase() === 'GET') {
+          etagPut(method, finalConfig.url, responseEtag, body);
+        }
+        return body;
       } catch (e) {
         throw new Error(
           `Sunucudan geçersiz JSON yanıtı (status ${response.status}, content-type ${contentType}): ${(e as Error).message}`,

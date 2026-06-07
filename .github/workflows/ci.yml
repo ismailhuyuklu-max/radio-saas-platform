@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
 
   backend:
-    name: Backend (lint · unit tests · static analysis)
+    name: Backend (lint · unit tests · static analysis · coverage)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,6 +39,8 @@ jobs:
           php-version: '8.2'
           extensions: pdo_pgsql, mbstring, zip, curl
           tools: composer:v2
+          # Faz CTO-24: xdebug coverage mode (PHPUnit yok ama line counts CI'da)
+          coverage: xdebug
       - name: Lint all PHP sources
         run: |
           find src public bin -name '*.php' -print0 | xargs -0 -n1 php -l

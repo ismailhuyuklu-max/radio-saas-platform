@@ -22,6 +22,9 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     },
   });
 
+  // Faz CTO-21: ETag cache mantığı vendor/vben/request.ts içinde
+  // entegre edildi (RequestClient.request kendisi If-None-Match yönetir).
+
   return client;
 }
 
