@@ -463,10 +463,12 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Faz UX-noc: tüm sayfa 1080p ekrana scroll'suz sığacak şekilde
+   sıkılaştırıldı (KPI strip + services + events + gauges + footer). */
 .noc {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 /* ===== Header ===== */
@@ -480,27 +482,27 @@ onUnmounted(() => {
 .noc__head h1 {
   margin: 0;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: var(--t-h1);
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--c-text);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .noc__chip {
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.16em;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
   background: var(--c-brand);
   color: #fff;
   vertical-align: middle;
 }
 .noc__sub {
-  margin: 3px 0 0;
-  font-size: var(--t-sm);
+  margin: 1px 0 0;
+  font-size: 11px;
   color: var(--c-text-3);
 }
 .noc__refresh {
@@ -523,21 +525,21 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.05;
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   font-variant-numeric: tabular-nums;
 }
 .noc__clock-time {
   font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--c-text);
   letter-spacing: 0.04em;
 }
 .noc__clock-date {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--c-text-3);
   margin-top: 1px;
 }
@@ -546,10 +548,10 @@ onUnmounted(() => {
 .noc__overall {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
+  gap: 6px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: var(--t-sm);
+  font-size: 12px;
   font-weight: 800;
   border: 1px solid var(--c-line);
 }
@@ -574,20 +576,20 @@ onUnmounted(() => {
 /* Control buttons */
 .noc__ctrl {
   display: flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 10px;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 8px;
   background: var(--c-surface);
   border: 1px solid var(--c-line);
 }
 .noc__btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--c-text-2);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
@@ -598,19 +600,19 @@ onUnmounted(() => {
 .noc__banner {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
   background: rgba(251, 113, 133, 0.08);
   border: 1px solid rgba(251, 113, 133, 0.32);
   color: var(--c-text);
 }
 .noc__banner-dot {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   background: var(--c-bad);
-  box-shadow: 0 0 12px var(--c-bad);
+  box-shadow: 0 0 10px var(--c-bad);
   animation: noc-pulse 0.8s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -647,30 +649,30 @@ onUnmounted(() => {
 .noc__kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 .noc__kpi {
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   background: var(--c-surface);
   border: 1px solid var(--c-line);
-  border-left: 4px solid var(--c-text-3);
+  border-left: 3px solid var(--c-text-3);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .noc__kpi.is-up, .noc__kpi.is-ok { border-left-color: var(--c-ok); }
 .noc__kpi.is-warn, .noc__kpi.is-degraded { border-left-color: var(--c-warn); }
 .noc__kpi.is-bad, .noc__kpi.is-down { border-left-color: var(--c-bad); }
 .noc__kpi-v {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 .noc__kpi-l {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -681,7 +683,7 @@ onUnmounted(() => {
 .noc__row {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 12px;
+  gap: 8px;
   align-items: start;
 }
 @media (max-width: 1024px) {
@@ -689,48 +691,48 @@ onUnmounted(() => {
 }
 
 .noc__panel {
-  padding: 14px 16px;
+  padding: 8px 10px;
 }
 .noc__panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
   border-bottom: 1px dashed var(--c-line);
 }
 .noc__panel-head h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--c-text);
 }
 .noc__panel-sub {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--c-text-3);
 }
 .noc__panel-empty {
   margin: 0;
-  padding: 18px 0;
+  padding: 12px 0;
   text-align: center;
   color: var(--c-text-3);
-  font-size: var(--t-sm);
+  font-size: 12px;
 }
 
 /* ===== Services ===== */
 .noc__services {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 4px;
 }
 @media (max-width: 640px) {
   .noc__services { grid-template-columns: 1fr; }
 }
 .noc__svc {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
   background: var(--c-surface-2);
   border: 1px solid var(--c-line);
   border-left: 3px solid var(--c-text-3);
@@ -755,20 +757,20 @@ onUnmounted(() => {
 .noc__svc.is-down .noc__svc-dot { background: var(--c-bad); box-shadow: 0 0 8px var(--c-bad); animation: noc-pulse 0.8s ease-in-out infinite; }
 .noc__svc-top strong {
   flex: 1;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--c-text);
 }
 .noc__svc-state {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--c-text-3);
 }
 .noc__svc-detail {
-  margin: 6px 0 0;
-  font-size: 11px;
+  margin: 2px 0 0;
+  font-size: 10px;
   color: var(--c-text-2);
   font-variant-numeric: tabular-nums;
 }
@@ -780,19 +782,21 @@ onUnmounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 280px;
+  gap: 2px;
+  /* Faz UX-noc: event log höhe-limit; içerikten fazlası scroll'a düşer
+     ama tüm sayfa scroll'suz kalır. */
+  max-height: 220px;
   overflow-y: auto;
 }
 .noc__event {
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 18px 1fr auto;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: 7px;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
   border-left: 2px solid transparent;
-  font-size: 12px;
+  font-size: 11px;
 }
 .noc__event.tone-ok { border-left-color: var(--c-ok); background: rgba(52, 211, 153, 0.04); }
 .noc__event.tone-info { border-left-color: var(--c-info); background: rgba(96, 165, 250, 0.04); }
@@ -801,7 +805,7 @@ onUnmounted(() => {
 
 .noc__event-icon {
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1;
 }
 .noc__event-body {
@@ -811,19 +815,19 @@ onUnmounted(() => {
 }
 .noc__event-action {
   font-family: 'Fira Code', Consolas, monospace;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--c-text);
 }
 .noc__event-meta {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--c-text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .noc__event-time {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--c-text-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -833,7 +837,7 @@ onUnmounted(() => {
 .noc__gauges {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 @media (max-width: 900px) {
   .noc__gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -844,21 +848,21 @@ onUnmounted(() => {
 }
 
 .noc__gauge {
-  padding: 14px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .noc__gauge-top {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 .noc__ring {
   --end: 0deg;
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border-radius: 999px;
   display: grid;
@@ -868,14 +872,14 @@ onUnmounted(() => {
 .noc__ring::before {
   content: '';
   position: absolute;
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   background: var(--c-surface);
 }
 .noc__ring-val {
   position: relative;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
@@ -885,38 +889,38 @@ onUnmounted(() => {
 .noc__ring.tone-critical { --ring-c: var(--c-bad); }
 
 .noc__load-mark {
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   border-radius: 999px;
   background: rgba(96, 165, 250, 0.14);
   color: var(--c-info);
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 900;
 }
 
 .noc__gauge-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 .noc__gauge-meta strong {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--c-text);
 }
 .noc__gauge-meta span {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--c-text-3);
   font-variant-numeric: tabular-nums;
 }
 
 .noc__load-rows {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: space-between;
 }
 .noc__load-rows span {
@@ -924,19 +928,19 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  padding: 4px 0;
-  border-radius: 6px;
+  padding: 2px 0;
+  border-radius: 5px;
   background: rgba(148, 163, 184, 0.06);
 }
 .noc__load-rows b {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
 }
 .noc__load-rows em {
   font-style: normal;
-  font-size: 9px;
+  font-size: 8px;
   color: var(--c-text-3);
   letter-spacing: 0.04em;
 }
@@ -944,7 +948,7 @@ onUnmounted(() => {
 /* ===== Sparkline ===== */
 .noc__spark {
   width: 100%;
-  height: 28px;
+  height: 18px;
   display: block;
 }
 .noc__spark-fill {
@@ -963,7 +967,7 @@ onUnmounted(() => {
 .noc__spark.tone-critical { --spark-c: var(--c-bad); }
 .noc__spark.tone-info { --spark-c: var(--c-info); }
 .noc__spark-cap {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--c-text-3);
   text-align: right;
   letter-spacing: 0.04em;
@@ -972,10 +976,10 @@ onUnmounted(() => {
 /* ===== Footer ===== */
 .noc__foot {
   margin: 0;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--c-text-3);
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
   background: rgba(148, 163, 184, 0.04);
   border: 1px solid var(--c-line);
 }
