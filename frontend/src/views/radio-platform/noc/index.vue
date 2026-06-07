@@ -463,18 +463,26 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Faz UX-noc: tüm sayfa 1080p ekrana scroll'suz sığacak şekilde
-   sıkılaştırıldı. Footer ekranın altına yapışsın, içerik ile altındaki
-   boş arka plan arası kapatılır. */
+/* Faz UX-noc: sayfa viewport'a TAM oturur — header + KPI sabit,
+   ortadaki services/events satırı kalan alanı doldurur, gauges + footer
+   yine sabit. Boşluk yok, scroll yok. Events listesi panel boyu kadar
+   içeride scroll edilebilir. */
 .noc {
   display: flex;
   flex-direction: column;
   gap: 8px;
   /* topbar 44 + app-content padding 14 üst + 14 alt = 72 px */
-  min-height: calc(100vh - 72px);
+  height: calc(100vh - 72px);
+  overflow: hidden;
 }
 .noc.is-wall {
-  min-height: 100vh;
+  height: 100vh;
+}
+/* Header/banner/KPI/gauges/footer kendi boylarını alır;
+   .noc__row hepsinden kalan alanı doldurur. */
+.noc > .noc__row {
+  flex: 1 1 auto;
+  min-height: 0;       /* flex child overflow düzgün çalışsın */
 }
 
 /* ===== Header ===== */
@@ -698,6 +706,12 @@ onUnmounted(() => {
 
 .noc__panel {
   padding: 8px 10px;
+  /* Panel grid hücresini tamamen doldur; içerikteki events listesi
+     bu yüksekliği baz alarak scroll yapsın. */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .noc__panel-head {
   display: flex;
@@ -732,6 +746,11 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
+  align-content: start;
+  /* Panel flex child olduğu için kalan alanı kapla */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 @media (max-width: 640px) {
   .noc__services { grid-template-columns: 1fr; }
@@ -789,9 +808,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* Faz UX-noc: event log höhe-limit; içerikten fazlası scroll'a düşer
-     ama tüm sayfa scroll'suz kalır. */
-  max-height: 220px;
+  /* Faz UX-noc: max-height kaldırıldı; panel flex column içinde flex:1
+     ile kalan yüksekliği alır → sayfa scroll'u yok, sadece içeride. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 .noc__event {
@@ -981,9 +1001,10 @@ onUnmounted(() => {
 
 /* ===== Footer ===== */
 .noc__foot {
-  /* margin-top:auto + .noc min-height = ekran altına yapışır,
-     içerik kısa olursa arada boş kalmaz görsel olarak.  */
-  margin: auto 0 0;
+  /* .noc__row flex:1 ile kalan alanı doldurduğu için footer doğal
+     olarak en altta — margin-top:auto'ya gerek yok. */
+  margin: 0;
+  flex-shrink: 0;
   font-size: 10px;
   color: var(--c-text-3);
   padding: 4px 10px;
