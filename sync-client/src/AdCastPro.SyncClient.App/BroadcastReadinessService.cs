@@ -48,9 +48,15 @@ public sealed class BroadcastReadinessService
     public async Task<ReadinessReport> EvaluateAsync(CancellationToken ct = default)
     {
         var (manifest, _) = await _cache.LoadManifestAsync(ct);
-        if (manifest == null || manifest.Files.Count == 0)
+        if (manifest == null)
         {
             return new ReadinessReport(ReadinessLevel.Unknown, "Henüz manifest yok", null, null, false);
+        }
+        // BR-Bug-1 fix: empty manifest (FileCount==0 ama manifest fetch edildi) → Idle Green
+        // (Yaklaşan haber kuşağı yok, sistem hazır)
+        if (manifest.Files.Count == 0)
+        {
+            return new ReadinessReport(ReadinessLevel.Green, "Yaklaşan haber kuşağı yok", null, null, true);
         }
 
         var now = DateTimeOffset.UtcNow;

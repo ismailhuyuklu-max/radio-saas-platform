@@ -180,6 +180,7 @@ public class AtomicFileWriterTests : IDisposable
     private static string Sha256Hex(byte[] data)
     {
         using var sha = SHA256.Create();
-        return Convert.ToHexStringLower(sha.ComputeHash(data));
+        // .NET 8: ToHexString → UPPER hex; lower için ToLowerInvariant
+        return Convert.ToHexString(sha.ComputeHash(data)).ToLowerInvariant();
     }
 }

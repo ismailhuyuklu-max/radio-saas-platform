@@ -21,7 +21,8 @@ public sealed class Sha256ChecksumService : IChecksumService
             sha.TransformBlock(buffer, 0, read, null, 0);
         }
         sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-        return Convert.ToHexStringLower(sha.Hash ?? throw new InvalidOperationException("Hash null"));
+        // .NET 8: Convert.ToHexString döner UPPER hex; lower case için ToLowerInvariant
+        return Convert.ToHexString(sha.Hash ?? throw new InvalidOperationException("Hash null")).ToLowerInvariant();
     }
 
     public async Task<string> ComputeFileSha256Async(string filePath, CancellationToken ct = default)

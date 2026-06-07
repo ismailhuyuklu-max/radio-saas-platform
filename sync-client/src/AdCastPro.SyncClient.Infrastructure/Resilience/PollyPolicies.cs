@@ -3,6 +3,8 @@ using AdCastPro.SyncClient.Core.Configuration;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
+// Type alias — Core.Configuration.RetryPolicy ile Polly.Retry.RetryPolicy çakışması çözümü
+using RetryPolicyOptions = AdCastPro.SyncClient.Core.Configuration.RetryPolicy;
 
 namespace AdCastPro.SyncClient.Infrastructure.Resilience;
 
@@ -24,7 +26,7 @@ public static class PollyPolicies
         HttpStatusCode.GatewayTimeout,           // 504
     };
 
-    public static ResiliencePipeline<HttpResponseMessage> CreatePipeline(RetryPolicy options)
+    public static ResiliencePipeline<HttpResponseMessage> CreatePipeline(RetryPolicyOptions options)
     {
         return new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new RetryStrategyOptions<HttpResponseMessage>

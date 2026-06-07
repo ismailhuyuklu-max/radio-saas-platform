@@ -57,28 +57,45 @@ public class BroadcastReadinessServiceTests
     }
 
     [Fact]
-    public async Task DosyaYok_30dkSonra_Sari()
+    public async Task DosyaYok_35dkSonra_Sari()
     {
+        // 35dk = warn threshold (15dk) × 2 üstü → YELLOW (bekleniyor, normal)
         var (svc, cache, _, baseDir) = Build();
         var newsDir = Path.Combine(baseDir, "haber");
         var missingPath = Path.Combine(newsDir, "yok.mp3");
 
         cache.Setup(c => c.LoadManifestAsync(It.IsAny<CancellationToken>()))
-             .ReturnsAsync((Mk(missingPath, DateTimeOffset.UtcNow.AddMinutes(30)), "etag"));
+             .ReturnsAsync((Mk(missingPath, DateTimeOffset.UtcNow.AddMinutes(35)), "etag"));
 
         var report = await svc.EvaluateAsync();
         report.Level.Should().Be(BroadcastReadinessService.ReadinessLevel.Yellow);
     }
 
     [Fact]
-    public async Task DosyaYok_10dkKaldi_Kirmizi()
+    public async Task DosyaYok_10dkKaldi_Turuncu()
     {
+        // 4-level: 5-30dk arası + dosya yok → ORANGE uyarı
         var (svc, cache, _, baseDir) = Build();
         var newsDir = Path.Combine(baseDir, "haber");
         var missingPath = Path.Combine(newsDir, "yok.mp3");
 
         cache.Setup(c => c.LoadManifestAsync(It.IsAny<CancellationToken>()))
              .ReturnsAsync((Mk(missingPath, DateTimeOffset.UtcNow.AddMinutes(10)), "etag"));
+
+        var report = await svc.EvaluateAsync();
+        report.Level.Should().Be(BroadcastReadinessService.ReadinessLevel.Orange);
+    }
+
+    [Fact]
+    public async Task DosyaYok_3dkKaldi_Kirmizi()
+    {
+        // < 5dk + dosya yok → RED (kritik, yayın riski)
+        var (svc, cache, _, baseDir) = Build();
+        var newsDir = Path.Combine(baseDir, "haber");
+        var missingPath = Path.Combine(newsDir, "yok.mp3");
+
+        cache.Setup(c => c.LoadManifestAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Mk(missingPath, DateTimeOffset.UtcNow.AddMinutes(3)), "etag"));
 
         var report = await svc.EvaluateAsync();
         report.Level.Should().Be(BroadcastReadinessService.ReadinessLevel.Red);

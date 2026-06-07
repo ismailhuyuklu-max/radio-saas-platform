@@ -93,7 +93,8 @@ public sealed class AtomicFileWriter : IAtomicFileWriter
         }
 
         // 6. Checksum validation
-        var actualSha = Convert.ToHexStringLower(sha.Hash ?? throw new InvalidOperationException("Hash null"));
+        // .NET 8: ToHexString döner UPPER hex; lower case ToLowerInvariant ile
+        var actualSha = Convert.ToHexString(sha.Hash ?? throw new InvalidOperationException("Hash null")).ToLowerInvariant();
         if (!string.IsNullOrEmpty(expectedSha256) &&
             !actualSha.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
         {
@@ -150,18 +151,20 @@ public sealed class AtomicFileWriter : IAtomicFileWriter
         if (string.IsNullOrWhiteSpace(filename))
             throw new ArgumentException("Dosya adı boş olamaz", nameof(filename));
 
-        // Sadece basename
-        var baseName = Path.GetFileName(filename);
-        if (string.IsNullOrWhiteSpace(baseName))
-            throw new ArgumentException($"Geçersiz dosya adı: {filename}");
-
-        // Path traversal
-        if (baseName.Contains("..") || baseName.Contains('/') || baseName.Contains('\\') ||
-            baseName.Contains(':') || baseName.Contains('|') || baseName.Contains('?') ||
-            baseName.Contains('*') || baseName.Contains('<') || baseName.Contains('>'))
+        // KRITIK: Önce RAW filename üzerinde dangerous karakter kontrol (platform-agnostic).
+        // Path.GetFileName Linux'ta "/" karakterini çıkarır, Windows'ta "\\" — bu yüzden
+        // raw input üzerinde kontrol yapılmalı, basename çıkardıktan sonra DEĞİL.
+        if (filename.Contains("..") || filename.Contains('/') || filename.Contains('\\') ||
+            filename.Contains(':') || filename.Contains('|') || filename.Contains('?') ||
+            filename.Contains('*') || filename.Contains('<') || filename.Contains('>'))
         {
             throw new ArgumentException($"Dosya adı geçersiz karakter içeriyor: {filename}");
         }
+
+        // Sadece basename (Path.GetFileName) — bu noktada zaten dangerous char yok
+        var baseName = Path.GetFileName(filename);
+        if (string.IsNullOrWhiteSpace(baseName))
+            throw new ArgumentException($"Geçersiz dosya adı: {filename}");
 
         // Windows reserved names
         var stem = Path.GetFileNameWithoutExtension(baseName).ToUpperInvariant();

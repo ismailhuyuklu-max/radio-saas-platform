@@ -112,8 +112,10 @@ public sealed class SqliteCache : ILocalCache
     public async Task<IReadOnlyList<DownloadedFile>> ListRecentDownloadsAsync(int limit = 50, CancellationToken ct = default)
     {
         await using var db = await _factory.CreateDbContextAsync(ct);
+        // SQLite: DateTimeOffset ORDER BY native desteklenmiyor → AsAsyncEnumerable ile
+        // client-side sort. Id descending (auto-increment) DownloadedAt ile aynı sıra.
         var rows = await db.DownloadedFiles
-            .OrderByDescending(x => x.DownloadedAt)
+            .OrderByDescending(x => x.Id)
             .Take(limit)
             .ToListAsync(ct);
         return rows.Select(r => new DownloadedFile(r.FileId, r.Filename, r.TargetPath, r.ChecksumSha256, r.SizeBytes, r.DownloadedAt)).ToList();
