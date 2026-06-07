@@ -166,7 +166,7 @@ async function handleSubmit() {
 }
 
 .login-card {
-  width: min(92vw, 480px);
+  width: min(94vw, 560px);
   display: grid;
   gap: 22px;
   padding: 32px;
@@ -187,14 +187,14 @@ async function handleSubmit() {
 }
 
 .login-logo {
-  /* Wordmark + slogan (~3:2 aspect) — yükseklik bazlı, slogan rahat okunsun
-     diye 150px, card 480px'e büyütüldü. Transparent PNG. */
+  /* Wordmark + slogan (~3:2 aspect) — net ve büyük. Width-based ile
+     card'a yayılır, height auto aspect korur. Slogan rahat okunur. */
   display: block;
-  height: 150px;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 6px 22px rgba(225, 29, 72, 0.35));
+  filter: drop-shadow(0 8px 28px rgba(225, 29, 72, 0.4));
 }
 
 .login-tagline {

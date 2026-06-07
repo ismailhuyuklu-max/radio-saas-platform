@@ -248,26 +248,25 @@ watch(() => route.fullPath, () => {
 /* Faz UX-sidebar: tüm 13 nav item + brand + foot 720p ekrana sığar.
    Yalnız sidebar dokunuldu; sayfa içerikleri ve diğer her şey aynı. */
 .app-brand {
-  /* REBRAND: wide-format wordmark → column layout (logo üstte, alt-text altta).
-     Önceden row + emoji + iki satır text vardı; logo zaten "Ad Cast Pro"
-     wordmark'ını içeriyor. */
+  /* REBRAND: wordmark + slogan logo column layout — logo büyük ve full-width,
+     alt-text küçük olarak altta. Sidebar başında belirgin marka kimliği. */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px 10px;
+  gap: 6px;
+  padding: 8px 6px 12px;
 }
 
 .app-brand__mark {
-  /* REBRAND: wordmark + slogan (~3:2 aspect) yükseklik bazlı.
-     Sidebar genişliğine sığsın diye max-width %100. Transparent PNG,
-     drop-shadow ile brand-red glow korunur. 56px slogan'ı da görünür kılar. */
+  /* REBRAND: wordmark + slogan (~3:2 aspect) — büyük ve net,
+     sidebar genişliğinin tamamını kullan. Transparent PNG, drop-shadow ile
+     brand-red glow. Dashboard dahil tüm sayfalarda görünür. */
   display: block;
-  height: 56px;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(225, 29, 72, 0.35));
+  filter: drop-shadow(0 3px 10px rgba(225, 29, 72, 0.4));
 }
 
 .app-brand__text {
