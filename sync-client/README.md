@@ -98,7 +98,27 @@ reportgenerator -reports:./TestResults/**/coverage.cobertura.xml -targetdir:./co
 dotnet test --filter "FullyQualifiedName~AtomicFileWriter"
 ```
 
-## Installer Build
+## Installer Build (Önerilen — PowerShell Script)
+
+```powershell
+# Tek komutla: restore + build + test + WiX MSI
+pwsh sync-client/scripts/build-msi.ps1
+
+# İmzalı production build
+pwsh sync-client/scripts/build-msi.ps1 -Sign `
+    -CertPath "C:\path\to\code-signing.pfx" `
+    -CertPassword "..." `
+    -Version "1.0.0"
+
+# Testleri atla (hızlı dev build)
+pwsh sync-client/scripts/build-msi.ps1 -SkipTests
+```
+
+Çıktı:
+- `sync-client/installer/bin/Release/AdCastProSyncClient.msi`
+- `AdCastProSyncClient.msi.sha256` (auto-updater manifest için)
+
+### Manuel WiX Build
 
 ```powershell
 # WiX v4 SDK gerekli
@@ -114,6 +134,23 @@ dotnet build -c Release
 signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a `
     AdCastProSyncClient.msi
 ```
+
+## Windows Service Management
+
+MSI çift tıkla → admin onay → otomatik servis kurulumu.
+
+```powershell
+# Servis durum
+sc query AdCastProSyncService
+
+# Manuel restart
+Restart-Service -Name AdCastProSyncService -Force
+
+# Event Log
+Get-EventLog -LogName Application -Source AdCastProSync -Newest 20
+```
+
+Detaylı runbook: `sync-client/WINDOWS-SERVICE-RUNBOOK.md`
 
 ## Geliştirici Notları
 
