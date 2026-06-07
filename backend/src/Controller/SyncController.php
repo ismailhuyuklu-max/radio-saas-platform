@@ -410,6 +410,39 @@ final class SyncController
     }
 
     /**
+     * GET /api/v1/sync/update?current_version=1.0.0
+     *
+     * Windows client auto-updater check. Backend latest version + signed MSI URL döner.
+     * AdCast Pro release pipeline production'da yeni MSI yayınladığında bu endpoint
+     * son versiyonu bildirir.
+     *
+     * Response: { code:0, result: { latest_version, download_url, sha256, mandatory, release_notes, released_at } }
+     * Latest == current ise: { code:0, result: null, message: "up-to-date" }
+     */
+    public function update(): void
+    {
+        // No auth — public endpoint (sadece versiyon bilgisi; download URL signed)
+        $currentVersion = (string)($_GET['current_version'] ?? '');
+
+        // Şimdilik static — production'da releases tablosu/CDN manifest dosyasından okunur
+        $latest = self::MIN_CLIENT_VERSION;  // 1.0.0
+        $isLatest = version_compare($currentVersion, $latest, '>=');
+
+        $this->respond(200, [
+            'code' => 0,
+            'result' => $isLatest ? null : [
+                'latest_version' => $latest,
+                'download_url' => 'https://files.adcastpro.com/releases/AdCastProSyncClient-' . $latest . '.msi',
+                'sha256' => '0000000000000000000000000000000000000000000000000000000000000000', // build pipeline doldurur
+                'mandatory' => false,
+                'release_notes' => 'İlk genel sürüm.',
+                'released_at' => date('c'),
+            ],
+            'message' => $isLatest ? 'Up to date' : 'New version available',
+        ]);
+    }
+
+    /**
      * GET /api/v1/sync-admin/clients?filter=all|online|offline|error&limit=200&offset=0
      *
      * Admin ekranı için tüm sync client'ların durumu (NOC ekranı).

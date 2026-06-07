@@ -700,6 +700,11 @@ if ($method === 'POST' && $path === '/api/v1/sync/heartbeat') {
     $syncController->heartbeat();
     return;
 }
+// Auto-updater (no auth — public version manifest)
+if ($method === 'GET' && $path === '/api/v1/sync/update') {
+    $syncController->update();
+    return;
+}
 // Admin: tüm sync client durumlarını listele (NOC ekranı)
 if ($method === 'GET' && $path === '/api/v1/sync-admin/clients') {
     $syncController->adminListClients();

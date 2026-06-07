@@ -2,8 +2,11 @@ using AdCastPro.SyncClient.Core.Abstractions;
 using AdCastPro.SyncClient.Core.Configuration;
 using AdCastPro.SyncClient.Infrastructure.Api;
 using AdCastPro.SyncClient.Infrastructure.Files;
+using AdCastPro.SyncClient.Infrastructure.Queue;
+using AdCastPro.SyncClient.Infrastructure.Realtime;
 using AdCastPro.SyncClient.Infrastructure.Resilience;
 using AdCastPro.SyncClient.Infrastructure.Storage;
+using AdCastPro.SyncClient.Infrastructure.Update;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -44,6 +47,18 @@ public static class ServiceCollectionExtensions
             http.BaseAddress = new Uri(opts.ApiBaseUrl.TrimEnd('/') + "/");
             http.Timeout = TimeSpan.FromMinutes(5); // büyük dosya download
         }).AddHttpMessageHandler<AuthDelegatingHandler>();
+
+        // Auto-updater (ayrı HttpClient — MSI indirme, uzun timeout)
+        services.AddHttpClient<IAutoUpdater, AutoUpdaterService>((_, http) =>
+        {
+            http.Timeout = TimeSpan.FromMinutes(15);
+        });
+
+        // Priority download queue (Singleton — global state)
+        services.AddSingleton<IDownloadQueue, PriorityDownloadQueue>();
+
+        // SignalR client (Singleton — persistent hub connection)
+        services.AddSingleton<IManifestNotifier, SignalRManifestNotifier>();
 
         return services;
     }

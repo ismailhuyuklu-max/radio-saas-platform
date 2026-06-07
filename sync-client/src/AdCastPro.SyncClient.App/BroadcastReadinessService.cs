@@ -9,13 +9,16 @@ namespace AdCastPro.SyncClient.App;
 /// <summary>
 /// Yayıncılık readiness — tray icon + UI'a renk besler.
 ///
-/// YEŞIL = Hazır:   bir sonraki kuşak için tüm dosyalar disk'te, checksum ok
-/// SARI  = Bekliyor: dosya henüz inmiyor ama 15 dk eşiği gelmedi
-/// KIRMIZI = Kritik: haber saatine 15 dk kaldı, dosya hâlâ yok / hatalı
+/// 4-LEVEL SCHEME:
+///   GREEN  = Hazır: tüm dosyalar disk'te + checksum verified, 15dk+ var
+///   YELLOW = Bekliyor: dosya henüz iniyor, 30dk+ var (normal)
+///   ORANGE = Uyarı: 15dk eşiği yakın (5-15dk), dosya iniyor olmalı
+///   RED    = Kritik: 5dk içinde, dosya yok veya checksum FAIL — YAYIN RİSKİ
+///   UNKNOWN = Manifest yok
 /// </summary>
 public sealed class BroadcastReadinessService
 {
-    public enum ReadinessLevel { Green, Yellow, Red, Unknown }
+    public enum ReadinessLevel { Green, Yellow, Orange, Red, Unknown }
 
     public sealed record ReadinessReport(
         ReadinessLevel Level,
@@ -92,21 +95,37 @@ public sealed class BroadcastReadinessService
                 next, timeUntilAir, true);
         }
 
-        if (timeUntilAir > warnThreshold)
+        // 4-renkli hiyerarşi:
+        //   30dk+ → SARI (rahat bekleme)
+        //   15-30dk → SARI (normal bekleme)
+        //   5-15dk → TURUNCU (uyarı eşiği — dosya iniyor olmalı)
+        //   < 5dk → KIRMIZI (kritik, yayın riski)
+        var minutes = timeUntilAir.TotalMinutes;
+
+        if (minutes > 30)
         {
             return new ReadinessReport(
                 ReadinessLevel.Yellow,
-                $"İndirme bekleniyor — {next.Filename} ({timeUntilAir.TotalMinutes:F0} dk sonra)",
+                $"Bekleniyor — {next.Filename} ({minutes:F0} dk sonra)",
                 next, timeUntilAir, checksumOk);
         }
 
-        // KIRMIZI — kritik
+        if (minutes > 5)
+        {
+            // 5-30dk: ORANGE — dosya iniyor olmalı, aksi halde KIRMIZI'ya hızla geçer
+            return new ReadinessReport(
+                ReadinessLevel.Orange,
+                $"UYARI — {next.Filename} {minutes:F0} dk içinde yayında, indirme henüz tamamlanmadı",
+                next, timeUntilAir, checksumOk);
+        }
+
+        // < 5dk — KIRMIZI
         var reason = !fileOnDisk
             ? "dosya disk'te yok"
             : "checksum doğrulanamadı";
         return new ReadinessReport(
             ReadinessLevel.Red,
-            $"KRİTİK — {next.Filename} ({timeUntilAir.TotalMinutes:F0} dk kaldı, {reason})",
+            $"KRİTİK — {next.Filename} ({minutes:F0} dk kaldı, {reason})",
             next, timeUntilAir, checksumOk);
     }
 }
