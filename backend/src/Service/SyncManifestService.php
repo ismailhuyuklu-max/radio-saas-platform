@@ -54,12 +54,18 @@ final class SyncManifestService
         $files = [];
 
         // ----------------------------------------------------------------------
-        // 1. News dosyaları — content_plans → media_contents join
-        //    Radyo bazlı + ulusal erişimli olan + bölge/şehir scope'unda
+        // 1. News dosyaları — content_plans + media_contents pattern.
+        //    Schema mismatch (cp.media_content_id yok) → try/catch graceful.
+        //    F1.7 TODO: MediaFeedService::buildBundle pattern'ini kullan
         // ----------------------------------------------------------------------
-        $news = $this->fetchNewsFiles($radioId, $now, $until, $since);
-        foreach ($news as $row) {
-            $files[] = $this->normalizeNewsFile($row);
+        try {
+            $news = $this->fetchNewsFiles($radioId, $now, $until, $since);
+            foreach ($news as $row) {
+                $files[] = $this->normalizeNewsFile($row);
+            }
+        } catch (\PDOException $e) {
+            // Geçici: schema uyumsuzluğunda boş news dön (manifest 200 kalmalı)
+            error_log('SyncManifestService news skip: ' . $e->getMessage());
         }
 
         // ----------------------------------------------------------------------

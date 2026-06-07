@@ -12,7 +12,6 @@ use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\SyncClientRepository;
 use RadioSaaS\Repository\UserRepository;
 use RadioSaaS\Service\JwtService;
-use RadioSaaS\Service\PasswordHasher;
 use RadioSaaS\Service\RequestContext;
 use RadioSaaS\Service\SyncManifestService;
 use RuntimeException;
@@ -90,8 +89,8 @@ final class SyncController
         // (LoginThrottleRepository pattern AuthController'da var).
 
         $user = $this->users->findByUsername($username);
-        if ($user === null || !PasswordHasher::verify($password, (string)($user['password_hash'] ?? ''))) {
-            $this->audit->record('sync_login_failed', null, ['username' => $username, 'ip' => $clientIp]);
+        if ($user === null || !password_verify($password, (string)($user['password_hash'] ?? ''))) {
+            $this->recordAudit('sync_login_failed', null, ['username' => $username, 'ip' => $clientIp]);
             $this->respond(401, ['code' => 401, 'message' => 'Kullanıcı adı veya şifre hatalı']);
             return;
         }
@@ -110,13 +109,20 @@ final class SyncController
         ]);
 
         // Radyo bilgisi
-        $radio = $user['radio_id'] !== null ? $this->stations->find($user['radio_id']) : null;
+        $stationId = $user['station_id'] ?? null;
+        $radio = $stationId !== null ? $this->stations->findById((string)$stationId) : null;
 
-        $roles = isset($user['role']) ? [(string)$user['role']] : ['partner'];
+        // UserRepository: roles JSON array döndürür (örn: ["super"] veya ["partner"])
+        $rolesRaw = $user['roles'] ?? null;
+        if (is_string($rolesRaw)) $rolesRaw = json_decode($rolesRaw, true);
+        $roles = is_array($rolesRaw) && count($rolesRaw) > 0
+            ? array_values(array_map('strval', $rolesRaw))
+            : ['partner'];
+
         $accessToken = $this->jwt->issueAccess(
             userId: (string)$user['id'],
             roles: $roles,
-            stationId: $user['radio_id'] !== null ? (string)$user['radio_id'] : null
+            stationId: $stationId !== null ? (string)$stationId : null
         );
         $refreshToken = $this->jwt->issueRefresh();
         $this->refreshTokens->insert(
@@ -125,7 +131,7 @@ final class SyncController
             ttlSeconds: self::REFRESH_TTL
         );
 
-        $this->audit->record('sync_login_success', $user['id'], [
+        $this->recordAudit('sync_login_success', $user['id'], [
             'ip' => $clientIp,
             'client_version' => $clientVersion,
             'machine_id' => $machineId,
@@ -179,7 +185,7 @@ final class SyncController
         $hash = hash('sha256', $refresh);
         $row = $this->refreshTokens->findValid($hash);
         if ($row === null) {
-            $this->audit->record('sync_refresh_invalid', null, ['ip' => RequestContext::clientIp()]);
+            $this->recordAudit('sync_refresh_invalid', null, ['ip' => RequestContext::clientIp()]);
             $this->respond(401, ['code' => 401, 'message' => 'Refresh token geçersiz veya süresi dolmuş']);
             return;
         }
@@ -193,11 +199,16 @@ final class SyncController
         // Rotation — eski refresh'i hemen revoke et (replay attack koruması)
         $this->refreshTokens->revoke($hash);
 
-        $roles = isset($user['role']) ? [(string)$user['role']] : ['partner'];
+        $rolesRaw = $user['roles'] ?? null;
+        if (is_string($rolesRaw)) $rolesRaw = json_decode($rolesRaw, true);
+        $roles = is_array($rolesRaw) && count($rolesRaw) > 0
+            ? array_values(array_map('strval', $rolesRaw))
+            : ['partner'];
+        $sid = $user['station_id'] ?? null;
         $newAccess = $this->jwt->issueAccess(
             userId: (string)$user['id'],
             roles: $roles,
-            stationId: $user['radio_id'] !== null ? (string)$user['radio_id'] : null
+            stationId: $sid !== null ? (string)$sid : null
         );
         $newRefresh = $this->jwt->issueRefresh();
         $this->refreshTokens->insert(
@@ -206,7 +217,7 @@ final class SyncController
             ttlSeconds: self::REFRESH_TTL
         );
 
-        $this->audit->record('sync_refresh_success', $user['id'], ['ip' => RequestContext::clientIp()]);
+        $this->recordAudit('sync_refresh_success', $user['id'], ['ip' => RequestContext::clientIp()]);
 
         $this->respond(200, [
             'code' => 0,
@@ -234,7 +245,7 @@ final class SyncController
             return;
         }
 
-        $radio = $user['radio_id'] !== null ? $this->stations->find($user['radio_id']) : null;
+        $radio = $user['station_id'] ?? null !== null ? $this->stations->findById($user['station_id'] ?? null) : null;
 
         $this->respond(200, [
             'code' => 0,
@@ -281,7 +292,10 @@ final class SyncController
         $manifest = $this->manifestService->buildForRadio($radioId, $since);
 
         // ETag desteği — büyük manifest payload tekrar inmesin (CTO-19 pattern)
-        $etag = '"' . substr(hash('sha256', (string)json_encode($manifest)), 0, 16) . '"';
+        // generated_at hariç tut (her istekte değişir, false-positive 200 üretir)
+        $etagPayload = $manifest;
+        unset($etagPayload['generated_at']);
+        $etag = '"' . substr(hash('sha256', (string)json_encode($etagPayload)), 0, 16) . '"';
         $clientEtag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
         if ($clientEtag === $etag) {
             header('ETag: ' . $etag);
@@ -328,7 +342,7 @@ final class SyncController
         $manifest = $this->manifestService->buildForRadio($radioId);
         $allowedIds = array_column($manifest['files'], 'file_id');
         if (!in_array($fileId, $allowedIds, true)) {
-            $this->audit->record('sync_download_denied', $claims['sub'], [
+            $this->recordAudit('sync_download_denied', $claims['sub'], [
                 'file_id' => $fileId,
                 'radio_id' => $radioId,
                 'reason' => 'not_in_manifest',
@@ -346,7 +360,7 @@ final class SyncController
                 ttlSeconds: self::DOWNLOAD_URL_TTL
             );
         } catch (\Throwable $e) {
-            $this->audit->record('sync_download_signed_url_failed', $claims['sub'], [
+            $this->recordAudit('sync_download_signed_url_failed', $claims['sub'], [
                 'file_id' => $fileId,
                 'radio_id' => $radioId,
                 'error' => $e->getMessage(),
@@ -355,7 +369,7 @@ final class SyncController
             return;
         }
 
-        $this->audit->record('sync_download', $claims['sub'], [
+        $this->recordAudit('sync_download', $claims['sub'], [
             'file_id' => $fileId,
             'radio_id' => $radioId,
             'ip' => RequestContext::clientIp(),
@@ -384,7 +398,7 @@ final class SyncController
             return;
         }
 
-        $this->audit->record('sync_report_' . $status, $claims['sub'], [
+        $this->recordAudit('sync_report_' . $status, $claims['sub'], [
             'file_id' => $fileId,
             'radio_id' => $claims['radio_id'] ?? null,
             'bytes' => (int)($body['bytes'] ?? 0),
@@ -454,6 +468,20 @@ final class SyncController
     }
 
     // ---------- Helper methods ----------
+
+    /**
+     * Audit log wrapper — AuditLogRepository::log() 5-arg imzasına uyum.
+     */
+    private function recordAudit(string $action, ?string $actorUsername, array $payload): void
+    {
+        $this->audit->log(
+            actorUsername: $actorUsername ?? 'sync-anonymous',
+            action: $action,
+            entityType: 'sync',
+            entityId: $payload['file_id'] ?? null,
+            payload: $payload
+        );
+    }
 
     private function readJsonBody(): array
     {
