@@ -47,13 +47,9 @@ final class PasswordHasher
 
     public static function hash(string $plaintext): string
     {
-        $hash = password_hash($plaintext, PASSWORD_BCRYPT, ['cost' => self::cost()]);
-        // Doc'ta `string|false` der; PHP 7.4+ bcrypt için pratikte false dönmez,
-        // ama type-safe olalım.
-        if (!is_string($hash) || $hash === '') {
-            throw new \RuntimeException('password_hash() failed unexpectedly.');
-        }
-        return $hash;
+        // PHP 8.0+ password_hash() dönüş tipi string (false yok).
+        // PHPStan'a göre defensive check gereksiz — kaldırıldı (Faz CTO-15).
+        return password_hash($plaintext, PASSWORD_BCRYPT, ['cost' => self::cost()]);
     }
 
     /**

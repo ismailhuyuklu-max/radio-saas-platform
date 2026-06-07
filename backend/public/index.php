@@ -18,11 +18,10 @@ ini_set('error_log', '/proc/self/fd/2');
  *  warn about already-emitted output (which would itself become HTML noise). */
 function radio_error_response(int $status, string $message, ?string $debug = null): void
 {
-    if (ob_get_level() > 0) {
-        // Wipe any partial output (PHP warnings, controller echo before fatal).
-        while (ob_get_level() > 0) {
-            @ob_end_clean();
-        }
+    // Wipe any partial output (PHP warnings, controller echo before fatal).
+    // ob_start() en üstte zaten çağrıldı, en az 1 buffer mevcut.
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
     }
     if (!headers_sent()) {
         http_response_code($status);
@@ -1232,10 +1231,9 @@ try {
     // Faz H1-1: önce partial output'u temizle, sonra header'ları korumalı set et.
     // Controller'lar respond() ile zaten echo etmiş olabilir; bu durumda ob_clean
     // bunları siler, JSON gövdesi tek seferlik gönderilir, HTML kalıntısı sızmaz.
-    if (ob_get_level() > 0) {
-        while (ob_get_level() > 0) {
-            @ob_end_clean();
-        }
+    // ob_start() en üstte; en az 1 buffer var.
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
     }
     if (!headers_sent()) {
         http_response_code($status);

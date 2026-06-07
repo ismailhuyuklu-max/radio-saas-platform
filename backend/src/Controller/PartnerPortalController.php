@@ -24,17 +24,10 @@ use RadioSaaS\Service\StreamTokenService;
  */
 final class PartnerPortalController
 {
-    /** Map portal "purpose" → underlying media part code. */
-    private const PURPOSE_TO_PART = [
-        'news' => 'news',
-        'sports' => 'sports',
-        'economy' => 'economy',
-        'weather' => 'weather',
-        'sponsor' => 'news',
-        'ad' => 'news',
-        'special' => 'news',
-        'emergency' => 'news',
-    ];
+    // PURPOSE_TO_PART const kaldırıldı (Faz CTO-15) — kullanılmıyordu.
+    // Portal media filtreleme MediaContentRepository tarafında part_code
+    // join'i ile yapılır; explicit mapping gerektiğinde StreamTokenService
+    // içindeki PURPOSE_LABELS kullanılır.
 
     public function __construct(
         private readonly AdminAuthenticator $authenticator,

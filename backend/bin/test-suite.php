@@ -57,7 +57,9 @@ function httpJsonRequest(string $method, string $url, array $payload = [], array
     ]);
 
     $responseBody = @file_get_contents($url, false, $context);
-    $responseHeaders = $http_response_header ?? [];
+    // $http_response_header file_get_contents sonrası PHP tarafından otomatik
+    // tanımlanır; ?? gereksiz ama PHPStan görmüyor diye explicit isset.
+    $responseHeaders = isset($http_response_header) ? $http_response_header : [];
     $statusLine = $responseHeaders[0] ?? 'HTTP/1.1 000 Unknown';
 
     if ($responseBody === false) {

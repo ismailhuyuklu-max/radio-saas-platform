@@ -52,7 +52,8 @@ final class Rbac
     private const CONTENT_WRITERS = [self::ROLE_SUPER, self::ROLE_MANAGER, self::ROLE_EDITOR];
     private const MANAGERS = [self::ROLE_SUPER, self::ROLE_MANAGER];
     private const ADMINS = [self::ROLE_SUPER];
-    private const PARTNERS = [self::ROLE_STATION_USER];
+    // PARTNERS const kaldırıldı (Faz CTO-15) — kullanılmıyordu; ROLE_STATION_USER
+    // her permission'da inline declared (portal:view, portal:download, vb.).
 
     /**
      * permission => roles allowed.

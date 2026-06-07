@@ -168,7 +168,8 @@ final class StationController
         }
 
         $this->stationRepository->delete($stationId);
-        $this->auditLogRepository->log('admin', 'delete', 'station', $stationId, $existing ?? []);
+        // $existing zaten null-check'ten geçti, ?? gereksiz.
+        $this->auditLogRepository->log('admin', 'delete', 'station', $stationId, $existing);
         $this->respond([
             'code' => 0,
             'result' => ['deleted' => true, 'station_id' => $stationId],
