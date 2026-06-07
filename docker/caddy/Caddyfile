@@ -1,5 +1,5 @@
 # =============================================================================
-# Aircast Pro — Caddy TLS terminator (Faz H3-5)
+# AdCast Pro — Caddy TLS terminator (Faz H3-5)
 # =============================================================================
 # Caddy:
 #   - HTTPS dinler (443), HTTP/3 destekler (UDP 443).

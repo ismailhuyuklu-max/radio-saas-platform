@@ -1,5 +1,5 @@
 # =============================================================================
-# Aircast Pro — Prometheus alert rules (Faz UX-tune)
+# AdCast Pro — Prometheus alert rules (Faz UX-tune)
 # =============================================================================
 # Bu dosya henüz canlı bir Prometheus instance'a bind edilmedi; çıktı olarak
 # /api/v1/metrics endpoint'i mevcut. Üretimde Prometheus + alertmanager
@@ -12,9 +12,9 @@
 #   4. radio_saas_info eksik = backend down
 # =============================================================================
 groups:
-  - name: aircast-disk
+  - name: adcast-disk
     rules:
-      - alert: AircastDiskHigh
+      - alert: AdCastDiskHigh
         expr: radio_saas_disk_used_pct > 80
         for: 5m
         labels:
@@ -28,7 +28,7 @@ groups:
               2) docker exec radio-minio mc du local
               3) backup_data volume'ında eski dump'ları temizle
 
-      - alert: AircastDiskCritical
+      - alert: AdCastDiskCritical
         expr: radio_saas_disk_used_pct > 90
         for: 1m
         labels:
@@ -39,9 +39,9 @@ groups:
             ACİL: PG WAL yer kalmazsa veritabanı write'ları reddedilir.
             Hemen MinIO temizliği + backup volume prune.
 
-  - name: aircast-queue
+  - name: adcast-queue
     rules:
-      - alert: AircastQueueBackup
+      - alert: AdCastQueueBackup
         expr: radio_saas_queue_depth{status="pending"} > 50
         for: 10m
         labels:
@@ -50,7 +50,7 @@ groups:
           summary: "Render kuyruğunda {{ $value }} bekleyen iş"
           description: "FFmpeg worker yetişemiyor — paralelizm artırılmalı (worker container scale up)."
 
-      - alert: AircastQueueFailures
+      - alert: AdCastQueueFailures
         expr: radio_saas_queue_depth{status="failed"} > 5
         for: 5m
         labels:
@@ -59,9 +59,9 @@ groups:
           summary: "{{ $value }} render job failed"
           description: "Worker log'larına bakın: docker logs radio-worker --tail 100"
 
-  - name: aircast-security
+  - name: adcast-security
     rules:
-      - alert: AircastLoginBruteForce
+      - alert: AdCastLoginBruteForce
         expr: radio_saas_login_failures_1h > 20
         for: 2m
         labels:
@@ -73,9 +73,9 @@ groups:
             Eğer farklı kullanıcı/IP'lerden geliyorsa coordinated brute force —
             audit_logs incele: action='login_failed' last 1h.
 
-  - name: aircast-availability
+  - name: adcast-availability
     rules:
-      - alert: AircastBackendDown
+      - alert: AdCastBackendDown
         expr: absent(radio_saas_info)
         for: 1m
         labels:

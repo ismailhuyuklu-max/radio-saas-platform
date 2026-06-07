@@ -9,7 +9,7 @@ test.describe('Login page', () => {
     await page.goto('/login');
 
     // Brand
-    await expect(page.getByRole('heading', { name: 'Aircast Pro' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'AdCast Pro' })).toBeVisible();
 
     // Form fields + submit
     await expect(page.getByPlaceholder('admin')).toBeVisible();

@@ -15,7 +15,7 @@ import {
 import TurkeySvgMap, {
   type TurkeyRegionState,
 } from '#/components/TurkeySvgMap.vue';
-import AircastProLogo from '#/components/brand/AircastProLogo.vue';
+import AdCastProLogo from '#/components/brand/AdCastProLogo.vue';
 
 import {
   createMatrixKey,
@@ -403,9 +403,9 @@ onBeforeUnmount(() => {
       <section class="col-span-8 matrix-map-panel">
         <div class="panel-head">
           <div class="panel-brand">
-            <AircastProLogo compact />
+            <AdCastProLogo compact />
             <div class="panel-brand-copy">
-              <strong>Aircast Pro</strong>
+              <strong>AdCast Pro</strong>
               <span>Haber Yönetim Paneli</span>
             </div>
             <div class="panel-brand-clock">

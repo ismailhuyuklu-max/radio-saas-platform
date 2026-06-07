@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Partner Radio Portal end-to-end test.
  *
- * Drives the full Aircast Radio Partner Portal flow against the live API:
+ * Drives the full AdCast Pro Partner Portal flow against the live API:
  *   1. Admin provisions a station user → one-shot password returned
  *   2. Partner logs in with that password
  *   3. Partner reads /portal/me (own card), /portal/links (8 signed URLs),

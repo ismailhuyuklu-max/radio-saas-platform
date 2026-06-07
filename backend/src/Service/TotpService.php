@@ -50,7 +50,7 @@ final class TotpService
     }
 
     /** otpauth:// provisioning URI for QR codes / manual entry. */
-    public static function provisioningUri(string $base32Secret, string $account, string $issuer = 'Aircast Pro'): string
+    public static function provisioningUri(string $base32Secret, string $account, string $issuer = 'AdCast Pro'): string
     {
         $label = rawurlencode($issuer) . ':' . rawurlencode($account);
         $params = http_build_query([

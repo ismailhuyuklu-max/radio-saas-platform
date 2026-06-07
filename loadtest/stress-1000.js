@@ -1,5 +1,5 @@
 /**
- * Aircast Pro — k6 Stress Test 1000 VU (Faz CTO-5)
+ * AdCast Pro — k6 Stress Test 1000 VU (Faz CTO-5)
  *
  * 500+ partner radyo / 5000+ kullanıcı senaryosu için.
  *

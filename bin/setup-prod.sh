@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Aircast Pro — Üretim Ortamı Hızlı Kurulum (Faz H3-1)
+# AdCast Pro — Üretim Ortamı Hızlı Kurulum (Faz H3-1)
 # =============================================================================
 # Bu script:
 #   1. .env.production yoksa, .env.production.example'ı kopyalar.

@@ -40,7 +40,7 @@ final class JwtService
     {
         $now = time();
         $payload = [
-            'iss' => 'aircast-portal',
+            'iss' => 'adcast-portal',
             'sub' => $userId,
             'iat' => $now,
             // jti gives every issued token a unique identity even when two

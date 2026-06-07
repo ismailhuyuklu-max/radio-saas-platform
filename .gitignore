@@ -5,7 +5,8 @@ frontend/.pnpm-store/
 
 # Build output
 frontend/dist/
-frontend/public/
+# Note: frontend/public/ is Vite's static asset directory (logo, favicons,
+# robots.txt) — MUST be tracked so production builds serve the right files.
 
 # Logs
 *.log

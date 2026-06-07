@@ -46,7 +46,7 @@ if (!$regionId) {
 $stationRepo = new StationRepository($pdo);
 $stationId = $stationRepo->insert([
     'region_id' => $regionId,
-    'name' => 'Aircast Demo FM',
+    'name' => 'AdCast Demo FM',
     'slug' => 'doc_demo_fm',
     'station_code' => 'doc_demo_fm',
     'city_name' => 'İstanbul',
@@ -56,11 +56,11 @@ $stationId = $stationRepo->insert([
 // Enrich the corporate card so screenshots show something.
 $stationRepo->updateProfile($stationId, [
     'frequency' => '101.5 FM',
-    'company_name' => 'Aircast Yayıncılık A.Ş.',
+    'company_name' => 'AdCast Pro Yayıncılık A.Ş.',
     'contact_name' => 'Demo Yetkili',
     'contact_phone' => '+90 312 000 00 00',
-    'contact_email' => 'demo@aircast.fm',
-    'website' => 'https://aircast.fm',
+    'contact_email' => 'demo@adcastpro.com',
+    'website' => 'https://adcastpro.com',
 ]);
 
 $creds = new RadioCredentialService(new UserRepository($pdo), $stationRepo);

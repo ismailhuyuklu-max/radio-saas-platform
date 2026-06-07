@@ -33,7 +33,7 @@ final class MetricsExposeController
         Metrics::register(
             'radio_saas_info',
             'gauge',
-            'Aircast Pro deployment build info (constant 1)'
+            'AdCast Pro deployment build info (constant 1)'
         );
         Metrics::gauge('radio_saas_info', 1, [
             'version' => 'h5-1',

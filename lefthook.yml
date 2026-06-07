@@ -1,5 +1,5 @@
 # =============================================================================
-# Aircast Pro — Lefthook pre-commit guard (Faz CTO-2)
+# AdCast Pro — Lefthook pre-commit guard (Faz CTO-2)
 # =============================================================================
 # Her commit öncesi otomatik:
 #   1. PHP lint (php -l) — değişen *.php dosyaları

@@ -15,10 +15,10 @@
  */
 import type { Router } from 'vue-router';
 
-const DEFAULT_TITLE = 'Aircast Pro · Radyo Yayın Platformu';
+const DEFAULT_TITLE = 'AdCast Pro · Radyo Yayın Platformu';
 
 interface InstallA11yOptions {
-  /** Sayfa title prefix (default 'Aircast Pro'). */
+  /** Sayfa title prefix (default 'AdCast Pro'). */
   titleBase?: string;
   /** Main element id. App.vue'da `<main :id="...">` ile eşleşmeli. */
   mainElementId?: string;
@@ -29,10 +29,10 @@ export function installA11y(router: Router, options: InstallA11yOptions = {}): v
   const mainId = options.mainElementId ?? 'main-content';
 
   router.afterEach((to) => {
-    // Title formatı: "Sayfa · Aircast Pro" — screen reader title değişimini okur.
+    // Title formatı: "Sayfa · AdCast Pro" — screen reader title değişimini okur.
     const meta = (to.meta ?? {}) as { title?: string };
     const pageTitle = typeof meta.title === 'string' && meta.title.length > 0
-      ? `${meta.title} · Aircast Pro`
+      ? `${meta.title} · AdCast Pro`
       : base;
     if (typeof document !== 'undefined') {
       document.title = pageTitle;

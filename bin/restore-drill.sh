@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Aircast Pro — Backup Restore Drill (Faz H5-5)
+# AdCast Pro — Backup Restore Drill (Faz H5-5)
 # =============================================================================
 # Disaster Recovery sigortası: Backup'ları RESTORE EDEBİLİYORSAN backup'ın
 # vardır; teyit etmeden backup "Schrödinger'in backup'ıdır".
@@ -24,11 +24,11 @@ set -euo pipefail
 # --- Konfig ---
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-.env.production}"
-DRILL_CONTAINER="aircast-restore-drill"
+DRILL_CONTAINER="adcast-restore-drill"
 DRILL_DB="restore_drill"
 DRILL_PASSWORD=$(openssl rand -hex 16)
 DRILL_PORT="${DRILL_PORT:-54329}"
-WORKDIR=$(mktemp -d -t aircast-drill-XXXXXX)
+WORKDIR=$(mktemp -d -t adcast-drill-XXXXXX)
 trap 'rm -rf "$WORKDIR"; docker rm -f "$DRILL_CONTAINER" >/dev/null 2>&1 || true' EXIT
 
 cd "$(dirname "$0")/.."

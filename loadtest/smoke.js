@@ -1,5 +1,5 @@
 /**
- * Aircast Pro — k6 Smoke Load Test (Faz CTO-14 revize)
+ * AdCast Pro — k6 Smoke Load Test (Faz CTO-14 revize)
  *
  * SESSION-BASED scenario: VU bir kez login olur, sonra 7 endpoint'i
  * sırayla okur. Gerçek dashboard kullanıcı davranışını simüle eder

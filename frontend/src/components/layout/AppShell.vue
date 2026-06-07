@@ -93,7 +93,7 @@ const currentItem = computed(() =>
   allItems.value.find((item) => route.path.startsWith(item.path)),
 );
 
-const pageTitle = computed(() => currentItem.value?.label ?? 'Aircast Pro');
+const pageTitle = computed(() => currentItem.value?.label ?? 'AdCast Pro');
 
 const user = computed(() => {
   void route.fullPath;
@@ -136,9 +136,16 @@ watch(() => route.fullPath, () => {
     <!-- Sidebar (desktop) / Drawer (mobile) -->
     <aside class="app-sidebar" :class="{ 'is-open': drawerOpen }">
       <div class="app-brand">
-        <span class="app-brand__mark">📻</span>
+        <!-- REBRAND: gerçek PNG logo (frontend/public/adcastpro-logo.png) -->
+        <img
+          src="/adcastpro-logo.png"
+          alt="AdCast Pro"
+          class="app-brand__mark"
+          width="32"
+          height="32"
+        />
         <div class="app-brand__text">
-          <strong>Aircast Pro</strong>
+          <strong>AdCast Pro</strong>
           <span>Yayın Yönetimi</span>
         </div>
       </div>
@@ -249,7 +256,11 @@ watch(() => route.fullPath, () => {
 }
 
 .app-brand__mark {
-  font-size: 18px;
+  /* REBRAND: img element — emoji font-size yerine width/height */
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(225, 29, 72, 0.3));
 }
 
 .app-brand__text {

@@ -264,7 +264,7 @@ const SCREENS = [
   {
     role: 'partner', key: '20-portal-links', title: 'Partner Portal — Yayın Linkleri',
     purpose: 'Tek sayfa partner paneli — kurumsal bilgi kartı + 8 amaçlı signed-URL yayın linki (her biri JSON/XML/M3U/PLS).',
-    scenario: 'Radyo IT sorumlusu Aircast’ten linklerini alır, otomasyon yazılımına yapıştırır. Token iptal edilirse link anında çalışmaz hale gelir.',
+    scenario: 'Radyo IT sorumlusu AdCast Pro’ten linklerini alır, otomasyon yazılımına yapıştırır. Token iptal edilirse link anında çalışmaz hale gelir.',
     roles: 'station_user (kendi tenant scope).',
     workflow: 'Login → /portal redirect → GET /portal/me + /portal/links → 8 link kartı + tek tık Kopyala.',
     technical: 'StreamTokenService.ensure 8 amaç için lazy üretim. Her link 64-char hex token.',
@@ -618,7 +618,7 @@ function buildChapters(shotData) {
 
   // Bölüm 1
   c.push(chapterShell(1, 'Yönetici Özeti',
-    paragraph('Aircast Broadcast Platform, Türkiye genelinde yüzlerce partner radyonun yayın akışını tek merkezden yöneten, multi-tenant, güvenli, ölçeklenebilir bir SaaS platformudur. WideOrbit, Marketron ve RCS Zetta-sınıfı trafik motoru, tam izole partner portali, sponsor + reklam dağıtımı, gerçek zamanlı render hattı ve eksiksiz raporlama içerir.') +
+    paragraph('AdCast Pro Broadcast Platform, Türkiye genelinde yüzlerce partner radyonun yayın akışını tek merkezden yöneten, multi-tenant, güvenli, ölçeklenebilir bir SaaS platformudur. WideOrbit, Marketron ve RCS Zetta-sınıfı trafik motoru, tam izole partner portali, sponsor + reklam dağıtımı, gerçek zamanlı render hattı ve eksiksiz raporlama içerir.') +
     block('Yazılımın Amacı', paragraph('7 bölge, 81 il ve 500+ partner radyo için haber, spor, ekonomi, hava durumu, sponsor takdimleri ve ticari reklamların merkezi olarak planlanması, üretilmesi (FFmpeg sponsor enjeksiyonu + loudnorm), dağıtılması (signed-URL feed) ve raporlanmasını sağlar.')) +
     block('Sektörel Karşılık', list([
       'WideOrbit Traffic — kampanya planlama + airing reconciliation karşılığı',
@@ -929,7 +929,7 @@ function buildChapters(shotData) {
 
   // Bölüm 11: Reklam (büyük bölüm)
   c.push(chapterShell(11, 'Reklam Planlama Motoru',
-    paragraph('Master prompt’un en geniş bölümü. Aircast’in ticari değerinin büyük kısmı bu modülde — kampanyaların doğru bölgede, doğru kuşakta, doğru frekansta çalmasının garantörü.') +
+    paragraph('Master prompt’un en geniş bölümü. AdCast Pro’in ticari değerinin büyük kısmı bu modülde — kampanyaların doğru bölgede, doğru kuşakta, doğru frekansta çalmasının garantörü.') +
     screenshotPage(SCREENS.find((s) => s.key === '11-ad-traffic'), shotData) +
     screenshotPage(SCREENS.find((s) => s.key === '06-sponsors'), shotData) +
     block('Sponsor Yönetimi', paragraph('Sponsor reklam dosyaları (intro/outro/ad placement_type) kayıt, render, atama. Tek bir sponsor birden çok bölge ve kuşak kombinasyonuna atanabilir. is_global flag ile ulusal sponsor (örn. ana sponsor) sistem geneli geçerli.')) +
@@ -986,7 +986,7 @@ function buildChapters(shotData) {
     block('Fatura Akışı', paragraph('Aylık kapanışta CFO Reports → Gelir Raporu XLSX indirir. ad_airings tablosundan delivered_revenue + budget_used_pct → faturalandırma sistemine elle aktarılır. Future: Logo/Mikro entegrasyonu.')) +
     block('Pazar Karşılaştırma', table([
       ['Platform', 'Hedefleme', 'Gelir Modeli', 'Türkçe', 'Self-Service API'],
-      ['Aircast', '5 kapsam (TR + bölge + il + grup + radyo)', 'CPM/CPP/Flat', '✓ doğal', '✓ JWT + X-API-Key'],
+      ['AdCast Pro', '5 kapsam (TR + bölge + il + grup + radyo)', 'CPM/CPP/Flat', '✓ doğal', '✓ JWT + X-API-Key'],
       ['WideOrbit', 'ABD pazarı tipik', 'CPM', '✗', '✓'],
       ['Marketron', 'ABD pazarı tipik', 'CPM', '✗', 'kısmi'],
       ['RCS Zetta', 'Çok büyük ağ', 'Flat dominant', '✗', '✗'],
@@ -1277,7 +1277,7 @@ CREATE INDEX idx_audit_ip ON audit_logs (ip_address, created_at DESC);`)
     block('API Akış Diyagramı', paragraph('Frontend / Partner Otomasyonu → Vite Proxy / Direct → Nginx → PHP-FPM (front-controller) → AdminAuthenticator | ApiKeyService | JwtService → Controller → Service/Repository → PDO → PostgreSQL. Side-effect: MinIO put/get + audit_logs insert.')) +
     block('Endpoint Örnekleri — Login + JWT', paragraph('Klasik login (cookie döner):')) +
     codeBlock('http', `POST /api/v1/auth/login HTTP/1.1
-Host: app.aircast.fm
+Host: app.adcastpro.com
 Content-Type: application/json
 
 { "username": "admin", "password": "your_strong_password" }
@@ -1288,9 +1288,9 @@ Set-Cookie: radio_csrf=...; SameSite=Lax
 Content-Type: application/json
 
 { "code": 0, "result": { "userId": "uuid", "username": "admin",
-  "realName": "Aircast Admin", "roles": ["super"] }, "message": "Success" }`) +
+  "realName": "AdCast Pro Admin", "roles": ["super"] }, "message": "Success" }`) +
     paragraph('Token endpoint (JWT — partner otomasyonu için):') +
-    codeBlock('bash', `curl -X POST https://app.aircast.fm/api/v1/auth/token \\
+    codeBlock('bash', `curl -X POST https://app.adcastpro.com/api/v1/auth/token \\
   -H 'Content-Type: application/json' \\
   -d '{"username":"meskfm_konya","password":"<one-shot>"}'`) +
     codeBlock('json', `{
@@ -1304,7 +1304,7 @@ Content-Type: application/json
   }
 }`) +
     block('Endpoint Örnekleri — Bulk Plan', paragraph('Tüm Türkiye × 7 gün × 4 spot, kampanya bağlı:')) +
-    codeBlock('bash', `curl -X POST https://app.aircast.fm/api/v1/plans/bulk \\
+    codeBlock('bash', `curl -X POST https://app.adcastpro.com/api/v1/plans/bulk \\
   -H 'Authorization: Bearer eyJ...' \\
   -H 'Content-Type: application/json' \\
   -d '{
@@ -1329,7 +1329,7 @@ Content-Type: application/json
   },
   "message": "Success"
 }`) +
-    block('Endpoint Örnekleri — Provision', codeBlock('bash', `curl -X POST https://app.aircast.fm/api/v1/stations/{stationId}/provision \\
+    block('Endpoint Örnekleri — Provision', codeBlock('bash', `curl -X POST https://app.adcastpro.com/api/v1/stations/{stationId}/provision \\
   -H 'Authorization: Bearer eyJ...'`) +
       codeBlock('json', `{
   "code": 0,
@@ -1341,41 +1341,41 @@ Content-Type: application/json
 }`)) +
     block('Endpoint Örnekleri — Signed-URL Feed', paragraph('Partner otomasyonu (token kendisi auth):')) +
     codeBlock('bash', `# JSON feed (latest news bundle for the partner's region)
-curl https://app.aircast.fm/api/v1/stream/radio/{stationId}/{token}/news.json
+curl https://app.adcastpro.com/api/v1/stream/radio/{stationId}/{token}/news.json
 
 # M3U playlist (RDS, OnAir automation paste-ready)
-curl https://app.aircast.fm/api/v1/stream/radio/{stationId}/{token}/news.m3u
+curl https://app.adcastpro.com/api/v1/stream/radio/{stationId}/{token}/news.m3u
 
 # PLS playlist (Winamp/older players)
-curl https://app.aircast.fm/api/v1/stream/radio/{stationId}/{token}/news.pls
+curl https://app.adcastpro.com/api/v1/stream/radio/{stationId}/{token}/news.pls
 
 # XML (legacy automation)
-curl https://app.aircast.fm/api/v1/stream/radio/{stationId}/{token}/news.xml`) +
+curl https://app.adcastpro.com/api/v1/stream/radio/{stationId}/{token}/news.xml`) +
     block('Endpoint Örnekleri — Portal Self-Service', codeBlock('bash', `# 1) API key oluştur
 curl -X POST -H 'Authorization: Bearer eyJ...' \\
   -H 'Content-Type: application/json' \\
   -d '{"name":"Yayın Otomasyonu"}' \\
-  https://app.aircast.fm/api/v1/portal/api-keys
+  https://app.adcastpro.com/api/v1/portal/api-keys
 
 # 2) Sonraki çağrılarda key ile auth
 curl -H 'X-API-Key: ak_a1b2c3d4_...' \\
-  https://app.aircast.fm/api/v1/portal/me
+  https://app.adcastpro.com/api/v1/portal/me
 
 # 3) Bugünkü yayınları çek
 curl -H 'X-API-Key: ak_a1b2c3d4_...' \\
-  'https://app.aircast.fm/api/v1/portal/feeds?date=2026-07-15'
+  'https://app.adcastpro.com/api/v1/portal/feeds?date=2026-07-15'
 
 # 4) İndirme merkezi
 curl -H 'X-API-Key: ak_a1b2c3d4_...' \\
-  https://app.aircast.fm/api/v1/portal/media
+  https://app.adcastpro.com/api/v1/portal/media
 
 # 5) MP3 doğrudan indir
 curl -O -H 'X-API-Key: ak_a1b2c3d4_...' \\
-  https://app.aircast.fm/api/v1/media-stream/content/{id}?format=mp3`)) +
+  https://app.adcastpro.com/api/v1/media-stream/content/{id}?format=mp3`)) +
     block('Endpoint Örnekleri — Support Ticket', codeBlock('bash', `curl -X POST -H 'Authorization: Bearer eyJ...' \\
   -H 'Content-Type: application/json' \\
   -d '{"category":"technical","subject":"Yayın linki çalışmıyor","body":"news.m3u 403 dönüyor"}' \\
-  https://app.aircast.fm/api/v1/portal/support`) +
+  https://app.adcastpro.com/api/v1/portal/support`) +
       codeBlock('json', `{
   "code": 0,
   "result": {
@@ -1391,7 +1391,7 @@ curl -O -H 'X-API-Key: ak_a1b2c3d4_...' \\
     block('Endpoint Örnekleri — Rotate Tokens (IP/Domain/Expiry)', codeBlock('bash', `curl -X POST -H 'Authorization: Bearer eyJ...' \\
   -H 'Content-Type: application/json' \\
   -d '{"ip":"185.10.20.30","domain":"*.radio.example.com","expires_in_days":90}' \\
-  https://app.aircast.fm/api/v1/stations/{id}/rotate-tokens`) +
+  https://app.adcastpro.com/api/v1/stations/{id}/rotate-tokens`) +
       codeBlock('json', `{
   "code": 0,
   "result": {
@@ -1403,15 +1403,15 @@ curl -O -H 'X-API-Key: ak_a1b2c3d4_...' \\
 }`)) +
     block('Endpoint Örnekleri — Rapor İndirme', codeBlock('bash', `# Excel
 curl -O -H 'Authorization: Bearer eyJ...' \\
-  'https://app.aircast.fm/api/v1/reports/revenue?format=xlsx'
+  'https://app.adcastpro.com/api/v1/reports/revenue?format=xlsx'
 
 # PDF
 curl -O -H 'Authorization: Bearer eyJ...' \\
-  'https://app.aircast.fm/api/v1/reports/province?format=pdf'
+  'https://app.adcastpro.com/api/v1/reports/province?format=pdf'
 
 # JSON breakdown
 curl -H 'Authorization: Bearer eyJ...' \\
-  https://app.aircast.fm/api/v1/reports/breakdown/customer`))
+  https://app.adcastpro.com/api/v1/reports/breakdown/customer`))
   ));
 
   // Bölüm 16
@@ -1456,7 +1456,7 @@ curl -H 'Authorization: Bearer eyJ...' \\
 
   // Bölüm 18
   c.push(chapterShell(18, 'UX/UI Analizi',
-    paragraph('Tüm ekranlar tek tasarım dili (Aircast Pro) kullanır: brand rengi #e11d48 (radio-red), tipografi Plus Jakarta Sans, koyu tema varsayılan.') +
+    paragraph('Tüm ekranlar tek tasarım dili (AdCast Pro) kullanır: brand rengi #e11d48 (radio-red), tipografi Plus Jakarta Sans, koyu tema varsayılan.') +
     block('Profesyonellik', paragraph('Kurumsal kart benzeri layout, tutarlı padding (4/8/12/16/24 px scale), shadow seviyeleri, focus-visible outline.')) +
     block('Kullanılabilirlik', paragraph('Operatörün "30 sn’de plan kur" hedefi 3 ekranda karşılanır (traffic-center adım 1-2-3). Çoklu seç + bulk toolbar 1000 plan tek hamlede.')) +
     block('Operasyonel Hız', paragraph('Keep-alive cache 4 route. Optimistik UI (drag-drop snap-back). Debounced öneri çekimi 350ms.')) +
@@ -1535,7 +1535,7 @@ curl -H 'Authorization: Bearer eyJ...' \\
 
   // Bölüm 21: Kurulum Rehberi
   c.push(chapterShell(21, 'Kurulum Rehberi (Installation Guide)',
-    paragraph('Aircast Broadcast Platform tek docker-compose komutuyla local geliştirme + production-grade kurulum sunar. Bu bölüm sıfırdan sisteme erişene kadar adım adım anlatır.') +
+    paragraph('AdCast Pro Broadcast Platform tek docker-compose komutuyla local geliştirme + production-grade kurulum sunar. Bu bölüm sıfırdan sisteme erişene kadar adım adım anlatır.') +
     block('1. Önkoşullar', table([
       ['Bileşen', 'Sürüm', 'Açıklama'],
       ['Docker Engine', '24+', 'Compose v2 dahil'],
@@ -1557,13 +1557,13 @@ curl -H 'Authorization: Bearer eyJ...' \\
       ['POSTGRES_PASSWORD', '32+ char', 'Güçlü şifre'],
       ['MINIO_ROOT_USER', 'minioadmin', 'MinIO admin'],
       ['MINIO_ROOT_PASSWORD', '32+ char', 'MinIO şifresi'],
-      ['MINIO_PUBLIC_ENDPOINT', 'https://cdn.aircast.fm', 'Partner görünür URL'],
-      ['APP_URL', 'https://app.aircast.fm', 'Frontend public URL'],
+      ['MINIO_PUBLIC_ENDPOINT', 'https://cdn.adcastpro.com', 'Partner görünür URL'],
+      ['APP_URL', 'https://app.adcastpro.com', 'Frontend public URL'],
     ])) +
     block('4. İlk Başlatma', paragraph('docker compose up -d → 6 servis (postgres, minio, php-fpm, worker, nginx, liquidsoap) ayağa kalkar. migrate servisi tek-seferlik çalışır, şemayı kurar. minio-init bucket’ları oluşturur.')) +
     block('5. Default Admin', paragraph('docker compose run --rm migrate php bin/seed-admin.php → admin/admin (production’da hemen değiştirin). Production için: docker compose exec php-fpm php bin/seed-admin.php --password=NEW_PASSWORD')) +
     block('6. Frontend Build', paragraph('Production: cd frontend && npm ci && npm run build → dist/ dizini nginx ile servis. Dev: npm run dev → :3000 HMR.')) +
-    block('7. SSL Sertifikası', paragraph('LetsEncrypt önerilir: certbot --nginx -d app.aircast.fm. Wildcard için DNS-01 challenge.')) +
+    block('7. SSL Sertifikası', paragraph('LetsEncrypt önerilir: certbot --nginx -d app.adcastpro.com. Wildcard için DNS-01 challenge.')) +
     block('8. Sağlık Kontrolü', list([
       'GET /api/v1/monitoring/health → 200',
       'docker compose ps → 6 servis healthy',
@@ -1632,7 +1632,7 @@ curl -H 'Authorization: Bearer eyJ...' \\
     paragraph('Bu bölüm SRE/DevOps ekibinin platformu canlı tutmak için ihtiyaç duyduğu operasyonel prosedürleri içerir.') +
     block('Runbook-01: Yedekleme', list([
       'Günlük cron 02:00: docker compose exec postgres pg_dump … | gzip > backup-$(date +%F).sql.gz',
-      'S3 sync: aws s3 cp backup-*.sql.gz s3://aircast-backups/ --storage-class STANDARD_IA',
+      'S3 sync: aws s3 cp backup-*.sql.gz s3://adcast-backups/ --storage-class STANDARD_IA',
       'Retention 30 gün, sonra Glacier (90 gün) sonra silme',
       'MinIO bucket replication: ayrı region target → eventual consistency',
     ])) +
@@ -1750,7 +1750,7 @@ curl -H 'Authorization: Bearer eyJ...' \\
       ['Kuşak (Slot)', 'Yayın akışında sabit saat dilimi (08/10/12/14/16/18/20)'],
       ['Bölge (Region)', 'Türkiye\'nin 7 coğrafi bölgesinden biri'],
       ['İl (Province)', 'Türkiye\'nin 81 ilinden biri'],
-      ['Partner Radyo', 'Aircast\'i kullanan bir istasyon (kendi user\'ı + 8 tokenı vardır)'],
+      ['Partner Radyo', 'AdCast Pro\'i kullanan bir istasyon (kendi user\'ı + 8 tokenı vardır)'],
       ['Tenant', 'Platform içinde izole bir kapsam (bir partner radyo = bir tenant)'],
       ['Signed-URL', 'Token-imzalı yayın linki, gateway tarafında doğrulanır'],
       ['Bundle', 'Bir kuşak için tek API yanıtında dönen feed paketi (media + sponsor)'],
@@ -1916,7 +1916,7 @@ async function buildHtml() {
   const screenshotChapter = chapterShell(
     'Ek',
     'Tüm Ekran Görüntüleri (Desktop + Tablet + Mobile)',
-    `<p>Aşağıda Aircast Broadcast Platform'un her admin ve partner ekranının üç viewport'tan (Desktop 1440×900, Tablet 820×1180, Mobile 390×844) yakalanmış görüntüleri ve her ekrana ait amaç, senaryo, rol, iş akışı, teknik açıklama, veri kaynağı, API bağlantısı, performans ve geliştirme önerileri yer almaktadır.</p>
+    `<p>Aşağıda AdCast Pro Broadcast Platform'un her admin ve partner ekranının üç viewport'tan (Desktop 1440×900, Tablet 820×1180, Mobile 390×844) yakalanmış görüntüleri ve her ekrana ait amaç, senaryo, rol, iş akışı, teknik açıklama, veri kaynağı, API bağlantısı, performans ve geliştirme önerileri yer almaktadır.</p>
      ${screenshotPages}`,
   );
 
@@ -1924,7 +1924,7 @@ async function buildHtml() {
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Aircast Broadcast Platform — Master Documentation</title>
+  <title>AdCast Pro Broadcast Platform — Master Documentation</title>
   <style>
     /* Page setup. Cover keeps zero margin so the gradient bleeds full A4;
        every other page reserves room for the chrome header + footer. */
@@ -2227,7 +2227,7 @@ async function buildHtml() {
     <div class="cover-mark">
       <div class="logo">A</div>
       <div class="word">
-        <div class="brand">Aircast Pro</div>
+        <div class="brand">AdCast Pro</div>
         <div class="tag">Broadcast Platform</div>
       </div>
     </div>
@@ -2336,7 +2336,7 @@ async function main() {
       </div>`,
     footerTemplate:
       `<div style="font-size:7.5pt;color:#94a3b8;width:100%;padding:0 16mm;display:flex;justify-content:space-between;align-items:center;font-family:'Plus Jakarta Sans',Inter,sans-serif;border-top:1px solid #e2e8f0;padding-top:3mm">
-        <span>© Aircast — Şirket İçi · Yatırımcıya Açık</span>
+        <span>© AdCast Pro — Şirket İçi · Yatırımcıya Açık</span>
         <span><span class="pageNumber" style="color:#0f172a;font-weight:700"></span> / <span class="totalPages"></span></span>
       </div>`,
   });

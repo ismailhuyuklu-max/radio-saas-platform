@@ -1,8 +1,66 @@
-# Aircast Pro — CHANGELOG
+# AdCast Pro — CHANGELOG
 
 20 yıllık tam yetkili yazılım mühendisi rolü ile teslim edilen tüm sürümler.
 
-## v1.9.0 — `cto-frontend-cache` · 7 Haz 2026 (UPCOMING)
+## v2.0.0 — `rebrand-adcastpro` · 7 Haz 2026
+
+### REBRAND: Aircast Pro → AdCast Pro
+
+**Marka & Domain:**
+- Yeni marka adı: **AdCast Pro**
+- Üretim domain: **adcastpro.com** (`.env.production.example` default APP_URL,
+  ACME e-postası, MinIO CORS allow-origin hepsi güncellendi)
+- nginx CORS regex: `~^https://([a-z0-9-]+\.)*adcastpro\.com$`
+
+**Yüksek çözünürlüklü logo entegrasyonu:**
+- `frontend/public/adcastpro-logo.png` — Vite static asset (344 KB, transparent BG)
+- `frontend/src/assets/brand/adcastpro-logo.png` — kaynak kopya
+- `frontend/src/components/brand/AdCastProLogo.vue` — yeni component (eski
+  `AircastProLogo.vue` SVG monogramı kaldırıldı)
+- Sidebar (`AppShell.vue`), login sayfası, splash screen, favicon, og:image —
+  hepsi PNG kullanıyor; drop-shadow ile brand-red glow korunur
+
+**Frontend (16 dosya):**
+- `index.html` — title, og:meta, theme-color, favicon, splash logo
+- `views/auth/login.vue` — login-brand img + .login-logo CSS
+- `components/layout/AppShell.vue` — sidebar brand mark img
+- `views/radio-platform/matrix/index.vue` — `<AdCastProLogo>` import
+- `utils/a11y.ts` — `DEFAULT_TITLE = 'AdCast Pro · Radyo Yayın Platformu'`
+- `router/routes/modules/radio.ts`, `api/modules/portal.ts` — yorum güncellemesi
+- `e2e/login.spec.ts` + `e2e/portal-mobile.spec.ts` — heading expect güncellendi
+- `.storybook/preview.ts` — background ismi `adcast-dark`
+- `scripts/build-master-pdf.mjs` + `capture-screenshots.mjs` — marka string'leri
+
+**Backend (4 dosya — BREAKING):**
+- `JwtService.php` — JWT issuer `aircast-portal` → **`adcast-portal`** (mevcut
+  oturumdaki tüm kullanıcılar yeniden giriş yapmak zorunda)
+- `TotpService.php` + `TotpTest.php` — TOTP provisioning issuer `AdCast Pro`
+- `Controller/MetricsExposeController.php` — Prometheus help string
+- `bin/mint-doc-sessions.php`, `tests/partner_e2e.php` — seed/test yorum
+
+**Infrastructure (5 dosya):**
+- `docker/caddy/Caddyfile` — site label
+- `docker/nginx/nginx.prod.conf` — CORS regex
+- `docker/prometheus/alert-rules.yml` — alert group adları (`adcast-*`)
+- `bin/setup-prod.sh`, `bin/restore-drill.sh` — container/workdir adları
+- `lefthook.yml`, `loadtest/*` — test fixture başlıkları
+- `docs/DR-RUNBOOK.md`, `docs/perf.md`, `docs/master-documentation.html` — yorum
+
+**.gitignore fix:**
+- `frontend/public/` artık tracked (Vite static asset klasörü — logo + favicon
+  prod build'inde mutlaka bulunması gerekir; eski kural copy-paste hatası).
+
+**Geçiş notu:**
+- Tüm aktif oturumlar invalide olur (JWT iss değişti). Kullanıcılar yeniden
+  login yapacak. Refresh token'lar otomatik temizlenir.
+- DNS adcastpro.com → VDS IP yönlendirmesi, Let's Encrypt ACME sertifikası
+  Caddy `--profile tls` ile otomatik üretilir.
+- PHP namespace (`RadioSaaS\*`) ve Docker container_name (`radio-*`) korundu —
+  refactor kapsamı çok geniş, ayrı bir minor release'e bırakıldı.
+
+---
+
+## v1.9.0 — `cto-frontend-cache` · 7 Haz 2026
 
 ### Frontend ETag Cache (CTO-21)
 - `frontend/src/vendor/vben/request.ts` içine ETag/304 mantığı entegre edildi

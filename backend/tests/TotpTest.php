@@ -59,10 +59,10 @@ $genCode = TotpService::codeAt($gen, $now);
 check(TotpService::verify($gen, $genCode, $now), 'generated secret self-verifies');
 
 // provisioning URI
-$uri = TotpService::provisioningUri($secret, 'admin', 'Aircast Pro');
+$uri = TotpService::provisioningUri($secret, 'admin', 'AdCast Pro');
 check(str_starts_with($uri, 'otpauth://totp/'), 'provisioning uri scheme');
 check(str_contains($uri, 'secret=' . $secret), 'provisioning uri carries secret');
-check(str_contains($uri, 'issuer=Aircast'), 'provisioning uri carries issuer');
+check(str_contains($uri, 'issuer=AdCast'), 'provisioning uri carries issuer');
 
 // recovery codes
 $codes = TotpService::generateRecoveryCodes(8);

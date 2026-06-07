@@ -126,7 +126,7 @@ async function main() {
   await adminPage.evaluate((uid) => {
     localStorage.setItem(
       'userInfo',
-      JSON.stringify({ userId: uid, username: 'admin', realName: 'Aircast Admin', roles: ['super'] }),
+      JSON.stringify({ userId: uid, username: 'admin', realName: 'AdCast Pro Admin', roles: ['super'] }),
     );
   }, sessions.admin_user_id);
 

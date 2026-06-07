@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'lucide:radio',
       order: 2100,
-      title: 'Aircast Pro',
+      title: 'AdCast Pro',
       authCode: 'radio:platform:view',
     },
     redirect: '/radio-platform/operations',
@@ -188,7 +188,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // Aircast Radio Partner Portal — single-page tenant view a partner radio
+  // AdCast Radio Partner Portal — single-page tenant view a partner radio
   // operator sees after login. Lives outside /radio-platform/* so it can run
   // without the admin chrome (sidebar, NOC, etc.) and stays mobile-friendly.
   {

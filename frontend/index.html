@@ -3,8 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Radio SaaS Platform" />
-    <title>Aircast Pro · Yayın Yönetimi</title>
+    <meta name="description" content="AdCast Pro · Türkiye geneli radyo haber dağıtım ve yayın yönetim platformu" />
+    <meta name="theme-color" content="#e11d48" />
+    <title>AdCast Pro · Yayın Yönetimi</title>
+    <link rel="icon" type="image/png" href="/adcastpro-logo.png" />
+    <link rel="apple-touch-icon" href="/adcastpro-logo.png" />
+    <meta property="og:title" content="AdCast Pro" />
+    <meta property="og:description" content="Bölgesel Radyo Yayın Yönetim Platformu" />
+    <meta property="og:image" content="/adcastpro-logo.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://adcastpro.com" />
 
     <!-- Fonts: preconnect + non-render-blocking load (media swap) so the bundle
          CSS never blocks on a third-party @import. Falls back to system-ui. -->
@@ -30,7 +38,7 @@
     <style>
       html,body{margin:0;background:#090d16;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
       #app-splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-      #app-splash .s-logo{font-size:40px}
+      #app-splash .s-logo{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(225,29,72,0.3))}
       #app-splash .s-name{font-size:18px;font-weight:800;letter-spacing:-0.02em}
       #app-splash .s-bar{width:120px;height:3px;border-radius:3px;background:rgba(148,163,184,.18);overflow:hidden}
       #app-splash .s-bar::after{content:'';display:block;height:100%;width:40%;border-radius:3px;background:#e11d48;animation:s-load 1s infinite}
@@ -39,8 +47,8 @@
     </style>
     <div id="app"></div>
     <div id="app-splash" aria-hidden="true">
-      <span class="s-logo">📻</span>
-      <span class="s-name">Aircast Pro</span>
+      <img class="s-logo" src="/adcastpro-logo.png" alt="AdCast Pro" />
+      <span class="s-name">AdCast Pro</span>
       <span class="s-bar"></span>
     </div>
     <script type="module" src="/src/main.ts"></script>

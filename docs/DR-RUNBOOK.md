@@ -1,6 +1,6 @@
 # Disaster Recovery Runbook (Faz H5-5)
 
-Aircast Pro üretim ortamı için felaket kurtarma prosedürü, hedefler ve test rejimi.
+AdCast Pro üretim ortamı için felaket kurtarma prosedürü, hedefler ve test rejimi.
 
 ---
 
@@ -119,7 +119,7 @@ bash bin/restore-drill.sh
 
 Cron (host crontab):
 ```cron
-0 4 1 * *  /var/www/aircast/bin/restore-drill.sh >> /var/log/aircast-drill.log 2>&1
+0 4 1 * *  /var/www/adcast/bin/restore-drill.sh >> /var/log/adcast-drill.log 2>&1
 ```
 
 Drill raporu:

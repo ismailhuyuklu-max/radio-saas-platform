@@ -1,5 +1,5 @@
 /**
- * Aircast Radio Partner Portal — tenant-scoped client.
+ * AdCast Radio Partner Portal — tenant-scoped client.
  *
  * Every call here hits a /portal/* endpoint that the backend resolves to the
  * caller's own station. Cross-tenant lookups are rejected server-side.

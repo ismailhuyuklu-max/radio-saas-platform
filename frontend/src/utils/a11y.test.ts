@@ -64,19 +64,19 @@ describe('installA11y', () => {
     document.title = '';
   });
 
-  it('route.meta.title varsa "Title · Aircast Pro" yazar', async () => {
+  it('route.meta.title varsa "Title · AdCast Pro" yazar', async () => {
     const router = makeRouter();
     installA11y(router);
     await router.push('/plans');
     // afterEach RAF'a sokuyor — title senkron olarak set ediliyor afterEach hook'unda.
-    expect(document.title).toBe('Planlar · Aircast Pro');
+    expect(document.title).toBe('Planlar · AdCast Pro');
   });
 
   it('meta.title yoksa default base kullanır', async () => {
     const router = makeRouter();
     installA11y(router);
     await router.push('/nometa');
-    expect(document.title).toContain('Aircast Pro');
+    expect(document.title).toContain('AdCast Pro');
   });
 
   it('custom titleBase override edilebilir', async () => {

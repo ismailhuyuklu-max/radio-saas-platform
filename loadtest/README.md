@@ -1,4 +1,4 @@
-# Aircast Pro Load Test Suite (Faz CTO-5)
+# AdCast Pro Load Test Suite (Faz CTO-5)
 
 ## Senaryolar
 

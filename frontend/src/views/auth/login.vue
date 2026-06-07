@@ -97,9 +97,10 @@ async function handleSubmit() {
   <div class="login-page">
     <div class="login-card">
       <div class="login-brand">
-        <span class="login-logo">📻</span>
+        <!-- REBRAND: gerçek logo -->
+        <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo" width="64" height="64" />
         <div>
-          <h1>Aircast Pro</h1>
+          <h1>AdCast Pro</h1>
           <p>Bölgesel Radyo Yönetim Paneli</p>
         </div>
       </div>
@@ -183,7 +184,10 @@ async function handleSubmit() {
 }
 
 .login-logo {
-  font-size: 34px;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(225, 29, 72, 0.3));
 }
 
 .login-brand h1 {
