@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="AdCast Pro Sync Client"
+           Manufacturer="AdCast Pro"
+           Version="1.0.0.0"
+           UpgradeCode="A0CA5798-D1B0-4F7F-8E5F-AdCASTpro001"
+           InstallerVersion="500"
+           Scope="perUser">
+
+    <SummaryInformation Description="AdCast Pro Sync Client — Windows desktop sync için broadcast-safe distribution" />
+    <MajorUpgrade DowngradeErrorMessage="Daha yeni bir sürüm zaten kurulu." />
+
+    <Media Id="1" Cabinet="adcastpro.cab" EmbedCab="yes" />
+
+    <!-- ==================================================================
+         Directory yapısı
+    =================================================================== -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="AdCastPro" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationShortcutDir" Name="AdCast Pro" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- ==================================================================
+         Properties — kullanıcı klasör seçimi (custom UI)
+    =================================================================== -->
+    <Property Id="NEWS_FOLDER" Value="C:\AdCastPro\Haberler" />
+    <Property Id="ADS_FOLDER" Value="C:\AdCastPro\Reklamlar" />
+    <Property Id="MEDIA_PLANS_FOLDER" Value="C:\AdCastPro\MedyaPlanlari" />
+    <Property Id="API_BASE_URL" Value="https://adcastpro.com" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <Feature Id="MainFeature" Title="AdCast Pro Sync Client" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="AppShortcutsCmp" />
+      <ComponentRef Id="AutoStartCmp" />
+    </Feature>
+
+    <!-- ==================================================================
+         Shortcuts — Start Menu
+    =================================================================== -->
+    <Component Id="AppShortcutsCmp" Directory="ApplicationShortcutDir" Guid="*">
+      <Shortcut Id="StartMenuShortcut"
+                Name="AdCast Pro Sync"
+                Description="AdCast Pro Sync Client"
+                Target="[INSTALLFOLDER]AdCastPro.SyncClient.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveApplicationShortcutDir" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\AdCastPro"
+                     Name="Installed"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- ==================================================================
+         AutoStart — Windows açılışta otomatik başlatma
+    =================================================================== -->
+    <Component Id="AutoStartCmp" Directory="INSTALLFOLDER" Guid="*">
+      <RegistryValue Root="HKCU"
+                     Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                     Name="AdCastProSyncClient"
+                     Type="string"
+                     Value="&quot;[INSTALLFOLDER]AdCastPro.SyncClient.exe&quot;"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- ==================================================================
+         appsettings.json — kullanıcının seçtiği klasörlerle override
+         (Custom Action sırasında dosya üretilir)
+    =================================================================== -->
+    <util:User Id="LocalUser" Name="[LogonUser]" />
+
+    <!-- ==================================================================
+         WiX UI — InstallDir + folder selection sihirbazı
+    =================================================================== -->
+    <ui:WixUI Id="WixUI_InstallDir" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <!-- License (basit metin) -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <!--
+        Build output'unun tüm dosyaları HARVESTed olmalı.
+        Şu an iskelet — gerçek harvest CI/CD'de "heat" tool ile yapılır
+        veya project reference'tan otomatik gelir.
+        Aşağı manuel olarak ana exe + appsettings ekledim:
+      -->
+      <Component Id="MainExeCmp" Guid="*">
+        <File Id="MainExe" Source="$(var.AdCastPro.SyncClient.UI.TargetPath)" KeyPath="yes" />
+      </Component>
+      <Component Id="AppSettingsCmp" Guid="*">
+        <File Id="AppSettings"
+              Source="$(var.AdCastPro.SyncClient.UI.TargetDir)appsettings.json"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
