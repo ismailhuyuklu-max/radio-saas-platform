@@ -263,10 +263,21 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. AppShell topbar 44 + padding 14×2 = 72 */
 .dash {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 10px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* En uzun section (genelde KPI grid + chart) scroll'lanabilir alan */
+.dash > section:last-of-type,
+.dash > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .dash__head {

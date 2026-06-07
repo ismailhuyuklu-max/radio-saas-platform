@@ -246,10 +246,24 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. Kanban kolonları yatay scroll
+   gerektirebilir (5 sütun mobilde sığmaz) — kolon konteyneri
+   içinde kendi scroll'una izin verelim. */
 .kb {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.kb__board,
+.kb__cols,
+.kb > section:last-of-type,
+.kb > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 /* ===== Header: başlık + 5 kolonun anlık özeti ===== */

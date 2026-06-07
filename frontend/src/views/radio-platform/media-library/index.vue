@@ -387,10 +387,23 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, medya listesi içeride scroll.
+   padding-bottom 104 (player bar yüksekliği) iç scroll'a transfer. */
 .ml {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.ml__list,
+.ml__grid,
+.ml > section:last-of-type,
+.ml > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding-bottom: 104px;
 }
 .ml__head {

@@ -298,10 +298,22 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, broadcast operations dashboard. */
 .ops {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 10px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.ops__body,
+.ops__grid,
+.ops > section:last-of-type,
+.ops > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .ops__head {

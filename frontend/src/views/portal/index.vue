@@ -796,12 +796,16 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. Portal AppShell DIŞINDA (login sonrası
+   station_user için bare layout) — 100vh + iç scroll kullanır. */
 .prt {
-  min-height: 100vh;
-  padding: 16px;
+  height: 100dvh;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
   max-width: 1180px;
   margin: 0 auto;
 }

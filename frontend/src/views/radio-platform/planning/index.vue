@@ -693,10 +693,24 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. */
 .pln {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 10px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* Calendar/slot grid kalan alanı doldurur ve scroll'lanır */
+.pln__body,
+.pln__calendar,
+.pln__list,
+.pln > section:last-of-type,
+.pln > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .pln__bar {
   display: flex;

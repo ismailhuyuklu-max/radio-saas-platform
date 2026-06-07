@@ -246,10 +246,22 @@ async function download(type: string, format: string) {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, breakdown grid içeride scroll. */
 .rep {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.rep__body,
+.rep__grid,
+.rep > section:last-of-type,
+.rep > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .rep__head h1 {
   margin: 0;

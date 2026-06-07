@@ -794,13 +794,21 @@ onBeforeUnmount(() => {
   grid-column: span 12 / span 12;
 }
 
+/* Faz PAGE-FIT: viewport-fit. Matrix bölgesel grid içeride scroll. */
 .matrix-page {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .matrix-shell {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .matrix-map-panel,

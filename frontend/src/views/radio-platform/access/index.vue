@@ -296,10 +296,22 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. */
 .acc {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 10px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.acc__table,
+.acc__cards,
+.acc > section:last-of-type,
+.acc > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .acc__title {
   margin: 0;

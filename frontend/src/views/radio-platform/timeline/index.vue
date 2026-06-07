@@ -323,10 +323,22 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit. Gantt scroll iki yönlü olabilir. */
 .tl {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.tl__body,
+.tl__gantt,
+.tl > section:last-of-type,
+.tl > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .tl__head {

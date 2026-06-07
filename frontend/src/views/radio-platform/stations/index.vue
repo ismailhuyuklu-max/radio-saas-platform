@@ -518,10 +518,23 @@ onMounted(loadStations);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, istasyon listesi içeride scroll. */
 .stn {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* Tablo/liste alanı kalan boyu doldurur */
+.stn__body,
+.stn__list,
+.stn > section:last-of-type,
+.stn > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .stn__bar {

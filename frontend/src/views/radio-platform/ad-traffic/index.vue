@@ -435,10 +435,22 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, kampanya tablosu içeride scroll. */
 .ad {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.ad__body,
+.ad__table,
+.ad > section:last-of-type,
+.ad > div:last-of-type {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .ad__head {
   display: flex;

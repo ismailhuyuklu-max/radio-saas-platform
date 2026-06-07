@@ -406,10 +406,19 @@ onMounted(loadSponsors);
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit, sponsor tablosu içeride scroll. */
 .spn {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 8px;
+  height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.spn__table {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .spn__bar {
   display: flex;

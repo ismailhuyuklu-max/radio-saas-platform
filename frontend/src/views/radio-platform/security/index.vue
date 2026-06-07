@@ -329,11 +329,16 @@ async function retryAll(): Promise<void> {
 </template>
 
 <style scoped>
+/* Faz PAGE-FIT: viewport-fit (security ekranı zaten kısa, scroll'a
+   nadiren gerek olur). */
 .sec {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: 10px;
   max-width: 720px;
+  height: calc(100dvh - 72px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .sec__head h1 {
   margin: 0;
