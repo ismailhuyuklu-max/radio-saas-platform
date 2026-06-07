@@ -12,6 +12,21 @@ services:
       TZ: Europe/Istanbul
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Faz UX-tune: PG için anahtar tuning. 8 GB RAM sunucuda 256 MB
+    # shared_buffers + 64 MB work_mem yeterli. log_min_duration_statement
+    # ile 500 ms üstü sorgular PG log'una düşer (H5-2 PDO slow log'unun
+    # DB tarafı eşdeğeri). max_connections 50 = PHP 3 worker + worker
+    # container + backup + drill için bol.
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=64MB
+      -c maintenance_work_mem=128MB
+      -c max_connections=50
+      -c log_min_duration_statement=500
+      -c log_line_prefix='%t [%p] %u@%d '
+      -c log_statement=ddl
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-radio_saas} -d ${POSTGRES_DB:-radio_saas}"]
       interval: 10s
@@ -108,12 +123,20 @@ services:
         condition: service_healthy
     restart: "no"
     entrypoint: ["/bin/sh", "-c"]
+    # Faz UX-disk: bucket lifecycle policy. radio-raw + radio-rendered TTL
+    # 14 gün; radio-media (sponsor) kalıcı. Bu sayede 500 partner radyo
+    # × 8 amaç × günlük 4 render senaryosunda disk birikmesi sınırlanır.
+    # mc ilm rule add idempotent: aynı ID ile re-run ederse no-op.
+    # MINIO_RAW_TTL_DAYS / MINIO_RENDERED_TTL_DAYS env ile override edilebilir.
     command: >
       "mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin123} &&
        mc mb --ignore-existing local/radio-raw &&
        mc mb --ignore-existing local/radio-rendered &&
        mc mb --ignore-existing local/radio-media &&
-       mc anonymous set download local/radio-media"
+       mc anonymous set download local/radio-media &&
+       (mc ilm rule add --expire-days ${MINIO_RAW_TTL_DAYS:-7} local/radio-raw 2>/dev/null || echo '[ilm] raw rule already exists') &&
+       (mc ilm rule add --expire-days ${MINIO_RENDERED_TTL_DAYS:-14} local/radio-rendered 2>/dev/null || echo '[ilm] rendered rule already exists') &&
+       echo '[init] lifecycle policies applied'"
     networks:
       - radio_network
 

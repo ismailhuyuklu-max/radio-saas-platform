@@ -1,0 +1,89 @@
+# =============================================================================
+# Aircast Pro — Prometheus alert rules (Faz UX-tune)
+# =============================================================================
+# Bu dosya henüz canlı bir Prometheus instance'a bind edilmedi; çıktı olarak
+# /api/v1/metrics endpoint'i mevcut. Üretimde Prometheus + alertmanager
+# eklendiğinde aşağıdaki kuralları `rule_files:` listesine ekleyin.
+#
+# Tetiklenmesi gereken senaryolar:
+#   1. Disk usage > %80 (uyarı), > %90 (kritik)
+#   2. PG queue depth backup (>50 pending)
+#   3. Failed login spike (>20/h — brute force göstergesi)
+#   4. radio_saas_info eksik = backend down
+# =============================================================================
+groups:
+  - name: aircast-disk
+    rules:
+      - alert: AircastDiskHigh
+        expr: radio_saas_disk_used_pct > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk kullanımı %80 üstüne çıktı ({{ $value }}%)"
+          description: |
+            MinIO bucket lifecycle policy çalışmıyor olabilir.
+            Sonraki adımlar:
+              1) docker exec radio-minio mc ilm rule ls local/radio-rendered
+              2) docker exec radio-minio mc du local
+              3) backup_data volume'ında eski dump'ları temizle
+
+      - alert: AircastDiskCritical
+        expr: radio_saas_disk_used_pct > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk usage CRITICAL ({{ $value }}%)"
+          description: |
+            ACİL: PG WAL yer kalmazsa veritabanı write'ları reddedilir.
+            Hemen MinIO temizliği + backup volume prune.
+
+  - name: aircast-queue
+    rules:
+      - alert: AircastQueueBackup
+        expr: radio_saas_queue_depth{status="pending"} > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Render kuyruğunda {{ $value }} bekleyen iş"
+          description: "FFmpeg worker yetişemiyor — paralelizm artırılmalı (worker container scale up)."
+
+      - alert: AircastQueueFailures
+        expr: radio_saas_queue_depth{status="failed"} > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} render job failed"
+          description: "Worker log'larına bakın: docker logs radio-worker --tail 100"
+
+  - name: aircast-security
+    rules:
+      - alert: AircastLoginBruteForce
+        expr: radio_saas_login_failures_1h > 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Son 1 saatte {{ $value }} başarısız giriş"
+          description: |
+            LoginThrottle + nginx rate limit zaten kullanıcı/IP başına kilitliyor.
+            Eğer farklı kullanıcı/IP'lerden geliyorsa coordinated brute force —
+            audit_logs incele: action='login_failed' last 1h.
+
+  - name: aircast-availability
+    rules:
+      - alert: AircastBackendDown
+        expr: absent(radio_saas_info)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend /metrics endpoint yanıt vermiyor"
+          description: |
+            php-fpm container down olmuş olabilir. Hemen:
+              docker ps --filter name=radio-php
+              docker logs radio-php --tail 50
+              curl http://localhost:8080/api/v1/healthz/deep
