@@ -58,9 +58,14 @@ select {
   font: inherit;
 }
 
+/* =========================================================================
+   Faz UX-1: Sıkılaştırılmış density. Eski padding 28px / margin 24px /
+   font 40px → 12-16-22px aralığına çekildi. Amaç: her sayfa içeriğinin
+   1080p ekrana scroll'suz sığması. Per-screen iyileştirmeler UX-3'te.
+   ========================================================================= */
 .vben-page-shell {
   min-height: 100vh;
-  padding: 28px;
+  padding: 12px 16px 16px;
   background:
     radial-gradient(circle at top center, rgba(225, 29, 72, 0.08), transparent 24%),
     linear-gradient(180deg, rgba(9, 13, 22, 0.84), rgba(9, 13, 22, 0.98));
@@ -69,39 +74,53 @@ select {
 .vben-page-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0 0 24px;
-  padding: 24px 28px;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 12px 16px;
   border: 1px solid var(--radio-border);
-  border-radius: 28px;
+  border-radius: 14px;
   background: rgba(18, 27, 46, 0.76);
   backdrop-filter: blur(18px);
-  box-shadow: var(--radio-shadow-lg);
+  box-shadow: var(--radio-shadow-sm);
 }
 
 .vben-page-title {
   margin: 0;
   font-family: var(--radio-font-display);
-  font-size: clamp(28px, 3vw, 40px);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: clamp(18px, 1.6vw, 22px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   color: #f8fafc;
 }
 
 .vben-page-description {
   margin: 0;
-  max-width: 860px;
+  max-width: 1200px;
   color: var(--radio-text-muted);
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .vben-page-body {
   display: block;
 }
 
+/* Compact buttons */
 .ant-btn {
-  border-radius: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  height: 30px;
+  padding: 0 12px;
+}
+.ant-btn-lg {
+  height: 36px;
+  font-size: 14px;
+  padding: 0 16px;
+}
+.ant-btn-sm {
+  height: 24px;
+  font-size: 12px;
+  padding: 0 8px;
 }
 
 .ant-btn-primary {
@@ -114,12 +133,56 @@ select {
   opacity: 0.96;
 }
 
+/* Faz UX-1: card padding minimal, radius düşük — yoğun look */
 .ant-card {
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--radio-border);
   background: rgba(18, 27, 46, 0.86);
   backdrop-filter: blur(18px);
-  box-shadow: var(--radio-shadow-lg);
+  box-shadow: var(--radio-shadow-sm);
+}
+.ant-card .ant-card-body {
+  padding: 12px 14px;
+}
+.ant-card .ant-card-head {
+  min-height: 36px;
+  padding: 0 14px;
+}
+.ant-card .ant-card-head-title {
+  padding: 8px 0;
+  font-size: 14px;
+}
+.ant-card-small .ant-card-body {
+  padding: 8px 10px;
+}
+
+/* Faz UX-1: form item gap minimal */
+.ant-form-item {
+  margin-bottom: 8px;
+}
+.ant-form-vertical .ant-form-item-label {
+  padding-bottom: 2px;
+}
+.ant-form-item-label > label {
+  height: 22px;
+  font-size: 12px;
+}
+
+/* Faz UX-1: input ve select density */
+.ant-input,
+.ant-input-number,
+.ant-input-number-input,
+.ant-select-selector,
+.ant-picker {
+  font-size: 13px !important;
+}
+.ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
+  height: 30px;
+  padding: 0 10px;
+}
+.ant-select-single .ant-select-selector .ant-select-selection-item,
+.ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+  line-height: 28px;
 }
 
 .ant-table-wrapper .ant-table {
@@ -127,8 +190,27 @@ select {
 }
 
 .ant-table-wrapper .ant-table-container {
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
+}
+
+/* Faz UX-1: tablo dense — header/row 32px */
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 6px 10px !important;
+  font-size: 13px;
+}
+.ant-table-wrapper .ant-table-thead > tr > th {
+  height: 34px;
+}
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  height: 32px;
+}
+/* Tablo içinde tag/button small */
+.ant-table-tbody .ant-tag {
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 6px;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th {
@@ -368,8 +450,9 @@ textarea.ant-input::placeholder,
 .ui-card {
   background: var(--c-surface);
   border: 1px solid var(--c-line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+  padding: 12px;
 }
 
 /* Visible keyboard focus for accessibility. */
@@ -377,4 +460,153 @@ textarea.ant-input::placeholder,
   outline: 2px solid var(--c-info);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+/* =========================================================================
+   Faz UX-3 — Sayfa-içi sıkılaştırma yardımcı sınıfları.
+   - .page-stack: ardışık section'lar arası 8px (eskiden 16-24px).
+   - .kpi-grid: KPI cards 6 sütuna kadar uzar.
+   - .compact-form: form alanları yatay flow, label inline.
+   - .dense-list: ardışık liste item'ları daha sıkı.
+   - Heading sıkılaştırması.
+   ========================================================================= */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.page-stack > * {
+  margin: 0 !important;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.kpi-grid .ant-card .ant-card-body,
+.kpi-grid .ui-card {
+  padding: 8px 10px;
+}
+
+.compact-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: end;
+}
+.compact-form .ant-form-item {
+  margin-bottom: 0 !important;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.dense-list > * + * {
+  margin-top: 4px !important;
+}
+
+/* Heading mass redux */
+h1:not([class*="ant-"]):not(.app-topbar__title):not(.vben-page-title) {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+h2:not([class*="ant-"]) {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+h3:not([class*="ant-"]) {
+  font-size: 13px;
+  margin: 0 0 3px;
+}
+
+/* Scrollbar görselliği — kompakt + estetik (scroll mecbur kalırsa) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Tabs daha kompakt */
+.ant-tabs > .ant-tabs-nav {
+  margin-bottom: 8px !important;
+}
+.ant-tabs-tab {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
+/* Statistic + descriptions sıkılaştırma */
+.ant-statistic-title {
+  font-size: 11px !important;
+  margin-bottom: 2px !important;
+}
+.ant-statistic-content {
+  font-size: 18px !important;
+}
+.ant-descriptions-item-label,
+.ant-descriptions-item-content {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+}
+
+/* Tag daha sıkı */
+.ant-tag {
+  border-radius: 999px;
+  padding-inline: 8px;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 18px;
+  margin-inline-end: 4px;
+}
+
+/* List item dense */
+.ant-list-item {
+  padding: 6px 10px !important;
+}
+
+/* Modal padding */
+.ant-modal-body {
+  padding: 14px 16px !important;
+}
+.ant-modal-header {
+  padding: 10px 16px !important;
+}
+.ant-modal-footer {
+  padding: 8px 16px !important;
+}
+
+/* Alert kompakt */
+.ant-alert {
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+}
+.ant-alert-message {
+  font-size: 13px !important;
+}
+
+/* Drawer compact */
+.ant-drawer-header {
+  padding: 10px 14px !important;
+}
+.ant-drawer-body {
+  padding: 12px 14px !important;
+}
+
+/* Pagination kompakt */
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev,
+.ant-pagination .ant-pagination-next {
+  min-width: 26px !important;
+  height: 26px !important;
+  line-height: 24px !important;
+  font-size: 12px !important;
 }

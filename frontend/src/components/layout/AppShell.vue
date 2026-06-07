@@ -202,8 +202,11 @@ watch(() => route.fullPath, () => {
 </template>
 
 <style scoped>
+/* Faz UX-2: kompakt kabuk — sidebar 200, topbar 44, content padding düşük.
+   Hedef 1080p ekrana scroll'suz sığacak yoğunluk. */
 .app-shell {
-  --sidebar-w: 248px;
+  --sidebar-w: 200px;
+  --topbar-h: 44px;
   min-height: 100vh;
   width: 100%;
 }
@@ -213,13 +216,13 @@ watch(() => route.fullPath, () => {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 60;
-  width: min(82vw, 300px);
+  width: min(82vw, 280px);
   transform: translateX(-102%);
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 14px 16px;
+  gap: 2px;
+  padding: 10px 8px 10px;
   background: linear-gradient(180deg, #0c1426 0%, #0a1120 100%);
   border-right: 1px solid rgba(148, 163, 184, 0.12);
   box-shadow: 0 30px 80px rgba(2, 6, 23, 0.6);
@@ -240,12 +243,12 @@ watch(() => route.fullPath, () => {
 .app-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 6px 8px 14px;
+  gap: 8px;
+  padding: 2px 6px 8px;
 }
 
 .app-brand__mark {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .app-brand__text {
@@ -257,14 +260,14 @@ watch(() => route.fullPath, () => {
 .app-brand__text strong {
   color: #f8fafc;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
 
 .app-brand__text span {
   color: rgba(148, 163, 184, 0.9);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -272,37 +275,37 @@ watch(() => route.fullPath, () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   overflow-y: auto;
 }
 
 .app-nav__group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
 }
 
 .app-nav__title {
-  margin: 4px 10px 4px;
+  margin: 2px 8px 2px;
   color: rgba(148, 163, 184, 0.7);
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .app-nav__item {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
   width: 100%;
-  padding: 11px 12px;
+  padding: 6px 9px;
   border: 1px solid transparent;
-  border-radius: 13px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(203, 213, 225, 0.86);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -322,8 +325,8 @@ watch(() => route.fullPath, () => {
 }
 
 .app-nav__icon {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -331,37 +334,37 @@ watch(() => route.fullPath, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 8px 4px;
-  margin-top: 6px;
+  gap: 6px;
+  padding: 8px 4px 2px;
+  margin-top: 4px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .app-user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   min-width: 0;
 }
 
 .app-user__avatar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  border-radius: 11px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #e11d48, #fb7185);
   color: #fff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .app-user__avatar--sm {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  font-size: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 11px;
 }
 
 .app-user__meta {
@@ -373,7 +376,7 @@ watch(() => route.fullPath, () => {
 
 .app-user__meta strong {
   color: #f1f5f9;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -382,18 +385,18 @@ watch(() => route.fullPath, () => {
 
 .app-user__meta span {
   color: rgba(148, 163, 184, 0.85);
-  font-size: 11px;
+  font-size: 10px;
   text-transform: capitalize;
 }
 
 .app-logout {
   flex-shrink: 0;
-  padding: 7px 14px;
+  padding: 4px 10px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.6);
   color: rgba(226, 232, 240, 0.9);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
@@ -417,9 +420,9 @@ watch(() => route.fullPath, () => {
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 58px;
-  padding: 0 14px;
+  gap: 10px;
+  height: var(--topbar-h);
+  padding: 0 10px;
   background: rgba(9, 13, 22, 0.86);
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   backdrop-filter: blur(14px);
@@ -429,12 +432,12 @@ watch(() => route.fullPath, () => {
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  width: 38px;
-  height: 38px;
-  padding: 0 9px;
+  gap: 3px;
+  width: 30px;
+  height: 30px;
+  padding: 0 7px;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 11px;
+  border-radius: 8px;
   background: rgba(15, 23, 42, 0.5);
   cursor: pointer;
 }
@@ -449,7 +452,7 @@ watch(() => route.fullPath, () => {
   flex: 1;
   margin: 0;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #f8fafc;
@@ -467,23 +470,26 @@ watch(() => route.fullPath, () => {
 
 .app-content {
   flex: 1;
-  padding: 14px;
+  padding: 10px 12px;
   min-width: 0;
+  /* Faz UX-2: sayfa içeriği topbar yüksekliğini düşerek
+     1080p ekrana scroll'suz sığma şansı bulsun. */
+  min-height: calc(100vh - var(--topbar-h));
 }
 
 /* ---------- Tablet ---------- */
 @media (min-width: 768px) {
   .app-content {
-    padding: 20px;
+    padding: 12px 14px;
   }
 
   .app-topbar {
-    height: 62px;
-    padding: 0 20px;
+    height: var(--topbar-h);
+    padding: 0 14px;
   }
 
   .app-topbar__title {
-    font-size: 19px;
+    font-size: 15px;
   }
 }
 
@@ -516,7 +522,7 @@ watch(() => route.fullPath, () => {
   }
 
   .app-content {
-    padding: 26px 28px 40px;
+    padding: 14px 18px 18px;
   }
 }
 </style>

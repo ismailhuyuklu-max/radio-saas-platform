@@ -29,7 +29,20 @@ function handleSkipLink(event: Event) {
 </script>
 
 <template>
-  <ConfigProvider :locale="trTR">
+  <!-- Faz UX-1: componentSize="small" → ant-design-vue tüm bileşenleri compact.
+       Token override: brand rengi + yoğun radius/spacing.  -->
+  <ConfigProvider
+    :locale="trTR"
+    component-size="small"
+    :theme="{
+      token: {
+        colorPrimary: '#e11d48',
+        borderRadius: 8,
+        fontSize: 13,
+        controlHeight: 30,
+      },
+    }"
+  >
     <!-- Faz H5-4: Klavye kullanıcıları için skip-to-content. WCAG 2.4.1 -->
     <a href="#main-content" class="skip-link" @click="handleSkipLink">
       İçeriğe geç
