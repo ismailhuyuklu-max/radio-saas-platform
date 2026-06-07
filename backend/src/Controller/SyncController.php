@@ -396,6 +396,43 @@ final class SyncController
     }
 
     /**
+     * GET /api/v1/sync-admin/clients?filter=all|online|offline|error&limit=200&offset=0
+     *
+     * Admin ekranı için tüm sync client'ların durumu (NOC ekranı).
+     * Sadece admin/super rolü erişebilir.
+     */
+    public function adminListClients(): void
+    {
+        $claims = $this->requireJwt();
+        if ($claims === null) return;
+
+        $roles = (array)($claims['roles'] ?? []);
+        if (!in_array('super', $roles, true) && !in_array('admin', $roles, true)) {
+            $this->respond(403, ['code' => 403, 'message' => 'Yetkisiz']);
+            return;
+        }
+
+        $filter = (string)($_GET['filter'] ?? 'all');
+        $limit = max(1, min(500, (int)($_GET['limit'] ?? 200)));
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+
+        $clients = $this->syncClients->listStatus($filter, $limit, $offset);
+        $counts = $this->syncClients->countByStatus();
+
+        $this->respond(200, [
+            'code' => 0,
+            'result' => [
+                'clients' => $clients,
+                'counts' => $counts,
+                'filter' => $filter,
+                'limit' => $limit,
+                'offset' => $offset,
+            ],
+            'message' => 'OK',
+        ]);
+    }
+
+    /**
      * POST /api/v1/sync/heartbeat
      * Body: { "client_version": "...", "os": "Windows 11", "disk_free_gb": 50 }
      */

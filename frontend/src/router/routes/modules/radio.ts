@@ -25,6 +25,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/radio-platform/sync',
+        name: 'RadioPlatformSync',
+        component: () => import('#/views/radio-platform/sync/index.vue'),
+        meta: {
+          perm: 'matrix:view',
+          icon: 'lucide:cloud-cog',
+          title: 'Sync Client İzleme',
+          authCode: 'radio:matrix:view',
+        },
+      },
+      {
         path: '/radio-platform/media-library',
         name: 'RadioPlatformMediaLibrary',
         component: () => import('#/views/radio-platform/media-library/index.vue'),

@@ -700,6 +700,11 @@ if ($method === 'POST' && $path === '/api/v1/sync/heartbeat') {
     $syncController->heartbeat();
     return;
 }
+// Admin: tüm sync client durumlarını listele (NOC ekranı)
+if ($method === 'GET' && $path === '/api/v1/sync-admin/clients') {
+    $syncController->adminListClients();
+    return;
+}
 
 // Detect cookie-based auth BEFORE promoting the cookie to a Bearer header.
 $authViaCookie = empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session']);
