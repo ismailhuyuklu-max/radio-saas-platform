@@ -29,20 +29,8 @@ parameters:
     # Faz H4-1 sonrası: ob_start, set_exception_handler vb. native PHP
     # global'ları zaten core stubs ile tipli; ekstra ignore gerekmez.
     treatPhpDocTypesAsCertain: false
-    # Mevcut bilinçli tasarımları es geç:
-    ignoreErrors:
-        # Controller'lar respond() içinde her şeyi handle ediyor; missing return
-        # tipi mocks/tests dışında olmayacak.
-        -
-            message: '#Method .* has no return type specified#'
-            paths:
-                - src/Controller
-                - src/Service
-                - src/Repository
-        # Faz H1-1 hata zarflarında throw'lar string-typed exception alır;
-        # bilinçli geri-uyumluluk.
-        -
-            message: '#Catch statement with .*Throwable\\?#'
+    # Faz CTO-12: kullanılmayan generic ignore'lar temizlendi —
+    # phpstan-baseline.neon spesifik dosya/satır bazında ignore eder.
     # Baseline dosyası eğer varsa otomatik dahil edilir.
 includes:
     - phpstan-baseline.neon
