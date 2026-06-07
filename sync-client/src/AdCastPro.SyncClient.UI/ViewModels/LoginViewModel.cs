@@ -1,3 +1,4 @@
+using System.Net.Http;
 using AdCastPro.SyncClient.Core.Abstractions;
 using AdCastPro.SyncClient.Core.Configuration;
 using AdCastPro.SyncClient.Core.Models;
