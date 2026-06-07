@@ -259,11 +259,11 @@ watch(() => route.fullPath, () => {
 }
 
 .app-brand__mark {
-  /* REBRAND: wordmark — doğal aspect ratio (~3:1) ile yükseklik bazlı.
+  /* REBRAND: wordmark + slogan (~3:2 aspect) yükseklik bazlı.
      Sidebar genişliğine sığsın diye max-width %100. Transparent PNG,
-     drop-shadow ile brand-red glow korunur. */
+     drop-shadow ile brand-red glow korunur. 56px slogan'ı da görünür kılar. */
   display: block;
-  height: 40px;
+  height: 56px;
   width: auto;
   max-width: 100%;
   object-fit: contain;

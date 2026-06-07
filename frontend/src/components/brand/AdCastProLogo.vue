@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 // REBRAND: Aircast Pro → AdCast Pro
-// PNG wordmark logo (frontend/public/adcastpro-logo.png — 1554×519, 344 KB,
-// transparent RGBA). Logo zaten "Ad Cast Pro" yazısını içerdiği için yanına
-// ayrı text duplicate olur — kaldırıldı. compact prop API uyumluluğu için
-// korunuyor (yükseklik ölçeği etkiler).
+// PNG wordmark logo + "Planla. Yayınla. Raporla." sloganı
+// (frontend/public/adcastpro-logo.png — 1536×1024 ~3:2, 2.2 MB, transparent
+// RGBA). Logo zaten "AdCast Pro" + slogan içerdiği için ek text duplicate
+// olur — kaldırıldı. compact prop API uyumluluğu için korunuyor (boyut etkiler).
 
 interface Props {
   /** Compact mode: küçük yükseklik (matrix gibi yoğun ekranlarda) */
@@ -17,10 +17,11 @@ const props = withDefaults(defineProps<Props>(), {
   size: 0,
 });
 
-// size > 0 verilirse onu kullan; yoksa compact ise 32px, değilse 56px
+// size > 0 verilirse onu kullan; yoksa compact ise 48px, değilse 80px.
+// Slogan'lı logo, 48px altında okunmaz.
 const resolvedHeight = (): number => {
   if (props.size > 0) return props.size;
-  return props.compact ? 32 : 56;
+  return props.compact ? 48 : 80;
 };
 </script>
 
@@ -34,7 +35,7 @@ const resolvedHeight = (): number => {
       loading="eager"
       decoding="async"
       width="240"
-      height="80"
+      height="160"
     />
   </div>
 </template>
