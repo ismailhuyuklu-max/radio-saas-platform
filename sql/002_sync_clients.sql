@@ -9,6 +9,12 @@
 -- son dosya, eksik dosya, hata, client_version, IP, Windows sürümü görünür.
 -- =============================================================================
 
+-- Bootstrap: aşağıdaki v_sync_client_status view'i stations.city_name'e bağımlı.
+-- Bu kolon migrate.php'nin post-loop adımında ekleniyor ama 002 ondan ÖNCE çalışıyor;
+-- fresh DB'de "column city_name does not exist" hatası veriyordu. Idempotent ALTER ile
+-- garanti altına alıyoruz (migrate.php'deki sonraki ADD COLUMN IF NOT EXISTS no-op olur).
+ALTER TABLE stations ADD COLUMN IF NOT EXISTS city_name varchar(128) NOT NULL DEFAULT '';
+
 CREATE TABLE IF NOT EXISTS sync_clients (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

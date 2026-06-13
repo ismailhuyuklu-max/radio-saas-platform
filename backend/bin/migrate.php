@@ -51,6 +51,29 @@ $pdo->exec(
     )'
 );
 
+/**
+ * Bootstrap fix: `.sql` migrasyonlarından (örn. 002_sync_clients.sql) ÖNCE `users`
+ * tablosu var olmalı — 002, users(id)'e FK ve v_sync_client_status view'inde
+ * users.station_id'e referans veriyor. Aşağıdaki asıl bootstrap bloğu (CREATE TABLE
+ * IF NOT EXISTS users ...) döngüden sonra çalıştığından fresh DB'de 002 patlıyordu.
+ * Idempotent: bu erken oluşturma, sonraki IF NOT EXISTS ifadelerini no-op yapar.
+ * gen_random_uuid() PG13+ çekirdeğinde var (pgcrypto gerektirmez).
+ */
+$pdo->exec(
+    'CREATE TABLE IF NOT EXISTS users (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        username varchar(64) NOT NULL UNIQUE,
+        password_hash varchar(255) NOT NULL,
+        real_name varchar(128) NOT NULL,
+        roles jsonb NOT NULL DEFAULT \'["super"]\'::jsonb,
+        is_active boolean NOT NULL DEFAULT true,
+        last_login_at timestamptz NULL,
+        station_id uuid NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+    )'
+);
+
 $files = glob(rtrim($migrationsPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*.sql');
 if ($files === false) {
     fwrite(STDERR, "Unable to read migrations path: {$migrationsPath}\n");

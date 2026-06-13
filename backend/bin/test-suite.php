@@ -152,7 +152,9 @@ try {
         'region_code' => 'marmara',
         'city_name' => 'Istanbul',
     ], $authorizationHeaders);
-    $station = $stationResponse['body']['result'] ?? null;
+    // Faz 18: create response artık {result:{station,partner,tokens}} zarflıyor
+    // (auto-provision özelliği). İstasyon nesnesi result.station altında.
+    $station = $stationResponse['body']['result']['station'] ?? null;
     assertTrue($stationResponse['status'] === 201, 'Station creation endpoint did not return HTTP 201.');
     assertTrue(is_array($station), 'Station creation payload is missing.');
     assertTrue(!empty($station['id'] ?? null), 'Created station id is missing.');
@@ -170,7 +172,7 @@ try {
         'asset_key' => 'smoke-tests/sponsor.mp3',
         'asset_mime' => 'audio/mpeg',
     ], $authorizationHeaders);
-    $sponsorIds = $sponsorResponse['body']['sponsor_ids'] ?? null;
+    $sponsorIds = $sponsorResponse['body']['result']['sponsor_ids'] ?? $sponsorResponse['body']['sponsor_ids'] ?? null;
     assertTrue($sponsorResponse['status'] === 201, 'Sponsor assignment endpoint did not return HTTP 201.');
     assertTrue(is_array($sponsorIds) && count($sponsorIds) === 4, 'Sponsor assignment endpoint did not create four assignments.');
     succeed('Sponsor assignment endpoint created the expected region and part combinations.');
