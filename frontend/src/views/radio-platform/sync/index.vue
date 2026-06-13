@@ -144,8 +144,8 @@ onUnmounted(() => {
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'connection_status'">
               <Badge
-                :status="STATUS_COLORS[record.connection_status] as 'success' | 'warning' | 'default' | 'error'"
-                :text="STATUS_LABELS[record.connection_status]"
+                :status="STATUS_COLORS[record.connection_status as keyof typeof STATUS_COLORS] as 'success' | 'warning' | 'default' | 'error'"
+                :text="STATUS_LABELS[record.connection_status as keyof typeof STATUS_LABELS]"
               />
             </template>
             <template v-else-if="column.key === 'location'">

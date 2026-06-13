@@ -414,7 +414,9 @@ services:
         condition: service_healthy
     healthcheck:
       # nginx kendine HEAD atar; binary canlı + config yüklü ise 200/301/404 döner.
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1"]
+      # /healthz CSP header'siz düz 200 döner; kök "/" çok-satirli CSP header'i
+      # busybox wget'i "bad header line" ile patlatiyordu (yanlis unhealthy).
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -475,9 +477,9 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
-    # Faz H2-1: liquidsoap process canlı mı?
+    # Faz H2-1: liquidsoap process canlı mı? (imajda pgrep yok, pidof var)
     healthcheck:
-      test: ["CMD-SHELL", "pgrep liquidsoap >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "pidof liquidsoap >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
