@@ -11,6 +11,7 @@ use RadioSaaS\Repository\RefreshTokenRepository;
 use RadioSaaS\Repository\StationRepository;
 use RadioSaaS\Repository\SyncClientRepository;
 use RadioSaaS\Repository\UserRepository;
+use RadioSaaS\Service\AdminAuthenticator;
 use RadioSaaS\Service\JwtService;
 use RadioSaaS\Service\RequestContext;
 use RadioSaaS\Service\SyncManifestService;
@@ -59,7 +60,8 @@ final class SyncController
         private readonly MediaContentRepository $media,
         private readonly AuditLogRepository $audit,
         private readonly SyncManifestService $manifestService,
-        private readonly MinioStorage $minio
+        private readonly MinioStorage $minio,
+        private readonly AdminAuthenticator $adminAuth
     ) {
     }
 
@@ -450,14 +452,16 @@ final class SyncController
      */
     public function adminListClients(): void
     {
-        $claims = $this->requireJwt();
-        if ($claims === null) return;
-
-        $roles = (array)($claims['roles'] ?? []);
-        if (!in_array('super', $roles, true) && !in_array('admin', $roles, true)) {
-            $this->respond(403, ['code' => 403, 'message' => 'Yetkisiz']);
-            return;
+        // Bu uc ADMIN panel icindir; panel session-cookie auth kullanir
+        // (index.php, radio_session cookie'sini "Bearer <session>" olarak HTTP_AUTHORIZATION'a
+        // koprular). Onceki requireJwt() bir JWT access token bekliyordu ve session token'i
+        // dogrulayamayip her zaman 401 donuyordu -> NOC sync ekrani veri cekemiyordu.
+        // Diger tum admin uclari gibi AdminAuthenticator (session + rol) kullaniyoruz.
+        $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_API_TOKEN'] ?? null;
+        if ($token !== null && preg_match('/Bearer\s+(.*)$/i', $token, $m)) {
+            $token = trim($m[1]);
         }
+        $this->adminAuth->authenticate($token, ['super', 'admin']);
 
         $filter = (string)($_GET['filter'] ?? 'all');
         $limit = max(1, min(500, (int)($_GET['limit'] ?? 200)));

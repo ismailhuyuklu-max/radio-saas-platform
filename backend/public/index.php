@@ -647,7 +647,8 @@ $syncController = new SyncController(
     $mediaRepository,
     $auditLogRepository,
     $syncManifestService,
-    $storage
+    $storage,
+    $adminAuthenticator
 );
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -705,11 +706,10 @@ if ($method === 'GET' && $path === '/api/v1/sync/update') {
     $syncController->update();
     return;
 }
-// Admin: tüm sync client durumlarını listele (NOC ekranı)
-if ($method === 'GET' && $path === '/api/v1/sync-admin/clients') {
-    $syncController->adminListClients();
-    return;
-}
+// NOT: /sync-admin/clients ADMIN panel ucudur; session-cookie auth kullanir.
+// Bu yuzden asagidaki cookie->Bearer koprusu + exception handling try blogunun
+// ICINE tasindi (diger admin rotalari gibi). Sync-CLIENT rotalari (yukarida)
+// kendi JWT'leriyle koprudan once kalir.
 
 // Detect cookie-based auth BEFORE promoting the cookie to a Bearer header.
 $authViaCookie = empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_COOKIE['radio_session']);
@@ -943,6 +943,13 @@ try {
 
     if ($method === 'GET' && $path === '/api/v1/stations') {
         $stationController->index();
+        return;
+    }
+
+    // Admin: tüm sync client durumlarını listele (NOC ekranı). Cookie->Bearer
+    // koprusu calistiktan SONRA dispatch edilir; AdminAuthenticator (session) ile korunur.
+    if ($method === 'GET' && $path === '/api/v1/sync-admin/clients') {
+        $syncController->adminListClients();
         return;
     }
 
