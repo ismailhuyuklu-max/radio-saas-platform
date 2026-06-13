@@ -52,6 +52,15 @@ import {
 
 type Tab = 'links' | 'feeds' | 'media' | 'activity' | 'support' | 'apikeys' | 'security';
 
+// İngilizce enum kodlarını arayüzde Türkçe göster.
+const PART_TR: Record<string, string> = { news: 'Haber', sports: 'Spor', economy: 'Ekonomi', weather: 'Hava Durumu', road: 'Yol Durumu' };
+const PLAN_STATUS_TR: Record<string, string> = { draft: 'Taslak', published: 'Yayında', running: 'Canlı', paused: 'Duraklatıldı', archived: 'Arşiv' };
+const PLACEMENT_TR: Record<string, string> = { intro: 'Açılış', outro: 'Kapanış', pre_roll: 'Öncesi', post_roll: 'Sonrası' };
+const ENTITY_TR: Record<string, string> = { sponsor: 'Sponsor', content: 'İçerik', media: 'Medya', station: 'İstasyon', user: 'Kullanıcı', ad: 'Reklam' };
+function trLabel(map: Record<string, string>, key?: string | null): string {
+  return key ? (map[key] ?? key) : '';
+}
+
 const loading = ref(true);
 const card = ref<PortalCard | null>(null);
 const links = ref<PortalLink[]>([]);
@@ -454,8 +463,8 @@ onMounted(async () => {
         <div v-for="p in plans" :key="p.id" class="prt__plan">
           <span class="prt__plan-slot">{{ p.slot_time.slice(0, 5) }}</span>
           <span class="prt__plan-title">{{ p.content_title }}</span>
-          <span class="prt__plan-part">{{ p.part_code }}</span>
-          <span class="prt__chip" :class="`is-${p.status}`">{{ p.status }}</span>
+          <span class="prt__plan-part">{{ trLabel(PART_TR, p.part_code) }}</span>
+          <span class="prt__chip" :class="`is-${p.status}`">{{ trLabel(PLAN_STATUS_TR, p.status) }}</span>
         </div>
       </div>
       <p v-else class="prt__empty">Bugün için planlanmış yayın yok.</p>
@@ -497,7 +506,7 @@ onMounted(async () => {
         <div v-if="mediaItems.length" class="prt__media ui-card">
           <div v-for="m in mediaItems" :key="m.id" class="prt__media-row">
             <span class="prt__media-title">{{ m.title }}</span>
-            <span class="prt__media-meta">{{ m.part_code }} · {{ fmtDuration(m.source_duration_ms) }}</span>
+            <span class="prt__media-meta">{{ trLabel(PART_TR, m.part_code) }} · {{ fmtDuration(m.source_duration_ms) }}</span>
             <div class="prt__formats">
               <a
                 v-for="f in DOWNLOAD_FORMATS"
@@ -517,7 +526,7 @@ onMounted(async () => {
         <p class="prt__hint">Son 30 günde indirdiğiniz dosyalar (audit kayıtlarından).</p>
         <div v-if="downloadsList.length" class="prt__media ui-card">
           <div v-for="d in downloadsList" :key="d.id" class="prt__media-row">
-            <span class="prt__media-title">{{ d.entity_type }} · {{ d.entity_id }}</span>
+            <span class="prt__media-title">{{ trLabel(ENTITY_TR, d.entity_type) }} · {{ d.entity_id }}</span>
             <span class="prt__media-meta">{{ fmtTime(d.created_at) }}<template v-if="d.ip_address"> · {{ d.ip_address }}</template></span>
             <a
               class="prt__dl-fmt"
@@ -536,7 +545,7 @@ onMounted(async () => {
           <div v-for="s in sponsorsList" :key="s.id" class="prt__media-row">
             <span class="prt__media-title">{{ s.sponsor_name || '(adsız sponsor)' }}</span>
             <span class="prt__media-meta">
-              {{ s.placement_type }} · {{ s.content_type }}
+              {{ trLabel(PLACEMENT_TR, s.placement_type) }} · {{ trLabel(PART_TR, s.content_type) }}
               <template v-if="s.is_global"> · Ulusal</template>
               <template v-else-if="s.region_name"> · {{ s.region_name }}</template>
             </span>
@@ -552,7 +561,7 @@ onMounted(async () => {
           <div v-for="a in adsList" :key="a.id" class="prt__media-row">
             <span class="prt__media-title">{{ a.sponsor_name || '(adsız reklam)' }}</span>
             <span class="prt__media-meta">
-              {{ a.content_type }}
+              {{ trLabel(PART_TR, a.content_type) }}
               <template v-if="a.is_global"> · Ulusal</template>
               <template v-else-if="a.region_name"> · {{ a.region_name }}</template>
             </span>

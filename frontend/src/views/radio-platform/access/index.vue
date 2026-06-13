@@ -44,7 +44,7 @@ const ACTION_LABELS: Record<string, string> = {
   toggle: 'Durum değişti',
   upload_media: 'Medya yüklendi',
   assign_sponsor: 'Sponsor atandı',
-  generate_token: 'Token üretildi',
+  generate_token: 'Erişim anahtarı üretildi',
 };
 const ENTITY_LABELS: Record<string, string> = {
   user: 'Kullanıcı',

@@ -143,7 +143,7 @@ async function handleSubmit() {
         </Button>
         <Button size="large" block @click="cancelMfa">Geri</Button>
         <p class="login-hint">
-          Authenticator uygulamanızdaki 6 haneli kodu girin. Kurtarma kodunuzu da
+          Kimlik doğrulama uygulamanızdaki 6 haneli kodu girin. Kurtarma kodunuzu da
           kullanabilirsiniz.
         </p>
       </form>

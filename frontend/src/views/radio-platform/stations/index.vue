@@ -269,9 +269,9 @@ async function doRotateTokens() {
   partnerBusy.value = true;
   try {
     await rotatePartnerTokens(partnerStation.value.id);
-    message.success('Yayın linkleri yenilendi (8 token). Eski URL\'ler iptal edildi.');
+    message.success('Yayın bağlantıları yenilendi (8 anahtar). Eski URL\'ler iptal edildi.');
   } catch (error) {
-    message.error((error as Error)?.message ?? 'Token yenilenemedi.');
+    message.error((error as Error)?.message ?? 'Anahtar yenilenemedi.');
   } finally {
     partnerBusy.value = false;
   }
@@ -298,10 +298,10 @@ async function regenToken() {
     const token = res.station_token || res.stream_token || '';
     linkStation.value.stream_token = token;
     linkStation.value.station_token = token;
-    message.success('Yeni token üretildi.');
+    message.success('Yeni anahtar üretildi.');
   } catch (error) {
     console.error(error);
-    message.error('Token üretilemedi.');
+    message.error('Anahtar üretilemedi.');
   } finally {
     linkBusy.value = false;
   }
@@ -310,7 +310,7 @@ async function regenToken() {
 async function copyLink() {
   try {
     await navigator.clipboard.writeText(linkUrl.value);
-    message.success('Yayın linki kopyalandı.');
+    message.success('Yayın bağlantısı kopyalandı.');
   } catch {
     message.error('Kopyalanamadı.');
   }
@@ -458,7 +458,7 @@ onMounted(loadStations);
         </label>
         <code class="stn__link-url">{{ linkUrl }}</code>
         <div class="stn__link-actions">
-          <Button :loading="linkBusy" @click="regenToken">Token Yenile</Button>
+          <Button :loading="linkBusy" @click="regenToken">Anahtar Yenile</Button>
           <Button type="primary" @click="copyLink">Kopyala</Button>
         </div>
       </div>
@@ -509,7 +509,7 @@ onMounted(loadStations);
             @click="doProvision"
           >+ Kullanıcı Oluştur</Button>
           <Button v-else :loading="partnerBusy" @click="doRotatePassword">🔑 Şifre Yenile</Button>
-          <Button :loading="partnerBusy" @click="doRotateTokens">🔗 Linkleri Yenile</Button>
+          <Button :loading="partnerBusy" @click="doRotateTokens">🔗 Bağlantıları Yenile</Button>
           <Button type="text" @click="closePartner">Kapat</Button>
         </div>
       </div>

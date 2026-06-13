@@ -140,6 +140,26 @@ function eventTone(action: string): string {
   return 'muted';
 }
 
+// Denetim kaydı eylem/varlık kodlarını arayüzde Türkçe göster.
+const ACTION_TR: Record<string, string> = {
+  login: 'Giriş', logout: 'Çıkış', create: 'Oluşturma', update: 'Güncelleme',
+  delete: 'Silme', toggle: 'Durum değişikliği', upload_media: 'Medya yükleme',
+  assign_sponsor: 'Sponsor atama', generate_token: 'Anahtar üretimi',
+  access_denied: 'Erişim reddedildi', export_report: 'Rapor dışa aktarma',
+  partner_auto_provision: 'Partner otomatik kurulum', media_render: 'Medya işleme',
+  media_download: 'Medya indirme',
+};
+const ENTITY_TR: Record<string, string> = {
+  user: 'Kullanıcı', station: 'İstasyon', sponsor: 'Sponsor', media: 'Medya',
+  content_plan: 'Plan', auth: 'Kimlik doğrulama', report: 'Rapor', content: 'İçerik',
+};
+function eventActionLabel(action: string): string {
+  return ACTION_TR[action] ?? action.replaceAll('_', ' ');
+}
+function eventEntityLabel(entity: string): string {
+  return ENTITY_TR[entity] ?? entity;
+}
+
 function timeAgo(ts: string): string {
   const diff = now.value.diff(dayjs(ts), 'second');
   if (diff < 5) return 'şimdi';
@@ -392,10 +412,10 @@ onUnmounted(() => {
           >
             <span class="noc__event-icon">{{ eventIcon(ev.action) }}</span>
             <span class="noc__event-body">
-              <span class="noc__event-action">{{ ev.action }}</span>
+              <span class="noc__event-action">{{ eventActionLabel(ev.action) }}</span>
               <span class="noc__event-meta">
                 {{ ev.actor_username }}
-                <template v-if="ev.entity_type"> · {{ ev.entity_type }}</template>
+                <template v-if="ev.entity_type"> · {{ eventEntityLabel(ev.entity_type) }}</template>
                 <template v-if="ev.ip_address"> · {{ ev.ip_address }}</template>
               </span>
             </span>
