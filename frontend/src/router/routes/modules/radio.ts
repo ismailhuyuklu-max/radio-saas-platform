@@ -31,7 +31,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           perm: 'matrix:view',
           icon: 'lucide:cloud-cog',
-          title: 'Sync Client İzleme',
+          title: 'Eşitleme İstemcisi İzleme',
           authCode: 'radio:matrix:view',
         },
       },

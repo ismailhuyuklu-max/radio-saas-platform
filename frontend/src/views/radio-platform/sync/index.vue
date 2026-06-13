@@ -70,7 +70,7 @@ const columns = [
   { title: 'Bölge / Şehir', key: 'location', width: 160 },
   { title: 'Durum', key: 'connection_status', width: 110 },
   { title: 'Son Bağlantı', key: 'last_seen_at', width: 130 },
-  { title: 'Son Sync', key: 'last_sync_at', width: 130 },
+  { title: 'Son Eşitleme', key: 'last_sync_at', width: 130 },
   { title: 'Versiyon', dataIndex: 'client_version', key: 'client_version', width: 100 },
   { title: 'OS', dataIndex: 'os', key: 'os', width: 140 },
   { title: 'IP', dataIndex: 'last_seen_ip', key: 'last_seen_ip', width: 140 },
@@ -95,8 +95,8 @@ onUnmounted(() => {
   <div class="sync-admin page-fit">
     <header class="sync-admin__hero">
       <div>
-        <h1>Sync Client İzleme</h1>
-        <p>AdCast Pro Windows Desktop Client — radyo otomasyon bağlantı durumu</p>
+        <h1>Eşitleme İstemcisi İzleme</h1>
+        <p>AdCast Pro Windows Masaüstü İstemcisi — radyo otomasyon bağlantı durumu</p>
       </div>
       <div class="sync-admin__refresh">
         <span class="dim">Son yenileme: {{ lastRefresh || '—' }}</span>
@@ -131,7 +131,7 @@ onUnmounted(() => {
     <!-- Tablo -->
     <section class="sync-admin__table">
       <Spin :spinning="loading">
-        <Empty v-if="!loading && clients.length === 0" description="Henüz hiç sync client kaydı yok" />
+        <Empty v-if="!loading && clients.length === 0" description="Henüz hiç eşitleme istemcisi kaydı yok" />
         <Table
           v-else
           :columns="columns"
