@@ -7,16 +7,9 @@
     Exit="OnExit">
     <Application.Resources>
         <ResourceDictionary>
-            <SolidColorBrush x:Key="BrandRed" Color="#E11D48" />
-            <SolidColorBrush x:Key="BgDark" Color="#0B1220" />
-            <SolidColorBrush x:Key="BgCard" Color="#0F172A" />
-            <SolidColorBrush x:Key="FgPrimary" Color="#F8FAFC" />
-            <SolidColorBrush x:Key="FgMuted" Color="#94A3B8" />
-            <SolidColorBrush x:Key="BorderColor" Color="#1E293B" />
-            <SolidColorBrush x:Key="StatusGreen" Color="#10B981" />
-            <SolidColorBrush x:Key="StatusYellow" Color="#F59E0B" />
-            <SolidColorBrush x:Key="StatusRed" Color="#EF4444" />
-            <FontFamily x:Key="UiFont">Segoe UI</FontFamily>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/AdCastPro.SyncClient;component/Themes/AppTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
