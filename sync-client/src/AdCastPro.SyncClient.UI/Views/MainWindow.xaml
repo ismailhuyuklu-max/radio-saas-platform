@@ -5,7 +5,7 @@
     xmlns:ctl="clr-namespace:AdCastPro.SyncClient.UI.Controls"
     Title="AdCast Pro Senkronizasyon İstemcisi"
     Icon="/AdCastPro.SyncClient;component/Assets/app.ico"
-    Width="1360" Height="880" MinWidth="1120" MinHeight="720"
+    Width="1200" Height="760" MinWidth="980" MinHeight="600"
     Background="{StaticResource BgDark}"
     FontFamily="{StaticResource UiFont}"
     WindowStartupLocation="CenterScreen"
@@ -102,10 +102,12 @@
             </Grid>
 
             <!-- ===== Content ===== -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,12,24,16">
-                <Grid>
-                    <!-- ============ ÖZET ============ -->
-                    <StackPanel Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ozet}">
+            <Grid Grid.Row="1">
+                <!-- ============ ÖZET (Viewbox: scroll yok, tum kartlar pencereye sigar) ============ -->
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="20,8,20,12"
+                         VerticalAlignment="Top" HorizontalAlignment="Center"
+                         Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ozet}">
+                    <StackPanel Width="1180">
 
                         <!-- Üst sıra: 4 kart -->
                         <Grid>
@@ -354,8 +356,11 @@
                             </Border>
                         </Grid>
                     </StackPanel>
+                </Viewbox>
 
-                    <!-- ============ DİĞER BÖLÜMLER ============ -->
+                <!-- ============ DİĞER BÖLÜMLER (scroll'lu) ============ -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,12,24,16">
+                    <StackPanel>
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=indirilen}">
                         <StackPanel>
                             <TextBlock Text="İndirilen Dosyalar" Style="{StaticResource CardTitle}"/>
@@ -453,8 +458,9 @@
                             <TextBlock Text="© 2025 AdCast Pro" Style="{StaticResource Muted}" Margin="0,4"/>
                         </StackPanel>
                     </Border>
-                </Grid>
-            </ScrollViewer>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
 
             <!-- Footer -->
             <Border Grid.Row="2" Background="{StaticResource BgSidebar}" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,1,0,0" Padding="24,9">

@@ -30,8 +30,8 @@ internal static class Program
             WindowStartupLocation = WindowStartupLocation.Manual,
             Left = -10000,
             Top = -10000,
-            Width = 1360,
-            Height = 880,
+            Width = 1200,
+            Height = 760,
         };
 
         win.Loaded += (_, _) =>
