@@ -33,6 +33,7 @@ export const PERMISSIONS: Record<string, Role[]> = {
   'monitoring:view': MANAGERS,
   'reports:view': MANAGERS,
   'users:manage': ADMINS,
+  'support:manage': MANAGERS,
   // Partner Portal — station_user (own tenant) + admin override.
   'portal:view': PARTNERS,
   'portal:download': PARTNERS,

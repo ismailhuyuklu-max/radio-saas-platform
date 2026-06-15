@@ -4,8 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="AdCast Pro Sync — Giriş"
     Icon="/AdCastPro.SyncClient;component/Assets/app.ico"
-    Width="420"
-    Height="500"
+    Width="440"
+    Height="568"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None"
     AllowsTransparency="True"
@@ -16,81 +16,105 @@
         BorderBrush="{StaticResource BorderColor}"
         BorderThickness="1"
         CornerRadius="14">
-        <Grid Margin="32">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Brand (gercek logo) -->
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,4,0,12">
-                <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
-                       Stretch="Uniform" Width="300" MaxHeight="110"
-                       RenderOptions.BitmapScalingMode="HighQuality" />
-                <TextBlock
-                    FontFamily="{StaticResource UiFont}"
-                    FontSize="12.5"
-                    Foreground="{StaticResource FgMuted}"
-                    HorizontalAlignment="Center"
-                    Margin="0,2,0,0"
-                    Text="Sync Client — Windows" />
-            </StackPanel>
+            <!-- Baslik cubugu: surukle + kapat -->
+            <Grid Grid.Row="0" Height="44" Background="Transparent" MouseLeftButtonDown="OnTitleBarMouseDown">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
+                    <Ellipse Width="8" Height="8" Fill="{StaticResource BrandRed}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock Text="AdCast Pro" Foreground="{StaticResource FgMuted}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button Content="✕" Click="OnClose" ToolTip="Kapat"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Width="44" Height="44" Style="{StaticResource WindowCloseButton}" />
+            </Grid>
 
-            <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BorderColor}" Margin="0,8,0,24" />
+            <!-- Icerik -->
+            <Grid Grid.Row="1" Margin="36,2,36,26">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <!-- Form -->
-            <StackPanel Grid.Row="2" VerticalAlignment="Center">
-                <TextBlock Text="Kullanıcı Adı" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
-                <TextBox
-                    x:Name="UsernameBox"
-                    Height="38"
-                    Padding="10,0"
-                    Margin="0,0,0,16"
-                    Background="{StaticResource BgCard}"
-                    Foreground="{StaticResource FgPrimary}"
-                    BorderBrush="{StaticResource BorderColor}"
-                    Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                    VerticalContentAlignment="Center" />
+                <!-- Marka -->
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,10">
+                    <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
+                           Stretch="Uniform" Width="280" MaxHeight="100"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock
+                        FontFamily="{StaticResource UiFont}"
+                        FontSize="12.5"
+                        Foreground="{StaticResource FgMuted}"
+                        HorizontalAlignment="Center"
+                        Margin="0,2,0,0"
+                        Text="Yayın Senkronizasyon İstemcisi" />
+                </StackPanel>
 
-                <TextBlock Text="Şifre" Foreground="{StaticResource FgMuted}" Margin="0,0,0,4" />
-                <PasswordBox
-                    x:Name="PasswordBox"
-                    Height="38"
-                    Padding="10,0"
-                    Margin="0,0,0,16"
-                    Background="{StaticResource BgCard}"
-                    Foreground="{StaticResource FgPrimary}"
-                    BorderBrush="{StaticResource BorderColor}"
-                    VerticalContentAlignment="Center"
-                    PasswordChanged="OnPasswordChanged" />
+                <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BorderColor}" Margin="0,6,0,22" />
 
-                <TextBlock
-                    x:Name="ErrorText"
-                    Text="{Binding ErrorMessage}"
-                    Foreground="{StaticResource StatusRed}"
-                    FontSize="12"
-                    TextWrapping="Wrap"
-                    Margin="0,8,0,8" />
+                <!-- Form -->
+                <StackPanel Grid.Row="2" VerticalAlignment="Center">
+                    <TextBlock Text="Kullanıcı Adı" Foreground="{StaticResource FgMuted}" FontSize="12.5" Margin="0,0,0,6" />
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="9" Height="44" Margin="0,0,0,16">
+                        <TextBox
+                            x:Name="UsernameBox"
+                            BorderThickness="0"
+                            Background="Transparent"
+                            Foreground="{StaticResource FgPrimary}"
+                            CaretBrush="{StaticResource FgPrimary}"
+                            FontSize="14"
+                            Padding="12,0"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
+                    </Border>
 
-                <Button
-                    Height="40"
-                    Background="{StaticResource BrandRed}"
-                    Foreground="White"
-                    BorderThickness="0"
-                    FontWeight="SemiBold"
-                    Content="Giriş Yap"
-                    Command="{Binding LoginCommand}" />
-            </StackPanel>
+                    <TextBlock Text="Şifre" Foreground="{StaticResource FgMuted}" FontSize="12.5" Margin="0,0,0,6" />
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="9" Height="44" Margin="0,0,0,8">
+                        <PasswordBox
+                            x:Name="PasswordBox"
+                            BorderThickness="0"
+                            Background="Transparent"
+                            Foreground="{StaticResource FgPrimary}"
+                            CaretBrush="{StaticResource FgPrimary}"
+                            FontSize="14"
+                            Padding="12,0"
+                            VerticalContentAlignment="Center"
+                            PasswordChanged="OnPasswordChanged" />
+                    </Border>
 
-            <TextBlock
-                Grid.Row="3"
-                Text="Oturum güvenli şekilde DPAPI ile saklanır."
-                FontSize="11"
-                Foreground="{StaticResource FgMuted}"
-                HorizontalAlignment="Center"
-                Margin="0,16,0,0" />
+                    <TextBlock
+                        x:Name="ErrorText"
+                        Text="{Binding ErrorMessage}"
+                        Foreground="{StaticResource StatusRed}"
+                        FontSize="12"
+                        TextWrapping="Wrap"
+                        Margin="0,4,0,8" />
+
+                    <Button
+                        Height="46"
+                        Content="Giriş Yap"
+                        FontSize="14.5"
+                        IsDefault="True"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding LoginCommand}" />
+                </StackPanel>
+
+                <!-- Alt bilgi -->
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                    <TextBlock Text="🔒" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock
+                        Text="Oturum güvenli şekilde DPAPI ile saklanır."
+                        FontSize="11"
+                        Foreground="{StaticResource FgMuted}"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>

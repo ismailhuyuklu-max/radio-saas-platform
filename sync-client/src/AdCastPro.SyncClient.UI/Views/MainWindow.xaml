@@ -9,6 +9,8 @@
     Background="{StaticResource BgDark}"
     FontFamily="{StaticResource UiFont}"
     WindowStartupLocation="CenterScreen"
+    WindowState="Normal"
+    ResizeMode="CanMinimize"
     Closing="OnClosing">
 
     <Grid>
@@ -26,11 +28,55 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Logo (gercek AdCast Pro logosu — slogan dahil) -->
-                <StackPanel Grid.Row="0" Margin="14,18,14,14">
+                <!-- Logo (yuksek cozunurluk) + teknolojik saat + tarih -->
+                <StackPanel Grid.Row="0" Margin="16,18,16,8">
                     <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
-                           Stretch="Uniform" MaxHeight="96" HorizontalAlignment="Center"
+                           Stretch="Uniform" MaxHeight="118" HorizontalAlignment="Center"
                            RenderOptions.BitmapScalingMode="HighQuality" />
+
+                    <!-- Teknolojik saat (zarif, dengeli) -->
+                    <Border Margin="0,12,0,0" CornerRadius="13" Padding="12,9" BorderThickness="1">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0.4,1">
+                                <GradientStop Color="#13203A" Offset="0" />
+                                <GradientStop Color="#0A0F1A" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.BorderBrush>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#3A2230" Offset="0" />
+                                <GradientStop Color="#1B2840" Offset="0.5" />
+                                <GradientStop Color="#3A2230" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.BorderBrush>
+                        <Border.Effect>
+                            <DropShadowEffect Color="#E11D48" BlurRadius="22" ShadowDepth="0" Opacity="0.14" />
+                        </Border.Effect>
+                        <StackPanel>
+                            <TextBlock Text="{Binding ClockTime}" HorizontalAlignment="Center"
+                                       FontFamily="Consolas" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="#E11D48" BlurRadius="12" ShadowDepth="0" Opacity="0.6" />
+                                </TextBlock.Effect>
+                            </TextBlock>
+
+                            <!-- Aksan cizgisi -->
+                            <Border Height="1.5" Margin="18,6,18,5" CornerRadius="1">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#00E11D48" Offset="0" />
+                                        <GradientStop Color="#E11D48" Offset="0.5" />
+                                        <GradientStop Color="#00E11D48" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <TextBlock Text="{Binding ClockDay}" HorizontalAlignment="Center"
+                                       Foreground="{StaticResource BrandRed}" FontSize="10" FontWeight="Bold" />
+                            <TextBlock Text="{Binding ClockDate}" HorizontalAlignment="Center"
+                                       Foreground="{StaticResource FgPrimary}" FontSize="11.5" FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- Nav -->
@@ -51,24 +97,41 @@
                                  Command="{Binding NavigateCommand}" CommandParameter="servis" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="⟳" Content="Güncellemeler"
                                  Command="{Binding NavigateCommand}" CommandParameter="guncelleme" />
+                    <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="🛟" Content="Destek"
+                                 Command="{Binding NavigateCommand}" CommandParameter="destek" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="ⓘ" Content="Hakkında"
                                  Command="{Binding NavigateCommand}" CommandParameter="hakkinda" />
                 </StackPanel>
 
-                <!-- Alt durum -->
-                <StackPanel Grid.Row="2" Margin="18,0,18,16">
-                    <Border Background="#0E1726" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="9" Height="9" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <TextBlock Text="Sistem Durumu" Foreground="{StaticResource FgMuted}" FontSize="11.5" />
+                <!-- Alt durum (kompakt + teknolojik) -->
+                <StackPanel Grid.Row="2" Margin="14,2,14,10">
+                    <Border CornerRadius="10" Padding="11,8" Margin="0,0,0,7" BorderThickness="1">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#0E1A2C" Offset="0" />
+                                <GradientStop Color="#0A0F1A" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.BorderBrush>
+                            <SolidColorBrush Color="#1C2A40" />
+                        </Border.BorderBrush>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <Ellipse.Effect><DropShadowEffect Color="#10B981" BlurRadius="10" ShadowDepth="0" Opacity="0.95" /></Ellipse.Effect>
+                            </Ellipse>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="SİSTEM DURUMU" Foreground="{StaticResource FgMuted}" FontSize="9" FontWeight="Bold" />
+                                <TextBlock Text="{Binding ServiceStatusText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="13" />
                             </StackPanel>
-                            <TextBlock Text="{Binding ServiceStatusText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="13" Margin="17,2,0,0" />
-                            <TextBlock Text="Tüm sistemler nominal durumda." Foreground="{StaticResource FgDim}" FontSize="10.5" Margin="17,2,0,0" TextWrapping="Wrap" />
-                        </StackPanel>
+                        </Grid>
                     </Border>
-                    <TextBlock Text="Sürüm 1.0.0.0" Foreground="{StaticResource FgDim}" FontSize="10.5" />
-                    <TextBlock Text="© 2025 AdCast Pro" Foreground="{StaticResource FgDim}" FontSize="10.5" />
+                    <TextBlock Foreground="{StaticResource FgDim}" FontSize="10">
+                        <Run Text="Sürüm 1.0.0.0" /><Run Text="  •  © 2025 AdCast Pro" />
+                    </TextBlock>
                 </StackPanel>
             </Grid>
         </Border>
@@ -81,33 +144,11 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
-            <Grid Grid.Row="0" Margin="24,20,24,4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🖼" FontSize="20" Foreground="{StaticResource BrandRed}" Margin="0,0,10,0" />
-                    <TextBlock Text="Özet" FontSize="22" FontWeight="Bold" Foreground="{StaticResource FgPrimary}" VerticalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock VerticalAlignment="Center" Margin="0,0,12,0">
-                        <Run Text="Son Senkronizasyon: " Foreground="{StaticResource FgMuted}" FontSize="12.5" />
-                        <Run Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" FontWeight="SemiBold" />
-                    </TextBlock>
-                    <Button Content="⟳" FontSize="15" Width="38" Height="36" Style="{StaticResource GhostButton}" Padding="0"
-                            Command="{Binding RefreshCommand}" />
-                </StackPanel>
-            </Grid>
-
             <!-- ===== Content ===== -->
             <Grid Grid.Row="1">
-                <!-- ============ ÖZET (Viewbox: scroll yok, tum kartlar pencereye sigar) ============ -->
-                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="20,8,20,12"
-                         VerticalAlignment="Top" HorizontalAlignment="Center"
-                         Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ozet}">
-                    <StackPanel Width="1180">
+                <!-- ============ ÖZET (kartlar alana tam oturur, yanlarda boşluk yok) ============ -->
+                <StackPanel Margin="14,6,14,10" VerticalAlignment="Top"
+                            Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ozet}">
 
                         <!-- Üst sıra: 4 kart -->
                         <Grid>
@@ -191,13 +232,13 @@
                                     <ItemsControl ItemsSource="{Binding Slots}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Margin="0,4">
+                                                <Grid Margin="0,3.5">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="46"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Time}" Style="{StaticResource Muted}" FontWeight="SemiBold"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="12.5"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontSize="11.5" FontWeight="Bold">
+                                                    <TextBlock Text="{Binding Time}" Style="{StaticResource Muted}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center">
                                                         <TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground>
                                                     </TextBlock>
                                                 </Grid>
@@ -213,7 +254,7 @@
                             <Border Grid.Column="3" Style="{StaticResource Card}" Margin="8,0,0,0">
                                 <StackPanel>
                                     <TextBlock Text="Yayın Hazırlık Durumu" Style="{StaticResource CardTitle}" />
-                                    <ctl:DonutProgress Height="150" Percent="{Binding ReadinessPercent}" SubText="{Binding ReadinessLabel}">
+                                    <ctl:DonutProgress Height="150" Width="150" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding ReadinessPercent}" SubText="{Binding ReadinessLabel}">
                                         <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding ReadinessColor}"/></ctl:DonutProgress.RingColor>
                                     </ctl:DonutProgress>
                                     <TextBlock Text="Tüm yayın dosyaları yayına hazır." Style="{StaticResource Muted}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
@@ -228,7 +269,7 @@
                         </Grid>
 
                         <!-- Orta sıra -->
-                        <Grid Margin="0,16,0,0">
+                        <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*"/>
                                 <ColumnDefinition Width="1.15*"/>
@@ -241,20 +282,21 @@
                                     <TextBlock Text="Son İndirilen Dosyalar" Style="{StaticResource CardTitle}" />
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2.4*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.4*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="2.2*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="1.05*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Dosya Adı" Style="{StaticResource Muted}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="1" Text="Yayın Kuşağı" Style="{StaticResource Muted}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="2" Text="Boyut" Style="{StaticResource Muted}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="3" Text="Tarih" Style="{StaticResource Muted}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="4" Text="Durum" Style="{StaticResource Muted}" FontWeight="Bold"/>
+                                        <TextBlock Text="Dosya Adı" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="1" Text="Kuşak" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="Boyut" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="3" Text="Tarih" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="4" Text="Durum" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                     </Grid>
-                                    <ItemsControl ItemsSource="{Binding RecentDownloads}" MaxHeight="170">
+                                    <Grid MinHeight="170">
+                                    <ItemsControl ItemsSource="{Binding RecentDownloads}" MaxHeight="170" VerticalAlignment="Top">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,4">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="2.4*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.4*"/><ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="2.2*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="1.05*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Icon}" FontSize="12" Margin="0,0,6,0"/>
@@ -268,6 +310,22 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,12">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RecentDownloads.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <TextBlock Text="📭" FontSize="26" HorizontalAlignment="Center" Opacity="0.5"/>
+                                            <TextBlock Text="Henüz dosya indirilmedi" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                            <TextBlock Text="İlk senkronizasyonda dosyalar burada listelenir." Foreground="{StaticResource FgDim}" FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
                                     <Button Content="📁 Tüm Dosyaları Görüntüle" Style="{StaticResource GhostButton}" Margin="0,12,0,0" HorizontalAlignment="Left"
                                             Command="{Binding NavigateCommand}" CommandParameter="indirilen"/>
                                 </StackPanel>
@@ -277,7 +335,7 @@
                             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,8,0">
                                 <StackPanel>
                                     <TextBlock Text="İndirme Durumu" Style="{StaticResource CardTitle}" />
-                                    <ctl:DonutProgress Height="140" Percent="{Binding DownloadPercent}" SubText="Tamamlandı">
+                                    <ctl:DonutProgress Height="140" Width="140" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding DownloadPercent}" SubText="Tamamlandı">
                                         <ctl:DonutProgress.RingColor><SolidColorBrush Color="#10B981"/></ctl:DonutProgress.RingColor>
                                     </ctl:DonutProgress>
                                     <StackPanel Margin="0,10,0,0">
@@ -300,11 +358,11 @@
                                     <ItemsControl ItemsSource="{Binding Checks}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Margin="0,3">
+                                                <Grid Margin="0,3.5">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                    <TextBlock Text="✓" Margin="0,0,7,0"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{StaticResource FgPrimary}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Mark}" FontSize="11.5" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    <TextBlock Text="✓" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{StaticResource FgPrimary}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Mark}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -317,7 +375,7 @@
                         </Grid>
 
                         <!-- Alt sıra -->
-                        <Grid Margin="0,16,0,0">
+                        <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*"/><ColumnDefinition Width="1*"/>
                             </Grid.ColumnDefinitions>
@@ -330,7 +388,7 @@
                                         <Button Content="Temizle" Style="{StaticResource GhostButton}" Padding="10,5" HorizontalAlignment="Right" VerticalAlignment="Top"
                                                 FontSize="11" Command="{Binding ClearConsoleCommand}"/>
                                     </Grid>
-                                    <Border Background="#070B14" CornerRadius="8" Padding="12" Height="150">
+                                    <Border Background="#070B14" CornerRadius="8" Padding="12" Height="120">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                                             <ItemsControl ItemsSource="{Binding ConsoleLines}">
                                                 <ItemsControl.ItemTemplate>
@@ -348,6 +406,19 @@
                             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0">
                                 <StackPanel>
                                     <TextBlock Text="Hızlı İşlemler" Style="{StaticResource CardTitle}"/>
+
+                                    <!-- Son Senkronizasyon bilgi barı -->
+                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="SON SENKRONİZASYON" Style="{StaticResource Muted}" FontSize="10"/>
+                                                <TextBlock Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="⟳" FontSize="14" Width="34" Height="34" Style="{StaticResource GhostButton}" Padding="0" VerticalAlignment="Center" ToolTip="Yenile" Command="{Binding RefreshCommand}"/>
+                                        </Grid>
+                                    </Border>
+
                                     <Button Content="☁ Şimdi Senkronize Et" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Command="{Binding SyncNowCommand}"/>
                                     <Button Content="≣ Yayın Listesini Yenile" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding RefreshListCommand}"/>
                                     <Button Content="📈 Geçmiş Raporları Göster" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding NavigateCommand}" CommandParameter="raporlar"/>
@@ -355,8 +426,7 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
-                    </StackPanel>
-                </Viewbox>
+                </StackPanel>
 
                 <!-- ============ DİĞER BÖLÜMLER (scroll'lu) ============ -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,12,24,16">
@@ -416,12 +486,179 @@
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=servis}">
                         <StackPanel>
-                            <TextBlock Text="Servis Durumu" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,2"><Run Text="Servis: "/><Run Text="{Binding ServiceStatusText}" Foreground="{StaticResource StatusGreen}"/></TextBlock>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,2"><Run Text="İndirme Motoru: "/><Run Text="{Binding EngineStatusText}" Foreground="{StaticResource StatusGreen}"/></TextBlock>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,2"><Run Text="İşlemci: "/><Run Text="{Binding CpuText}" Foreground="{StaticResource FgPrimary}"/></TextBlock>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,2"><Run Text="Bellek: "/><Run Text="{Binding MemoryText}" Foreground="{StaticResource FgPrimary}"/></TextBlock>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,2"><Run Text="Disk: "/><Run Text="{Binding DiskText}" Foreground="{StaticResource FgPrimary}"/></TextBlock>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Text="Servis Durumu — Sistem İzleme" Style="{StaticResource CardTitle}"/>
+                                <Border Grid.Column="1" Background="#10331F" CornerRadius="10" Padding="10,4" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="CANLI" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="11"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Kaynak gauge'lari: CPU / RAM / Disk -->
+                            <UniformGrid Columns="3" Margin="0,6,0,2">
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="İŞLEMCİ (CPU)" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
+                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding CpuPercent}" SubText="kullanım">
+                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding CpuColor}"/></ctl:DonutProgress.RingColor>
+                                        </ctl:DonutProgress>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="BELLEK (RAM)" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
+                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding MemoryPercent}" SubText="kullanım">
+                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding MemoryColor}"/></ctl:DonutProgress.RingColor>
+                                        </ctl:DonutProgress>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8">
+                                    <StackPanel>
+                                        <TextBlock Text="DİSK" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
+                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding DiskUsedPercent}" SubText="dolu">
+                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding DiskColor}"/></ctl:DonutProgress.RingColor>
+                                        </ctl:DonutProgress>
+                                        <TextBlock Text="{Binding DiskUsedText}" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="11"><Run Text="Boş: " Foreground="{StaticResource FgMuted}"/><Run Text="{Binding FreeSpaceText}" Foreground="{StaticResource StatusGreen}"/></TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Gecmis grafikleri: CPU & RAM (sparkline) -->
+                            <UniformGrid Columns="2" Margin="0,6,0,2">
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <Grid>
+                                            <TextBlock Text="İşlemci Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/>
+                                            <TextBlock Text="{Binding CpuText}" Foreground="#38BDF8" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                        </Grid>
+                                        <Border Background="#070B14" CornerRadius="8" Margin="0,8,0,0" Padding="6">
+                                            <Viewbox Height="48" Stretch="Fill">
+                                                <Grid Width="300" Height="70">
+                                                    <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Polygon Points="{Binding CpuAreaPoints}">
+                                                        <Polygon.Fill>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                <GradientStop Color="#6638BDF8" Offset="0"/>
+                                                                <GradientStop Color="#0038BDF8" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Polygon.Fill>
+                                                    </Polygon>
+                                                    <Polyline Points="{Binding CpuPoints}" Stroke="#38BDF8" StrokeThickness="2.5" StrokeLineJoin="Round">
+                                                        <Polyline.Effect><DropShadowEffect Color="#38BDF8" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
+                                                    </Polyline>
+                                                </Grid>
+                                            </Viewbox>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12">
+                                    <StackPanel>
+                                        <Grid>
+                                            <TextBlock Text="Bellek Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/>
+                                            <TextBlock Text="{Binding MemoryText}" Foreground="#A78BFA" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                        </Grid>
+                                        <Border Background="#070B14" CornerRadius="8" Margin="0,8,0,0" Padding="6">
+                                            <Viewbox Height="48" Stretch="Fill">
+                                                <Grid Width="300" Height="70">
+                                                    <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                    <Polygon Points="{Binding MemoryAreaPoints}">
+                                                        <Polygon.Fill>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                <GradientStop Color="#66A78BFA" Offset="0"/>
+                                                                <GradientStop Color="#00A78BFA" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Polygon.Fill>
+                                                    </Polygon>
+                                                    <Polyline Points="{Binding MemoryPoints}" Stroke="#A78BFA" StrokeThickness="2.5" StrokeLineJoin="Round">
+                                                        <Polyline.Effect><DropShadowEffect Color="#A78BFA" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
+                                                    </Polyline>
+                                                </Grid>
+                                            </Viewbox>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Servis sagligi kartlari -->
+                            <UniformGrid Columns="4" Margin="0,6,0,2">
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="SENKRONİZASYON SERVİSİ" Style="{StaticResource Muted}" FontSize="10"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Ellipse Width="9" Height="9" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                            <TextBlock Text="{Binding ServiceStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="İNDİRME MOTORU" Style="{StaticResource Muted}" FontSize="10"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Ellipse Width="9" Height="9" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                            <TextBlock Text="{Binding EngineStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="SUNUCU BAĞLANTISI" Style="{StaticResource Muted}" FontSize="10"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Ellipse.Fill></Ellipse>
+                                            <TextBlock Text="{Binding ConnStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12">
+                                    <StackPanel>
+                                        <TextBlock Text="ÇALIŞMA SÜRESİ" Style="{StaticResource Muted}" FontSize="10"/>
+                                        <TextBlock Text="{Binding UptimeText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Senkronizasyon & Ag bilgileri + Son olaylar -->
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Senkronizasyon &amp; Ağ" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8"/>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Sunucu" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ServerAddress}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Bağlantı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ConnStatusText}"><TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son senkronizasyon" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son kontrol" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastCheckTime}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Tarama aralığı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding PollIntervalText}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Heartbeat" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding HeartbeatText}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son hata" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastErrorText}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12">
+                                    <StackPanel>
+                                        <TextBlock Text="Son Olaylar" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8"/>
+                                        <Border Background="#070B14" CornerRadius="8" Height="96" Padding="8">
+                                            <ItemsControl ItemsSource="{Binding ConsoleLines}">
+                                                <ItemsControl.Template>
+                                                    <ControlTemplate>
+                                                        <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
+                                                    </ControlTemplate>
+                                                </ItemsControl.Template>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" Foreground="#86EFAC" FontFamily="Consolas" FontSize="11.5" TextWrapping="Wrap" Margin="0,1"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
@@ -488,10 +725,11 @@
                                 <TextBlock Grid.Column="3" Text="Durum" Style="{StaticResource Muted}" FontSize="11"/>
                             </Grid>
                             <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,0,0,2"/>
-                            <ItemsControl ItemsSource="{Binding RecentDownloads}" MaxHeight="260">
+                            <Grid MinHeight="230">
+                            <ItemsControl ItemsSource="{Binding RecentDownloads}" VerticalAlignment="Top">
                                 <ItemsControl.Template>
                                     <ControlTemplate>
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="320"><ItemsPresenter/></ScrollViewer>
                                     </ControlTemplate>
                                 </ItemsControl.Template>
                                 <ItemsControl.ItemTemplate>
@@ -508,6 +746,22 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RecentDownloads.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <TextBlock Text="📭" FontSize="30" HorizontalAlignment="Center" Opacity="0.5"/>
+                                    <TextBlock Text="Henüz dosya indirilmedi" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                    <TextBlock Text="İlk senkronizasyonda indirilen dosyalar burada listelenir." Foreground="{StaticResource FgDim}" FontSize="11.5" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Grid>
 
                             <Button Content="🛠 Teknik Günlükler (Sorun Giderme)" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,16,0,0" Padding="14,8" Click="OnLogs"/>
                         </StackPanel>
@@ -515,39 +769,190 @@
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ayarlar}">
                         <StackPanel DataContext="{Binding SettingsVm}">
-                            <TextBlock Text="Ayarlar — Klasörler ve Senkronizasyon" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Ayarlar" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="İçerik klasörleri — her tür kendi klasörüne indirilir. Klasör seçmek için 📁 simgesini kullanın." Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
 
-                            <TextBlock Text="Haber Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
-                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding NewsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseNewsCommand}"/>
+                            <!-- Klasorler: 2 sutunlu kompakt izgara (scroll yok) -->
+                            <UniformGrid Columns="2">
+                                <!-- 1 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Haber" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding NewsFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseNewsCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 2 -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Reklam" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding AdsFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseAdsCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 3 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Medya Planı" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding MediaPlansFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseMediaPlansCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 4 -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Sponsor" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding SponsorsFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseSponsorsCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 5 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Acil Anons" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding EmergencyFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseEmergencyCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 6 -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Tanıtım (Promo)" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding PromoFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowsePromoCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 7 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Cıngıl (Jingle)" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding JingleFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseJingleCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 8 -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Bölgesel İçerik" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding RegionalFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseRegionalCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 9 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Ulusal İçerik" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding NationalFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseNationalCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 10 -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Arşiv" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding ArchiveFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseArchiveCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- 11 -->
+                                <StackPanel Margin="0,0,12,12">
+                                    <TextBlock Text="Geçici Dosyalar" Foreground="{StaticResource FgMuted}" FontSize="11" Margin="0,0,0,3"/>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34"><TextBox Text="{Binding TempFolder, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12"/></Border>
+                                        <Button Grid.Column="1" Content="📁" ToolTip="Gözat" Width="38" Height="34" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseTempCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </UniformGrid>
+
+                            <!-- Senkronizasyon ayarlari + Kaydet -->
+                            <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,4,0,14"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Tarama aralığı (sn):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34" Width="80"><TextBox Text="{Binding PollIntervalSeconds}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12.5"/></Border>
+                                </StackPanel>
+                                <CheckBox Grid.Column="1" Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}" IsChecked="{Binding AutoStartWithWindows}" VerticalAlignment="Center" Margin="22,0,0,0"/>
+                                <Button Grid.Column="2" Content="Kaydet" Style="{StaticResource PrimaryButton}" Padding="26,9" Command="{Binding SaveCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ====== DESTEK ====== -->
+                    <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=destek}">
+                        <StackPanel DataContext="{Binding SupportVm}" MaxWidth="760" HorizontalAlignment="Left">
+                            <TextBlock Text="Destek Talebi" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Bir sorununuz mu var? Aşağıdaki formu doldurun; ekibimiz en kısa sürede sizinle iletişime geçecektir." Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                            <!-- Radyo Bilgileri (otomatik, salt-okunur) -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="📻 RADYO BİLGİLERİ (otomatik)" Style="{StaticResource Muted}" FontSize="10.5" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <UniformGrid Columns="2">
+                                        <StackPanel Margin="0,0,12,8"><TextBlock Text="Radyo Adı" Foreground="{StaticResource FgDim}" FontSize="11"/><TextBlock Text="{Binding RadioName}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,8"><TextBlock Text="Frekans" Foreground="{StaticResource FgDim}" FontSize="11"/><TextBlock Text="{Binding Frequency}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/></StackPanel>
+                                        <StackPanel Margin="0,0,12,0"><TextBlock Text="Bölge" Foreground="{StaticResource FgDim}" FontSize="11"/><TextBlock Text="{Binding Region}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/></StackPanel>
+                                        <StackPanel><TextBlock Text="İl" Foreground="{StaticResource FgDim}" FontSize="11"/><TextBlock Text="{Binding City}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/></StackPanel>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Manuel alanlar -->
+                            <TextBlock Text="Ad Soyad *" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Height="40" Margin="0,0,0,12">
+                                <TextBox Text="{Binding FullName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="10,0"/>
+                            </Border>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                    <TextBlock Text="Telefon *" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Height="40">
+                                        <TextBox Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="10,0"/>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Text="E-posta *" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Height="40">
+                                        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="10,0"/>
+                                    </Border>
+                                </StackPanel>
                             </Grid>
 
-                            <TextBlock Text="Reklam Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
-                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding AdsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseAdsCommand}"/>
-                            </Grid>
+                            <TextBlock Text="Destek Mesajı *" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Height="130" Margin="0,0,0,4">
+                                <TextBox Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" Padding="10,8"/>
+                            </Border>
+                            <TextBlock Text="En az 10 karakter." Foreground="{StaticResource FgDim}" FontSize="11" Margin="0,0,0,8"/>
 
-                            <TextBlock Text="Medya Planı Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
-                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding MediaPlansFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseMediaPlansCommand}"/>
-                            </Grid>
+                            <!-- Durum mesaji -->
+                            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" FontSize="12.5" Margin="0,2,0,10"
+                                       Visibility="{Binding HasStatus, Converter={StaticResource BoolToVis}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource StatusGreen}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource StatusRed}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
-                            <TextBlock Text="Sponsor Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
-                            <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding SponsorsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseSponsorsCommand}"/>
-                            </Grid>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
-                                <TextBlock Text="Tarama aralığı (sn):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <TextBox Text="{Binding PollIntervalSeconds}" Width="90" Height="30" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
-                            </StackPanel>
-                            <CheckBox Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}" IsChecked="{Binding AutoStartWithWindows}" Margin="0,4,0,0"/>
-
-                            <Button Content="Kaydet" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,16,0,0" Command="{Binding SaveCommand}"/>
+                            <Button Command="{Binding SubmitCommand}" HorizontalAlignment="Left" Padding="24,11">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                                        <Setter Property="Content" Value="📨 Destek Talebi Gönder"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSubmitting}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                                <Setter Property="Content" Value="Gönderiliyor…"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                         </StackPanel>
                     </Border>
 
@@ -560,12 +965,68 @@
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=hakkinda}">
-                        <StackPanel>
-                            <TextBlock Text="Hakkında" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="AdCast Pro Senkronizasyon İstemcisi" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="14"/>
-                            <TextBlock Text="Sürüm 1.0.0.0" Style="{StaticResource Muted}" Margin="0,4"/>
-                            <TextBlock Text="Planla. Yayınla. Raporla." Foreground="{StaticResource BrandRed}" Margin="0,4"/>
-                            <TextBlock Text="© 2025 AdCast Pro" Style="{StaticResource Muted}" Margin="0,4"/>
+                        <StackPanel HorizontalAlignment="Center" MaxWidth="680" Margin="0,8,0,8">
+                            <!-- Logo -->
+                            <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
+                                   Stretch="Uniform" MaxHeight="110" HorizontalAlignment="Center" Margin="0,0,0,4"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <TextBlock Text="Yayın Senkronizasyon İstemcisi" Style="{StaticResource Muted}" HorizontalAlignment="Center" FontSize="13"/>
+                            <TextBlock Text="Planla. Yayınla. Raporla." Foreground="{StaticResource BrandRed}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="13"/>
+
+                            <!-- Aksan cizgisi -->
+                            <Border Height="2" Width="120" CornerRadius="1" Margin="0,16,0,16" HorizontalAlignment="Center">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#00E11D48" Offset="0"/>
+                                        <GradientStop Color="#E11D48" Offset="0.5"/>
+                                        <GradientStop Color="#00E11D48" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <!-- Profesyonel aciklama -->
+                            <TextBlock Foreground="{StaticResource FgPrimary}" FontSize="13.5" TextAlignment="Center" TextWrapping="Wrap" LineHeight="22"
+                                       Text="AdCast Pro, radyo istasyonları için geliştirilmiş profesyonel bir yayın senkronizasyon ve içerik dağıtım platformudur. Haber bültenleri, reklamlar, cıngıllar, tanıtımlar ve sponsor içeriklerini merkezi sunucudan otomatik olarak indirir; yayın kuşaklarına göre düzenler ve istasyonunuzun her an yayına hazır olmasını sağlar."/>
+                            <TextBlock Foreground="{StaticResource FgMuted}" FontSize="12.5" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" Margin="0,10,0,0"
+                                       Text="Uçtan uca güvenli dosya doğrulama, gerçek zamanlı sistem izleme ve kesintisiz otomatik güncelleme ile yayın sürekliliğinizi güvence altına alır."/>
+
+                            <!-- Ozellikler -->
+                            <UniformGrid Columns="2" Margin="0,18,0,4">
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,6,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🔄" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <StackPanel><TextBlock Text="Otomatik Senkronizasyon" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/><TextBlock Text="Merkezden gerçek zamanlı içerik" Style="{StaticResource Muted}" FontSize="11"/></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="6,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📻" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <StackPanel><TextBlock Text="Yayın Kuşağı Yönetimi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/><TextBlock Text="Günlük plana göre hazırlık" Style="{StaticResource Muted}" FontSize="11"/></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,6,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🛡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <StackPanel><TextBlock Text="Güvenli Doğrulama" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/><TextBlock Text="Bütünlük ve format kontrolü" Style="{StaticResource Muted}" FontSize="11"/></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="6,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📊" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <StackPanel><TextBlock Text="Sistem İzleme" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/><TextBlock Text="CPU, bellek, disk ve sağlık" Style="{StaticResource Muted}" FontSize="11"/></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Alt bilgi -->
+                            <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,18,0,12"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="Sürüm 1.0.0.0" Style="{StaticResource Muted}" FontSize="12"/>
+                                <TextBlock Text="  •  " Foreground="{StaticResource FgDim}" FontSize="12"/>
+                                <TextBlock Text="© 2025 AdCast Pro" Style="{StaticResource Muted}" FontSize="12"/>
+                                <TextBlock Text="  •  " Foreground="{StaticResource FgDim}" FontSize="12"/>
+                                <TextBlock Text="Tüm hakları saklıdır." Foreground="{StaticResource FgDim}" FontSize="12"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                     </StackPanel>

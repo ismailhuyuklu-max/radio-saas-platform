@@ -67,9 +67,10 @@ final class StationRepository
     public function findById(string $stationId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT s.*, r.code AS region_code, r.name AS region_name
+            'SELECT s.*, r.code AS region_code, r.name AS region_name, u.username AS partner_username
              FROM stations s
              INNER JOIN regions r ON r.id = s.region_id
+             LEFT JOIN users u ON u.id = s.user_id
              WHERE s.id = :id
              LIMIT 1'
         );
@@ -84,9 +85,11 @@ final class StationRepository
             SELECT
                 s.*,
                 r.code AS region_code,
-                r.name AS region_name
+                r.name AS region_name,
+                u.username AS partner_username
             FROM stations s
             INNER JOIN regions r ON r.id = s.region_id
+            LEFT JOIN users u ON u.id = s.user_id
             WHERE 1=1
         SQL;
 

@@ -76,6 +76,8 @@ export interface StationItem {
   stream_token?: string;
   /** Bound partner-radio user id (Faz 12+). Falsy when not provisioned yet. */
   user_id?: string | null;
+  /** Bound partner-radio kullanıcı adı (login). Provision edilmemişse boş. */
+  partner_username?: string | null;
   /** Faz 22: national-access partner sees content across every region. */
   national_access?: boolean;
   /** İstasyon logosu (MinIO public URL). */
@@ -339,7 +341,7 @@ function resolveApiUrl(path: string) {
   return new URL(path.replace(/^\//, ''), base).toString();
 }
 
-async function sendApiRequest<T>(method: 'PATCH' | 'DELETE', path: string, data?: unknown): Promise<T> {
+export async function sendApiRequest<T>(method: 'PATCH' | 'DELETE', path: string, data?: unknown): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Accept-Language': navigator.language || 'tr-TR',

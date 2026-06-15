@@ -111,4 +111,17 @@ internal static class SystemMetrics
         }
         catch { return 0; }
     }
+
+    /// <summary>Verilen yol icin surucunun toplam kapasitesi (GB).</summary>
+    public static double TotalDiskGb(string path)
+    {
+        try
+        {
+            var root = Path.GetPathRoot(Path.GetFullPath(path));
+            if (string.IsNullOrEmpty(root)) return 0;
+            var di = new DriveInfo(root);
+            return di.IsReady ? Math.Round(di.TotalSize / 1024d / 1024d / 1024d, 1) : 0;
+        }
+        catch { return 0; }
+    }
 }
