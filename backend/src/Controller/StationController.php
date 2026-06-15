@@ -135,6 +135,7 @@ final class StationController
             'is_active' => $this->readBool($payload['is_active'] ?? null, true),
             'city_name' => $cityName !== '' ? $cityName : $name,
             'stream_token' => $payload['stream_token'] ?? null,
+            'frequency' => $payload['frequency'] ?? null,
         ]);
 
         $station = $this->stationRepository->findById($stationId);
@@ -207,6 +208,7 @@ final class StationController
             'is_active' => $this->readBool($payload['is_active'] ?? $existing['is_active'] ?? null, true),
             'city_name' => $cityName !== '' ? $cityName : $name,
             'stream_token' => $payload['stream_token'] ?? ($existing['stream_token'] ?? null),
+            'frequency' => array_key_exists('frequency', $payload) ? $payload['frequency'] : ($existing['frequency'] ?? null),
         ];
         if (array_key_exists('national_access', $payload)) {
             $updateRow['national_access'] = $this->readBool($payload['national_access'], false);

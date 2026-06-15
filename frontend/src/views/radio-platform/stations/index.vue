@@ -60,6 +60,7 @@ const form = ref<{
   is_active: boolean;
   national_access: boolean;
   logo_url: string | null;
+  frequency: string;
 }>({
   name: '',
   region_code: 'marmara',
@@ -67,6 +68,7 @@ const form = ref<{
   is_active: true,
   national_access: false,
   logo_url: null,
+  frequency: '',
 });
 const logoUploading = ref(false);
 const logoInput = ref<HTMLInputElement | null>(null);
@@ -130,7 +132,7 @@ async function loadStations() {
 
 function openCreate() {
   editingId.value = null;
-  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false, logo_url: null };
+  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false, logo_url: null, frequency: '' };
   modalOpen.value = true;
 }
 function openEdit(s: StationItem) {
@@ -142,6 +144,7 @@ function openEdit(s: StationItem) {
     is_active: s.is_active ?? s.status === 'active',
     national_access: s.national_access ?? false,
     logo_url: s.logo_url ?? null,
+    frequency: s.frequency ?? '',
   };
   modalOpen.value = true;
 }
@@ -185,6 +188,7 @@ async function saveStation() {
       is_active: form.value.is_active,
       status: (form.value.is_active ? 'active' : 'paused') as StationStatus,
       national_access: form.value.national_access,
+      frequency: form.value.frequency.trim() || null,
     };
     if (editingId.value) {
       await updateStation(editingId.value, payload);
@@ -485,6 +489,10 @@ onMounted(loadStations);
         <label>
           <span>İstasyon Adı</span>
           <Input v-model:value="form.name" placeholder="Örn. Akdeniz FM" />
+        </label>
+        <label>
+          <span>Frekans</span>
+          <Input v-model:value="form.frequency" placeholder="Örn. 95.5" />
         </label>
         <label>
           <span>Bölge</span>

@@ -129,9 +129,9 @@ final class StationRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO stations
-                (region_id, name, slug, station_code, status, is_active, city_name, stream_token)
+                (region_id, name, slug, station_code, status, is_active, city_name, stream_token, frequency)
              VALUES
-                (:region_id, :name, :slug, :station_code, :status, :is_active, :city_name, :stream_token)
+                (:region_id, :name, :slug, :station_code, :status, :is_active, :city_name, :stream_token, :frequency)
              RETURNING id'
         );
         $stmt->execute([
@@ -143,6 +143,7 @@ final class StationRepository
             'is_active' => array_key_exists('is_active', $row) ? ($row['is_active'] ? 'true' : 'false') : 'true',
             'city_name' => $row['city_name'] ?? $row['name'],
             'stream_token' => $row['stream_token'] ?? null,
+            'frequency' => ($row['frequency'] ?? '') !== '' ? $row['frequency'] : null,
         ]);
 
         return (string) $stmt->fetchColumn();
@@ -163,6 +164,7 @@ final class StationRepository
                  is_active = :is_active,
                  city_name = :city_name,
                  stream_token = :stream_token,
+                 frequency = :frequency,
                  national_access = :national_access,
                  updated_at = now()
              WHERE id = :id'
@@ -179,6 +181,9 @@ final class StationRepository
             'is_active' => array_key_exists('is_active', $row) ? ($row['is_active'] ? 'true' : 'false') : 'true',
             'city_name' => $row['city_name'] ?? $row['name'],
             'stream_token' => $row['stream_token'] ?? null,
+            'frequency' => array_key_exists('frequency', $row)
+                ? (($row['frequency'] ?? '') !== '' ? $row['frequency'] : null)
+                : ($existing['frequency'] ?? null),
             'national_access' => $national,
         ]);
 
