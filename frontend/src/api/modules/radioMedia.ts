@@ -80,6 +80,8 @@ export interface StationItem {
   national_access?: boolean;
   /** İstasyon logosu (MinIO public URL). */
   logo_url?: string | null;
+  /** Yayın frekansı (örn. "95.5"). */
+  frequency?: string | null;
 }
 
 export interface StationSavePayload {
@@ -93,6 +95,8 @@ export interface StationSavePayload {
   stream_token?: string;
   /** Faz 22: ulusal yetkili radyo bayrağı. */
   national_access?: boolean;
+  /** Yayın frekansı (örn. "95.5"). */
+  frequency?: string | null;
 }
 
 export interface SponsorPayload {
