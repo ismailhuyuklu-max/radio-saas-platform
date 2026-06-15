@@ -24,7 +24,8 @@ internal static class Program
 
         var outPath = Environment.GetEnvironmentVariable("PREVIEW_OUT") ?? "preview.png";
 
-        var vm = MainViewModel.CreateSample();
+        var section = Environment.GetEnvironmentVariable("PREVIEW_SECTION") ?? "ozet";
+        var vm = MainViewModel.CreateSample(section);
         var win = new MainWindow(vm, null!)
         {
             WindowStartupLocation = WindowStartupLocation.Manual,

@@ -351,7 +351,7 @@
                                     <Button Content="☁ Şimdi Senkronize Et" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Command="{Binding SyncNowCommand}"/>
                                     <Button Content="≣ Yayın Listesini Yenile" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding RefreshListCommand}"/>
                                     <Button Content="📈 Geçmiş Raporları Göster" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding NavigateCommand}" CommandParameter="raporlar"/>
-                                    <Button Content="⚙ Ayarları Aç" Style="{StaticResource GhostButton}" Click="OnSettings"/>
+                                    <Button Content="⚙ Ayarları Aç" Style="{StaticResource GhostButton}" Command="{Binding NavigateCommand}" CommandParameter="ayarlar"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -426,18 +426,59 @@
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=raporlar}">
-                        <StackPanel>
-                            <TextBlock Text="Raporlar" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="Senkronizasyon ve indirme geçmişi günlükleri." Style="{StaticResource Muted}"/>
-                            <Button Content="Günlükleri Görüntüle" Style="{StaticResource GhostButton}" Margin="0,12,0,0" HorizontalAlignment="Left" Click="OnLogs"/>
+                        <StackPanel DataContext="{Binding LogsVm}">
+                            <TextBlock Text="Raporlar / Günlükler" Style="{StaticResource CardTitle}"/>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Text="Filtre:" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}"
+                                         BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"
+                                         Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Grid.Column="2" Content="Yenile" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Padding="14,6" Command="{Binding RefreshCommand}"/>
+                            </Grid>
+                            <Border Background="#070B14" CornerRadius="8" Height="430" Padding="8">
+                                <ListBox ItemsSource="{Binding Lines}" Background="Transparent" Foreground="#86EFAC"
+                                         BorderThickness="0" FontFamily="Consolas" FontSize="11.5"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                            </Border>
                         </StackPanel>
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ayarlar}">
-                        <StackPanel>
-                            <TextBlock Text="Ayarlar" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="Sunucu, klasör ve senkronizasyon ayarları." Style="{StaticResource Muted}"/>
-                            <Button Content="Ayarları Aç" Style="{StaticResource PrimaryButton}" Margin="0,12,0,0" HorizontalAlignment="Left" Click="OnSettings"/>
+                        <StackPanel DataContext="{Binding SettingsVm}">
+                            <TextBlock Text="Ayarlar — Klasörler ve Senkronizasyon" Style="{StaticResource CardTitle}"/>
+
+                            <TextBlock Text="Haber Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding NewsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseNewsCommand}"/>
+                            </Grid>
+
+                            <TextBlock Text="Reklam Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding AdsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseAdsCommand}"/>
+                            </Grid>
+
+                            <TextBlock Text="Medya Planı Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding MediaPlansFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseMediaPlansCommand}"/>
+                            </Grid>
+
+                            <TextBlock Text="Sponsor Klasörü" Style="{StaticResource Muted}" Margin="0,2,0,4"/>
+                            <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding SponsorsFolder, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Gözat" Width="64" Margin="6,0,0,0" Style="{StaticResource GhostButton}" Padding="0" Command="{Binding BrowseSponsorsCommand}"/>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                                <TextBlock Text="Tarama aralığı (sn):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBox Text="{Binding PollIntervalSeconds}" Width="90" Height="30" Padding="8,0" Background="{StaticResource BgDark}" Foreground="{StaticResource FgPrimary}" BorderBrush="{StaticResource BorderColor}" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <CheckBox Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}" IsChecked="{Binding AutoStartWithWindows}" Margin="0,4,0,0"/>
+
+                            <Button Content="Kaydet" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,16,0,0" Command="{Binding SaveCommand}"/>
                         </StackPanel>
                     </Border>
 

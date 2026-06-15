@@ -26,7 +26,14 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IApiClient _api;
     private readonly SyncClientOptions _options;
     private readonly ILogger<MainViewModel> _logger;
+    private readonly SettingsViewModel _settingsVm;
+    private readonly LogsViewModel _logsVm;
     private readonly DispatcherTimer _timer;
+
+    /// <summary>Ayarlar bolumu (inline) — popup yerine sayfada gosterilir.</summary>
+    public SettingsViewModel SettingsVm => _settingsVm;
+    /// <summary>Raporlar/loglar bolumu (inline).</summary>
+    public LogsViewModel LogsVm => _logsVm;
 
     // 7 standart haber kusagi sablonu (manifest yoksa gunluk plan olarak gosterilir).
     private static readonly (string Time, string Name)[] StandardSlots =
@@ -93,6 +100,8 @@ public sealed partial class MainViewModel : ObservableObject
         ITokenStore store,
         IApiClient api,
         IOptions<SyncClientOptions> options,
+        SettingsViewModel settingsVm,
+        LogsViewModel logsVm,
         ILogger<MainViewModel> logger)
     {
         _readiness = readiness;
@@ -100,6 +109,8 @@ public sealed partial class MainViewModel : ObservableObject
         _store = store;
         _api = api;
         _options = options.Value;
+        _settingsVm = settingsVm;
+        _logsVm = logsVm;
         _logger = logger;
 
         ServerAddress = StripScheme(_options.ApiBaseUrl);
@@ -130,15 +141,18 @@ public sealed partial class MainViewModel : ObservableObject
         _store = null!;
         _api = null!;
         _options = null!;
+        _settingsVm = new SettingsViewModel(Options.Create(new SyncClientOptions()));
+        _logsVm = new LogsViewModel();
         _logger = null!;
         _timer = new DispatcherTimer();
     }
 
     /// <summary>Ekteki tasarima birebir ornek veri — gorsel onizleme icin.</summary>
-    public static MainViewModel CreateSample()
+    public static MainViewModel CreateSample(string section = "ozet")
     {
         var vm = new MainViewModel
         {
+            SelectedSection = section,
             ServerAddress = "api.adcastpro.com",
             ConnUserName = "MESK_FM",
             StationName = "Meşk FM",
@@ -245,7 +259,9 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Navigate(string? section)
     {
-        if (!string.IsNullOrWhiteSpace(section)) SelectedSection = section;
+        if (string.IsNullOrWhiteSpace(section)) return;
+        SelectedSection = section;
+        if (section == "raporlar") _logsVm?.Refresh();   // gunlukleri tazele
     }
 
     // ==================== Veri yukleme ====================
