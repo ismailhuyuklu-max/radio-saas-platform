@@ -466,6 +466,32 @@ $pdo->exec(
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ticket_msgs_ticket ON support_ticket_messages (ticket_id, created_at)');
 
 /**
+ * Destek Modulu — Yayinci (sync client) destek talepleri. Mevcut portal
+ * support_tickets'tan ayri tutulur: yayinci iletisim bilgileri + radyo bilgileri
+ * (snapshot) + admin notu. Durum akisi: new -> in_progress -> resolved -> closed.
+ */
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS publisher_support_tickets (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        station_id uuid NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+        radio_name varchar(255) NULL,
+        frequency varchar(32) NULL,
+        region varchar(128) NULL,
+        city varchar(128) NULL,
+        full_name varchar(160) NOT NULL,
+        phone varchar(64) NOT NULL,
+        email varchar(160) NOT NULL,
+        message text NOT NULL,
+        status varchar(16) NOT NULL DEFAULT 'new',
+        admin_note text NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+    )"
+);
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_psupport_status ON publisher_support_tickets (status, created_at DESC)');
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_psupport_station ON publisher_support_tickets (station_id, created_at DESC)');
+
+/**
  * Faz 19 — Programmatic API keys per partner station. The master prompt's
  * KAYIT SİSTEMİ lists "API Anahtarı" + "Güvenlik Tokenı" as separate items;
  * stream tokens cover signed-URL feeds, this table covers /api/v1/* calls

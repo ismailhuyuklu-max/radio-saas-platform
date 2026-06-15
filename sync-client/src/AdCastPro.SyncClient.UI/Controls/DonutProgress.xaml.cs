@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 
 namespace AdCastPro.SyncClient.UI.Controls;
 
@@ -58,6 +59,18 @@ public partial class DonutProgress : UserControl
         BigText.Text = $"%{pct:0}";
         SubTextBlock.Text = SubText ?? string.Empty;
         Arc.Stroke = RingColor;
+
+        // Halka rengine uygun yumuşak parlama — daha profesyonel, modern görünüm.
+        if (RingColor is SolidColorBrush scb)
+        {
+            Arc.Effect = new DropShadowEffect
+            {
+                Color = scb.Color,
+                BlurRadius = 16,
+                ShadowDepth = 0,
+                Opacity = 0.55,
+            };
+        }
 
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0 || h <= 0) return;

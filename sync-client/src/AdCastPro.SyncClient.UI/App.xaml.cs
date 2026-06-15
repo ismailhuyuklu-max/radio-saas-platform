@@ -1,4 +1,6 @@
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Channels;
 using System.Windows;
 using AdCastPro.SyncClient.App;
@@ -24,9 +26,43 @@ public partial class App : Application
         ?? throw new InvalidOperationException("Host henüz başlatılmadı");
 
     private TrayIconHost? _trayHost;
+    private MainWindow? _mainWindow;
+
+    // Tek örnek (single-instance) — ikinci açılış engellenir, mevcut pencere öne gelir.
+    private Mutex? _singleInstanceMutex;
+    private EventWaitHandle? _activateEvent;
+    private const string SingleInstanceMutexName = @"Local\AdCastProSyncClient.SingleInstance.v1";
+    private const string ActivateEventName = @"Local\AdCastProSyncClient.Activate.v1";
 
     private async void OnStartup(object sender, StartupEventArgs e)
     {
+        // ---- Tek örnek kilidi: yazılım ikinci kez açılamaz ----
+        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out bool createdNew);
+        if (!createdNew)
+        {
+            // Zaten çalışan bir örnek var → onu öne getir ve bu örneği sessizce kapat.
+            try
+            {
+                if (EventWaitHandle.TryOpenExisting(ActivateEventName, out var existing))
+                {
+                    existing.Set();
+                    existing.Dispose();
+                }
+            }
+            catch { /* yoksay */ }
+            Shutdown();
+            return;
+        }
+
+        // İlk örnek: sonraki açılış denemelerini dinle → pencereyi öne getir.
+        _activateEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
+        ThreadPool.RegisterWaitForSingleObject(
+            _activateEvent,
+            (_, __) => Dispatcher.BeginInvoke(new Action(BringExistingWindowToFront)),
+            state: null,
+            millisecondsTimeOutInterval: Timeout.Infinite,
+            executeOnlyOnce: false);
+
         // Log dir
         var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AdCastPro", "Logs");
         Directory.CreateDirectory(logDir);
@@ -80,6 +116,7 @@ public partial class App : Application
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<SettingsViewModel>();
         builder.Services.AddSingleton<LogsViewModel>();
+        builder.Services.AddSingleton<SupportViewModel>();
         builder.Services.AddTransient<LoginWindow>();
         builder.Services.AddSingleton<MainWindow>();
         builder.Services.AddTransient<SettingsWindow>();
@@ -115,13 +152,32 @@ public partial class App : Application
         _trayHost = Services.GetRequiredService<TrayIconHost>();
         _trayHost.Show();
         // Ilk acilista Ozet dashboard'unu da goster (kapatinca tray'de calismaya devam eder).
-        var main = Services.GetRequiredService<MainWindow>();
-        main.Show();
-        main.Activate();
+        _mainWindow = Services.GetRequiredService<MainWindow>();
+        _mainWindow.Show();
+        _mainWindow.Activate();
+    }
+
+    /// <summary>İkinci açılış denemesinde çalışan örneğin penceresini öne getirir.</summary>
+    private void BringExistingWindowToFront()
+    {
+        try
+        {
+            var win = _mainWindow ?? Windows.OfType<Window>().FirstOrDefault();
+            if (win == null) return;
+            if (!win.IsVisible) win.Show();
+            if (win.WindowState == WindowState.Minimized) win.WindowState = WindowState.Normal;
+            win.Activate();
+            win.Topmost = true;
+            win.Topmost = false;   // öne getirip topmost'u geri al (flash)
+            win.Focus();
+        }
+        catch { /* yoksay */ }
     }
 
     private async void OnExit(object sender, ExitEventArgs e)
     {
+        _activateEvent?.Dispose();
+        _singleInstanceMutex?.Dispose();
         _trayHost?.Dispose();
         if (Host != null)
         {

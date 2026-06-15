@@ -622,6 +622,15 @@ $signedFeedController = new SignedFeedController($streamTokenRepository, $stream
 $partnerPortalController = new PartnerPortalController($adminAuthenticator, $stationRepository, $planRepository, $mediaRepository, $auditLogRepository, $streamTokenService, $sponsorRepository);
 $supportTicketRepository = new SupportTicketRepository($pdo);
 $supportController = new SupportController($adminAuthenticator, $supportTicketRepository, $auditLogRepository);
+$publisherSupportRepository = new \RadioSaaS\Repository\PublisherSupportRepository($pdo);
+$publisherSupportController = new \RadioSaaS\Controller\PublisherSupportController(
+    $userRepository,
+    $jwtService,
+    $stationRepository,
+    $publisherSupportRepository,
+    $auditLogRepository,
+    $adminAuthenticator
+);
 $partnerApiKeyRepository = new PartnerApiKeyRepository($pdo);
 $apiKeyService = new ApiKeyService($partnerApiKeyRepository);
 $partnerApiKeyController = new PartnerApiKeyController($adminAuthenticator, $partnerApiKeyRepository, $apiKeyService, $auditLogRepository);
@@ -699,6 +708,11 @@ if ($method === 'POST' && $path === '/api/v1/sync/report') {
 }
 if ($method === 'POST' && $path === '/api/v1/sync/heartbeat') {
     $syncController->heartbeat();
+    return;
+}
+// Destek Modulu — yayinci destek talebi (JWT auth, radyo bilgileri sunucuda dogrulanir)
+if ($method === 'POST' && $path === '/api/v1/sync/support') {
+    $publisherSupportController->createFromSync();
     return;
 }
 // Auto-updater (no auth — public version manifest)
@@ -1128,6 +1142,20 @@ try {
     }
     if ($method === 'POST' && preg_match('#^/api/v1/support/tickets/([^/]+)/message$#', $path, $matches)) {
         $supportController->adminReply($matches[1]);
+        return;
+    }
+
+    // Destek Paneli — yayinci destek talepleri (admin, support:manage)
+    if ($method === 'GET' && $path === '/api/v1/support/requests') {
+        $publisherSupportController->adminIndex();
+        return;
+    }
+    if ($method === 'GET' && preg_match('#^/api/v1/support/requests/([^/]+)$#', $path, $matches)) {
+        $publisherSupportController->adminShow($matches[1]);
+        return;
+    }
+    if ($method === 'PATCH' && preg_match('#^/api/v1/support/requests/([^/]+)$#', $path, $matches)) {
+        $publisherSupportController->adminUpdate($matches[1]);
         return;
     }
 

@@ -16,6 +16,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _adsFolder = "";
     [ObservableProperty] private string _mediaPlansFolder = "";
     [ObservableProperty] private string _sponsorsFolder = "";
+    [ObservableProperty] private string _emergencyFolder = "";
+    [ObservableProperty] private string _promoFolder = "";
+    [ObservableProperty] private string _jingleFolder = "";
+    [ObservableProperty] private string _regionalFolder = "";
+    [ObservableProperty] private string _nationalFolder = "";
+    [ObservableProperty] private string _archiveFolder = "";
     [ObservableProperty] private string _tempFolder = "";
     [ObservableProperty] private int _pollIntervalSeconds = 60;
     [ObservableProperty] private bool _autoStartWithWindows = true;
@@ -27,6 +33,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         AdsFolder = _options.Folders.Ads;
         MediaPlansFolder = _options.Folders.MediaPlans;
         SponsorsFolder = _options.Folders.Sponsors;
+        EmergencyFolder = _options.Folders.Emergency;
+        PromoFolder = _options.Folders.Promo;
+        JingleFolder = _options.Folders.Jingle;
+        RegionalFolder = _options.Folders.Regional;
+        NationalFolder = _options.Folders.National;
+        ArchiveFolder = _options.Folders.Archive;
         TempFolder = _options.Folders.Temp;
         PollIntervalSeconds = _options.PollIntervalSeconds;
         AutoStartWithWindows = _options.AutoStartWithWindows;
@@ -40,6 +52,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void BrowseMediaPlans() => MediaPlansFolder = BrowseFolder(MediaPlansFolder) ?? MediaPlansFolder;
     [RelayCommand]
     private void BrowseSponsors() => SponsorsFolder = BrowseFolder(SponsorsFolder) ?? SponsorsFolder;
+    [RelayCommand]
+    private void BrowseEmergency() => EmergencyFolder = BrowseFolder(EmergencyFolder) ?? EmergencyFolder;
+    [RelayCommand]
+    private void BrowsePromo() => PromoFolder = BrowseFolder(PromoFolder) ?? PromoFolder;
+    [RelayCommand]
+    private void BrowseJingle() => JingleFolder = BrowseFolder(JingleFolder) ?? JingleFolder;
+    [RelayCommand]
+    private void BrowseRegional() => RegionalFolder = BrowseFolder(RegionalFolder) ?? RegionalFolder;
+    [RelayCommand]
+    private void BrowseNational() => NationalFolder = BrowseFolder(NationalFolder) ?? NationalFolder;
+    [RelayCommand]
+    private void BrowseArchive() => ArchiveFolder = BrowseFolder(ArchiveFolder) ?? ArchiveFolder;
+    [RelayCommand]
+    private void BrowseTemp() => TempFolder = BrowseFolder(TempFolder) ?? TempFolder;
 
     [RelayCommand]
     private void Save()
@@ -48,6 +74,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         _options.Folders.Ads = AdsFolder;
         _options.Folders.MediaPlans = MediaPlansFolder;
         _options.Folders.Sponsors = SponsorsFolder;
+        _options.Folders.Emergency = EmergencyFolder;
+        _options.Folders.Promo = PromoFolder;
+        _options.Folders.Jingle = JingleFolder;
+        _options.Folders.Regional = RegionalFolder;
+        _options.Folders.National = NationalFolder;
+        _options.Folders.Archive = ArchiveFolder;
         _options.Folders.Temp = TempFolder;
         _options.PollIntervalSeconds = Math.Clamp(PollIntervalSeconds, 30, 300);
         _options.AutoStartWithWindows = AutoStartWithWindows;
@@ -60,6 +92,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         EnsureDir(AdsFolder);
         EnsureDir(MediaPlansFolder);
         EnsureDir(SponsorsFolder);
+        EnsureDir(EmergencyFolder);
+        EnsureDir(PromoFolder);
+        EnsureDir(JingleFolder);
+        EnsureDir(RegionalFolder);
+        EnsureDir(NationalFolder);
+        EnsureDir(ArchiveFolder);
         EnsureDir(TempFolder);
     }
 

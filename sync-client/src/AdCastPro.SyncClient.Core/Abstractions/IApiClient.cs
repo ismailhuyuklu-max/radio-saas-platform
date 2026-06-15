@@ -28,4 +28,7 @@ public interface IApiClient
     Task ReportAsync(SyncReport report, CancellationToken ct = default);
 
     Task SendHeartbeatAsync(Heartbeat heartbeat, CancellationToken ct = default);
+
+    /// <summary>Destek talebi gonderir. Hata durumunda sunucu mesajiyla exception firlatir.</summary>
+    Task CreateSupportTicketAsync(SupportTicketRequest request, CancellationToken ct = default);
 }

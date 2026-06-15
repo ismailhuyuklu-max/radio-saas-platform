@@ -117,29 +117,36 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{StaticResource FgMuted}" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Margin" Value="8,1" />
+        <Setter Property="Margin" Value="10,1" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="b" CornerRadius="9" Padding="12,9" Background="Transparent">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="26" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{TemplateBinding Tag}"
-                                       FontSize="15" VerticalAlignment="Center"
-                                       Foreground="{TemplateBinding Foreground}" />
-                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
+                    <Grid>
+                        <Border x:Name="accent" Width="3.5" Height="17" CornerRadius="2" HorizontalAlignment="Left"
+                                Background="{StaticResource BrandRed}" Visibility="Collapsed">
+                            <Border.Effect><DropShadowEffect Color="#E11D48" BlurRadius="8" ShadowDepth="0" Opacity="0.8" /></Border.Effect>
+                        </Border>
+                        <Border x:Name="b" CornerRadius="10" Padding="14,6" Margin="8,0,0,0" Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="26" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{TemplateBinding Tag}"
+                                           FontSize="15" VerticalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}" />
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="b" Property="Background" Value="#16213A" />
                             <Setter Property="Foreground" Value="{StaticResource FgPrimary}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="#3B1220" />
+                            <Setter TargetName="b" Property="Background" Value="#33121E" />
+                            <Setter TargetName="accent" Property="Visibility" Value="Visible" />
                             <Setter Property="Foreground" Value="{StaticResource FgPrimary}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -168,6 +175,30 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="b" Property="Background" Value="#1B2740" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Pencere kapatma butonu (cerceveyesiz pencereler icin) -->
+    <Style x:Key="WindowCloseButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource FgMuted}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="0,13,0,13">
+                        <TextBlock x:Name="t" Text="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="{StaticResource BrandRed}" />
+                            <Setter TargetName="t" Property="Foreground" Value="White" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

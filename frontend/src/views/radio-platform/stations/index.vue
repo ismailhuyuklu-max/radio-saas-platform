@@ -49,10 +49,48 @@ const statusOptions: Array<{ label: string; value: StationStatus }> = [
 ];
 const partOptions = PART_LIST.map((p) => ({ label: PART_LABELS[p], value: p }));
 
+// Türkiye'nin 7 coğrafi bölgesine göre iller (toplam 81). İl seçimi bölgeye göre filtrelenir.
+const PROVINCES_BY_REGION: Record<RegionCode, string[]> = {
+  'marmara': [
+    'Balıkesir', 'Bilecik', 'Bursa', 'Çanakkale', 'Edirne', 'İstanbul',
+    'Kırklareli', 'Kocaeli', 'Sakarya', 'Tekirdağ', 'Yalova',
+  ],
+  'ege': [
+    'Afyonkarahisar', 'Aydın', 'Denizli', 'İzmir', 'Kütahya', 'Manisa',
+    'Muğla', 'Uşak',
+  ],
+  'akdeniz': [
+    'Adana', 'Antalya', 'Burdur', 'Hatay', 'Isparta', 'Kahramanmaraş',
+    'Mersin', 'Osmaniye',
+  ],
+  'ic-anadolu': [
+    'Aksaray', 'Ankara', 'Çankırı', 'Eskişehir', 'Karaman', 'Kayseri',
+    'Kırıkkale', 'Kırşehir', 'Konya', 'Nevşehir', 'Niğde', 'Sivas', 'Yozgat',
+  ],
+  'karadeniz': [
+    'Amasya', 'Artvin', 'Bartın', 'Bayburt', 'Bolu', 'Çorum', 'Düzce',
+    'Giresun', 'Gümüşhane', 'Karabük', 'Kastamonu', 'Ordu', 'Rize', 'Samsun',
+    'Sinop', 'Tokat', 'Trabzon', 'Zonguldak',
+  ],
+  'dogu-anadolu': [
+    'Ağrı', 'Ardahan', 'Bingöl', 'Bitlis', 'Elazığ', 'Erzincan', 'Erzurum',
+    'Hakkâri', 'Iğdır', 'Kars', 'Malatya', 'Muş', 'Tunceli', 'Van',
+  ],
+  'guneydogu-anadolu': [
+    'Adıyaman', 'Batman', 'Diyarbakır', 'Gaziantep', 'Kilis', 'Mardin',
+    'Siirt', 'Şanlıurfa', 'Şırnak',
+  ],
+};
+
 // ---- Edit modal ----
 const modalOpen = ref(false);
 const editingId = ref<string | null>(null);
 const saving = ref(false);
+// Düzenle modalı — partner erişim (kullanıcı adı + tek seferlik şifre üretimi)
+const editPartnerUsername = ref<string | null>(null);
+const editGenPassword = ref<string | null>(null);
+const editGenBusy = ref(false);
+const editGenCopied = ref(false);
 const form = ref<{
   name: string;
   region_code: RegionCode;
@@ -72,6 +110,28 @@ const form = ref<{
 });
 const logoUploading = ref(false);
 const logoInput = ref<HTMLInputElement | null>(null);
+// Yeni İstasyon'da seçilen logo — kayıttan sonra yüklenmek üzere bekletilir.
+const pendingLogoFile = ref<File | null>(null);
+
+// İl seçenekleri — seçili bölgeye göre filtrelenir.
+const provinceOptions = computed(() =>
+  (PROVINCES_BY_REGION[form.value.region_code] ?? []).map((c) => ({ label: c, value: c })),
+);
+// Bölge değişince, mevcut il yeni bölgeye ait değilse temizle.
+function onRegionChange() {
+  const list = PROVINCES_BY_REGION[form.value.region_code] ?? [];
+  if (form.value.city_name && !list.includes(form.value.city_name)) {
+    form.value.city_name = '';
+  }
+}
+
+const partnerUsernamePreview = computed(() => {
+  const name = form.value.name.trim().replace(/\s+/g, ' ');
+  return name || 'Radyo adını yazınca otomatik dolar';
+});
+const partnerPasswordPreview = computed(() =>
+  editingId.value ? 'Mevcut şifre güvenlik nedeniyle gösterilmez' : 'Kaydedince güçlü şifre üretilecek',
+);
 
 // ---- Solea link modal ----
 const linkOpen = ref(false);
@@ -130,13 +190,28 @@ async function loadStations() {
   }
 }
 
+function resetEditPartner() {
+  editPartnerUsername.value = null;
+  editGenPassword.value = null;
+  editGenBusy.value = false;
+  editGenCopied.value = false;
+}
+function resetPendingLogo() {
+  if (form.value?.logo_url?.startsWith('blob:')) URL.revokeObjectURL(form.value.logo_url);
+  pendingLogoFile.value = null;
+}
 function openCreate() {
   editingId.value = null;
+  resetEditPartner();
+  resetPendingLogo();
   form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false, logo_url: null, frequency: '' };
   modalOpen.value = true;
 }
 function openEdit(s: StationItem) {
   editingId.value = s.id;
+  resetEditPartner();
+  resetPendingLogo();
+  editPartnerUsername.value = s.partner_username ?? null;
   form.value = {
     name: s.name,
     region_code: s.region_code,
@@ -149,15 +224,63 @@ function openEdit(s: StationItem) {
   modalOpen.value = true;
 }
 
+/**
+ * Düzenle modalında partner için yeni tek seferlik şifre üretir.
+ * Partner kullanıcısı varsa şifreyi yeniler (rotate), yoksa oluşturur (provision).
+ */
+async function generateEditPassword() {
+  if (!editingId.value) return;
+  editGenBusy.value = true;
+  try {
+    if (editPartnerUsername.value) {
+      const res = await rotatePartnerPassword(editingId.value);
+      editGenPassword.value = res.result.one_time_password;
+    } else {
+      const res = await provisionPartner(editingId.value);
+      editPartnerUsername.value = res.result.username ?? null;
+      editGenPassword.value = res.result.one_time_password ?? null;
+    }
+    message.success('Yeni şifre üretildi. Yalnızca bir kez gösterilir.');
+  } catch (error) {
+    message.error((error as Error)?.message ?? 'Şifre üretilemedi.');
+  } finally {
+    editGenBusy.value = false;
+  }
+}
+/** Kullanıcı adı + (varsa) yeni şifreyi panoya kopyalar. */
+async function copyEditCreds() {
+  const user = editPartnerUsername.value ?? '';
+  const pass = editGenPassword.value ?? '';
+  const text = pass ? `${user}\n${pass}`.trim() : user;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    editGenCopied.value = true;
+    setTimeout(() => (editGenCopied.value = false), 1500);
+    message.success('Kopyalandı.');
+  } catch {
+    message.error('Kopyalanamadı.');
+  }
+}
+
 async function onLogoPicked(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file || !editingId.value) return;
+  if (!file) return;
   if (file.size > 2 * 1024 * 1024) {
     message.warning('Logo en fazla 2 MB olabilir.');
     input.value = '';
     return;
   }
+  // Yeni İstasyon: henüz id yok → dosyayı beklet, yerel önizleme göster, kayıtta yükle.
+  if (!editingId.value) {
+    if (form.value.logo_url?.startsWith('blob:')) URL.revokeObjectURL(form.value.logo_url);
+    pendingLogoFile.value = file;
+    form.value.logo_url = URL.createObjectURL(file);
+    input.value = '';
+    return;
+  }
+  // Düzenleme: anında yükle.
   logoUploading.value = true;
   try {
     await uploadStationLogo(editingId.value, file);
@@ -197,14 +320,25 @@ async function saveStation() {
       await loadStations();
     } else {
       const res = await createStation(payload);
+      const createdStation = res?.result?.station;
+      // Yeni İstasyon'da seçilmiş logo varsa, oluşturulan istasyona yükle.
+      if (createdStation?.id && pendingLogoFile.value) {
+        try {
+          await uploadStationLogo(createdStation.id, pendingLogoFile.value);
+        } catch (logoErr) {
+          console.error(logoErr);
+          message.warning('İstasyon eklendi ancak logo yüklenemedi. Düzenle ekranından tekrar deneyin.');
+        }
+      }
+      if (form.value.logo_url?.startsWith('blob:')) URL.revokeObjectURL(form.value.logo_url);
+      pendingLogoFile.value = null;
       message.success('İstasyon eklendi.');
       modalOpen.value = false;
       await loadStations();
       // Auto-provision returned one-shot credentials → surface them now.
       const p = res?.result?.partner;
-      const fresh = res?.result?.station;
-      if (p?.one_time_password && fresh) {
-        partnerStation.value = fresh;
+      if (p?.one_time_password && createdStation) {
+        partnerStation.value = createdStation;
         partnerCreds.value = {
           username: p.username,
           password: p.one_time_password,
@@ -391,7 +525,7 @@ onMounted(loadStations);
                 :src="s.logo_url"
                 alt=""
                 style="height: 24px; width: auto; max-width: 64px; object-fit: contain; vertical-align: middle; margin-right: 8px; border-radius: 3px"
-              />{{ s.name }}
+              >{{ s.name }}
             </td>
             <td>{{ s.region_name }}</td>
             <td>{{ s.city_name || '—' }}</td>
@@ -466,7 +600,7 @@ onMounted(loadStations);
           <span>İstasyon Logosu</span>
           <div style="display: flex; gap: 14px; align-items: center">
             <div style="width: 110px; height: 70px; border-radius: 8px; background: #0b1220; border: 1px solid #1e293b; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0">
-              <img v-if="form.logo_url" :src="form.logo_url" alt="logo" style="max-width: 100%; max-height: 100%; object-fit: contain" />
+              <img v-if="form.logo_url" :src="form.logo_url" alt="logo" style="max-width: 100%; max-height: 100%; object-fit: contain">
               <span v-else style="color: #64748b; font-size: 11px">LOGO</span>
             </div>
             <div>
@@ -476,12 +610,12 @@ onMounted(loadStations);
                 accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
                 style="display: none"
                 @change="onLogoPicked"
-              />
-              <Button :loading="logoUploading" :disabled="!editingId" @click="logoInput?.click()">
+              >
+              <Button :loading="logoUploading" @click="logoInput?.click()">
                 {{ form.logo_url ? 'Logoyu Değiştir' : 'Logo Yükle' }}
               </Button>
               <p style="margin: 6px 0 0; font-size: 11px; color: #64748b">
-                {{ editingId ? 'PNG, JPG, WEBP, SVG · maks 2 MB' : 'Logoyu eklemek için önce istasyonu kaydedin.' }}
+                PNG, JPG, WEBP, SVG · maks 2 MB{{ editingId ? '' : ' · kayıtta otomatik yüklenir' }}
               </p>
             </div>
           </div>
@@ -490,17 +624,64 @@ onMounted(loadStations);
           <span>İstasyon Adı</span>
           <Input v-model:value="form.name" placeholder="Örn. Akdeniz FM" />
         </label>
+        <div v-if="!editingId" class="stn__credential-preview">
+          <label>
+            <span>Kullanıcı Adı</span>
+            <Input :value="partnerUsernamePreview" readonly />
+          </label>
+          <label>
+            <span>Şifre</span>
+            <Input :value="partnerPasswordPreview" readonly />
+          </label>
+          <p class="stn__hint">
+            Kayıt tamamlanınca şifre otomatik üretilir ve güvenlik için yalnızca bir kez gösterilir.
+          </p>
+        </div>
+
+        <!-- Partner erişim (Düzenle): Sync Client kullanıcı adı + tek seferlik şifre üretimi -->
+        <div v-if="editingId" class="stn__credential-preview">
+          <span class="stn__cred-head">🔑 Partner Erişim (Sync Client)</span>
+          <label>
+            <span>Kullanıcı Adı</span>
+            <Input :value="editPartnerUsername ?? '—'" readonly />
+          </label>
+          <label>
+            <span>Şifre</span>
+            <Input
+              :value="editGenPassword ?? '••••••••  (güvenlik nedeniyle gizli)'"
+              readonly
+            />
+          </label>
+          <div class="stn__cred-actions">
+            <Button type="primary" :loading="editGenBusy" @click="generateEditPassword">Şifre Üret</Button>
+            <Button v-if="editPartnerUsername || editGenPassword" @click="copyEditCreds">
+              {{ editGenCopied ? 'Kopyalandı ✓' : 'Kopyala' }}
+            </Button>
+          </div>
+          <p class="stn__hint">
+            {{ editPartnerUsername
+              ? 'Mevcut şifre geri okunamaz. "Şifre Üret" yeni bir tek seferlik şifre oluşturur ve eskisini geçersiz kılar.'
+              : 'Bu istasyon için henüz partner kullanıcısı yok. "Şifre Üret" kullanıcıyı oluşturup şifre verir.' }}
+          </p>
+        </div>
         <label>
           <span>Frekans</span>
           <Input v-model:value="form.frequency" placeholder="Örn. 95.5" />
         </label>
         <label>
           <span>Bölge</span>
-          <Select v-model:value="form.region_code" :options="regionOptions" />
+          <Select v-model:value="form.region_code" :options="regionOptions" @change="onRegionChange" />
         </label>
         <label>
           <span>İl</span>
-          <Input v-model:value="form.city_name" placeholder="Örn. Antalya" />
+          <Select
+            v-model:value="form.city_name"
+            :options="provinceOptions"
+            show-search
+            option-filter-prop="label"
+            placeholder="İl seçin"
+            style="width: 100%"
+          />
         </label>
         <label class="stn__form-row">
           <span>Yayında</span>
@@ -794,6 +975,24 @@ onMounted(loadStations);
   flex-direction: row !important;
   align-items: center;
   justify-content: space-between;
+}
+.stn__credential-preview {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  background: rgba(37, 99, 235, 0.06);
+}
+.stn__cred-head {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-text-2, var(--c-text));
+}
+.stn__cred-actions {
+  display: flex;
+  gap: var(--sp-2);
 }
 .stn__link-name {
   margin: 0;

@@ -94,18 +94,18 @@ public static class FileTypes
 
 public sealed class FolderPaths
 {
-    public string News { get; set; } = @"D:\AdCastPro\News";
-    public string Ads { get; set; } = @"D:\AdCastPro\Ads";
-    public string MediaPlans { get; set; } = @"D:\AdCastPro\MediaPlan";
-    public string Sponsors { get; set; } = @"D:\AdCastPro\Sponsors";
-    public string Emergency { get; set; } = @"D:\AdCastPro\Emergency";
-    public string Promo { get; set; } = @"D:\AdCastPro\Promo";
-    public string Jingle { get; set; } = @"D:\AdCastPro\Jingle";
-    public string Regional { get; set; } = @"D:\AdCastPro\Regional";
-    public string National { get; set; } = @"D:\AdCastPro\National";
-    public string Archive { get; set; } = @"D:\AdCastPro\Archive";
-    public string Temp { get; set; } = @"D:\AdCastPro\Temp";
-    public string Logs { get; set; } = @"D:\AdCastPro\Logs";
+    public string News { get; set; } = @"D:\AdCastPro\Haber";
+    public string Ads { get; set; } = @"D:\AdCastPro\Reklam";
+    public string MediaPlans { get; set; } = @"D:\AdCastPro\MedyaPlani";
+    public string Sponsors { get; set; } = @"D:\AdCastPro\Sponsor";
+    public string Emergency { get; set; } = @"D:\AdCastPro\AcilAnons";
+    public string Promo { get; set; } = @"D:\AdCastPro\Tanitim";
+    public string Jingle { get; set; } = @"D:\AdCastPro\Cingil";
+    public string Regional { get; set; } = @"D:\AdCastPro\Bolgesel";
+    public string National { get; set; } = @"D:\AdCastPro\Ulusal";
+    public string Archive { get; set; } = @"D:\AdCastPro\Arsiv";
+    public string Temp { get; set; } = @"D:\AdCastPro\Gecici";
+    public string Logs { get; set; } = @"D:\AdCastPro\Kayitlar";
 
     /// <summary>
     /// file_type → klasör mapping. FileTypes sınıfında 9 tip; her birinin

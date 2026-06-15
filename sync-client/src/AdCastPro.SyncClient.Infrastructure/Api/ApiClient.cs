@@ -154,6 +154,20 @@ public sealed class ApiClient : IApiClient
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task CreateSupportTicketAsync(SupportTicketRequest request, CancellationToken ct = default)
+    {
+        var payload = new
+        {
+            full_name = request.FullName,
+            phone = request.Phone,
+            email = request.Email,
+            message = request.Message,
+        };
+        var response = await PostAsync("api/v1/sync/support", payload, ct);
+        // Hata (400/429/403) durumunda sunucu mesajiyla HttpRequestException firlatir.
+        await ReadEnvelope<object>(response, ct);
+    }
+
     // ---------- Helpers ----------
 
     private Task<HttpResponseMessage> GetAsync(string path, string? etag, CancellationToken ct)

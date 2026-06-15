@@ -197,6 +197,17 @@ const routes: RouteRecordRaw[] = [
           authCode: 'radio:access:view',
         },
       },
+      {
+        path: '/radio-platform/support',
+        name: 'RadioPlatformSupport',
+        component: () => import('#/views/radio-platform/support/index.vue'),
+        meta: {
+          perm: 'support:manage',
+          icon: 'lucide:life-buoy',
+          title: 'Destek Paneli',
+          authCode: 'radio:support:manage',
+        },
+      },
     ],
   },
   // AdCast Radio Partner Portal — single-page tenant view a partner radio

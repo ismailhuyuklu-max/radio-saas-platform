@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AdCastPro.SyncClient.App;
 using AdCastPro.SyncClient.Core.Abstractions;
@@ -28,12 +31,16 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ILogger<MainViewModel> _logger;
     private readonly SettingsViewModel _settingsVm;
     private readonly LogsViewModel _logsVm;
+    private readonly SupportViewModel _supportVm;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _clockTimer;
 
     /// <summary>Ayarlar bolumu (inline) — popup yerine sayfada gosterilir.</summary>
     public SettingsViewModel SettingsVm => _settingsVm;
     /// <summary>Raporlar/loglar bolumu (inline).</summary>
     public LogsViewModel LogsVm => _logsVm;
+    /// <summary>Destek formu bolumu (inline).</summary>
+    public SupportViewModel SupportVm => _supportVm;
 
     // 7 standart haber kusagi sablonu (manifest yoksa gunluk plan olarak gosterilir).
     private static readonly (string Time, string Name)[] StandardSlots =
@@ -93,9 +100,39 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _reportSlotsReady = "0 / 0";
     [ObservableProperty] private string _reportLastSync = "Henuz yok";
 
+    // ==================== Servis Durumu (izleme paneli) ====================
+    [ObservableProperty] private double _cpuPercent;
+    [ObservableProperty] private double _memoryPercent;
+    [ObservableProperty] private double _diskUsedPercent;
+    [ObservableProperty] private string _cpuColor = "#10B981";
+    [ObservableProperty] private string _memoryColor = "#10B981";
+    [ObservableProperty] private string _diskColor = "#10B981";
+    [ObservableProperty] private string _diskUsedText = "—";
+    [ObservableProperty] private string _uptimeText = "—";
+    [ObservableProperty] private string _heartbeatText = "—";
+    [ObservableProperty] private string _pollIntervalText = "—";
+    [ObservableProperty] private PointCollection _cpuPoints = new();
+    [ObservableProperty] private PointCollection _memoryPoints = new();
+    [ObservableProperty] private PointCollection _cpuAreaPoints = new();
+    [ObservableProperty] private PointCollection _memoryAreaPoints = new();
+    [ObservableProperty] private string _serviceHealthText = "Tüm sistemler nominal";
+
+    // Sparkline gecmis tamponlari (son 40 ornek) ve uygulama baslangic zamani.
+    private const int SparkPoints = 40;
+    private const double SparkW = 300, SparkH = 70;
+    private readonly Queue<double> _cpuHist = new();
+    private readonly Queue<double> _memHist = new();
+    private readonly DateTime _startedAt = DateTime.Now;
+
     // ----- Yayina Hazir -----
     [ObservableProperty] private bool _readyToAir = true;
     [ObservableProperty] private string _readyToAirText = "YAYINA HAZIR";
+
+    // ----- Sidebar teknolojik saat -----
+    [ObservableProperty] private string _clockTime = "--:--:--";
+    [ObservableProperty] private string _clockDate = "—";
+    [ObservableProperty] private string _clockDay = "—";
+    private static readonly CultureInfo TrCulture = new("tr-TR");
 
     public ObservableCollection<SlotRow> Slots { get; } = new();
     public ObservableCollection<DownloadRow> RecentDownloads { get; } = new();
@@ -110,6 +147,7 @@ public sealed partial class MainViewModel : ObservableObject
         IOptions<SyncClientOptions> options,
         SettingsViewModel settingsVm,
         LogsViewModel logsVm,
+        SupportViewModel supportVm,
         ILogger<MainViewModel> logger)
     {
         _readiness = readiness;
@@ -119,17 +157,18 @@ public sealed partial class MainViewModel : ObservableObject
         _options = options.Value;
         _settingsVm = settingsVm;
         _logsVm = logsVm;
+        _supportVm = supportVm;
         _logger = logger;
 
         ServerAddress = StripScheme(_options.ApiBaseUrl);
 
         // 6 yayin hazirlik kontrolu
-        Checks.Add(new CheckRow { Label = "1. Dosya Mevcut" });
-        Checks.Add(new CheckRow { Label = "2. Dosya Boyutu Dogru" });
-        Checks.Add(new CheckRow { Label = "3. Guvenlik Dogrulamasi Tamam" });
-        Checks.Add(new CheckRow { Label = "4. Ses Formati Dogru" });
-        Checks.Add(new CheckRow { Label = "5. Yayin Kusagi Eslesmesi" });
-        Checks.Add(new CheckRow { Label = "6. Guvenli Dosya Degisimi Basarili" });
+        Checks.Add(new CheckRow { Label = "Dosya mevcut" });
+        Checks.Add(new CheckRow { Label = "Dosya boyutu doğru" });
+        Checks.Add(new CheckRow { Label = "Güvenlik doğrulaması" });
+        Checks.Add(new CheckRow { Label = "Ses formatı doğru" });
+        Checks.Add(new CheckRow { Label = "Yayın kuşağı eşleşmesi" });
+        Checks.Add(new CheckRow { Label = "Güvenli dosya değişimi" });
 
         AppendLog("Uygulama baslatildi.");
 
@@ -137,8 +176,22 @@ public sealed partial class MainViewModel : ObservableObject
         _timer.Tick += (_, __) => UpdateMetrics();
         _timer.Start();
 
+        _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _clockTimer.Tick += (_, __) => UpdateClock();
+        _clockTimer.Start();
+        UpdateClock();
+
         UpdateMetrics();
         _ = LoadAsync();
+    }
+
+    /// <summary>Sidebar saat + tarih (gun ay yil) — saniyede bir guncellenir.</summary>
+    private void UpdateClock()
+    {
+        var now = DateTime.Now;
+        ClockTime = now.ToString("HH:mm:ss");
+        ClockDate = now.ToString("dd MMMM yyyy", TrCulture);
+        ClockDay = now.ToString("dddd", TrCulture);
     }
 
     /// <summary>Onizleme/tasarim icin servissiz ctor — ornek veriyle doldurulur.</summary>
@@ -151,8 +204,10 @@ public sealed partial class MainViewModel : ObservableObject
         _options = null!;
         _settingsVm = new SettingsViewModel(Options.Create(new SyncClientOptions()));
         _logsVm = new LogsViewModel();
+        _supportVm = new SupportViewModel(null!);
         _logger = null!;
         _timer = new DispatcherTimer();
+        _clockTimer = new DispatcherTimer();
     }
 
     /// <summary>Ekteki tasarima birebir ornek veri — gorsel onizleme icin.</summary>
@@ -195,15 +250,34 @@ public sealed partial class MainViewModel : ObservableObject
             ReportTodaySize = "66.6 MB",
             ReportSlotsReady = "7 / 7",
             ReportLastSync = "8.06.2025 10:24:30",
+            ClockTime = "21:42:07",
+            ClockDate = "15 Haziran 2026",
+            ClockDay = "Pazar",
+            CpuPercent = 12,
+            MemoryPercent = 38,
+            DiskUsedPercent = 63,
+            CpuColor = "#10B981",
+            MemoryColor = "#10B981",
+            DiskColor = "#F59E0B",
+            DiskUsedText = "210 / 336 GB kullanildi",
+            UptimeText = "5 sa 42 dk",
+            HeartbeatText = "60 sn'de bir",
+            PollIntervalText = "60 sn",
+            ServiceHealthText = "Tüm sistemler nominal durumda",
         };
+        vm.CpuPoints = SampleSpark(new double[] { 8, 14, 10, 22, 17, 12, 9, 15, 28, 19, 11, 13, 10, 18, 24, 14, 9, 12, 16, 11 });
+        vm.CpuAreaPoints = BuildArea(vm.CpuPoints);
+        vm.MemoryPoints = SampleSpark(new double[] { 36, 37, 38, 37, 39, 41, 40, 38, 37, 38, 39, 40, 38, 37, 38, 39, 38, 37, 38, 38 });
+        vm.MemoryAreaPoints = BuildArea(vm.MemoryPoints);
+        vm.SupportVm.SetRadioInfo("Meşk FM", "95.5", "Akdeniz", "Adana");
         foreach (var (time, name) in StandardSlots)
             vm.Slots.Add(new SlotRow { Time = time, Name = name, StatusText = "HAZIR", StatusColor = "#10B981" });
-        vm.Checks.Add(new CheckRow { Label = "1. Dosya Mevcut" });
-        vm.Checks.Add(new CheckRow { Label = "2. Dosya Boyutu Doğru" });
-        vm.Checks.Add(new CheckRow { Label = "3. Güvenlik Doğrulaması Tamam" });
-        vm.Checks.Add(new CheckRow { Label = "4. Ses Formatı Doğru" });
-        vm.Checks.Add(new CheckRow { Label = "5. Yayın Kuşağı Eşleşmesi" });
-        vm.Checks.Add(new CheckRow { Label = "6. Güvenli Dosya Değişimi Başarılı" });
+        vm.Checks.Add(new CheckRow { Label = "Dosya mevcut" });
+        vm.Checks.Add(new CheckRow { Label = "Dosya boyutu doğru" });
+        vm.Checks.Add(new CheckRow { Label = "Güvenlik doğrulaması" });
+        vm.Checks.Add(new CheckRow { Label = "Ses formatı doğru" });
+        vm.Checks.Add(new CheckRow { Label = "Yayın kuşağı eşleşmesi" });
+        vm.Checks.Add(new CheckRow { Label = "Güvenli dosya değişimi" });
         var dl = new (string n, string s, string sz, string d)[]
         {
             ("08.00-Sabah_Haberleri.aac", "08:00", "18.2 MB", "8.06.2025 07:45"),
@@ -306,6 +380,9 @@ public sealed partial class MainViewModel : ObservableObject
             ProvinceName = radio?.Province ?? "—";
             RadioLogoUrl = radio?.LogoUrl;
 
+            // Destek formu otomatik radyo bilgileri
+            _supportVm?.SetRadioInfo(radio?.Name, radio?.Frequency, radio?.Region, radio?.Province);
+
             bool connected = tokens != null;
             ConnStatusText = connected ? "Baglandi" : "Baglanti yok";
             ConnStatusColor = connected ? "#10B981" : "#EF4444";
@@ -365,7 +442,7 @@ public sealed partial class MainViewModel : ObservableObject
                 Time = time,
                 Name = name,
                 StatusText = ready ? "HAZIR" : "BEKLIYOR",
-                StatusColor = ready ? "#10B981" : "#94A3B8",
+                StatusColor = ready ? "#10B981" : "#F59E0B",
             });
         }
     }
@@ -422,11 +499,32 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            MemoryText = $"%{SystemMetrics.MemoryLoadPercent()}";
+            int cpu = ReadCpu();
+            int mem = SystemMetrics.MemoryLoadPercent();
+            CpuPercent = cpu;
+            MemoryPercent = mem;
+            CpuText = $"%{cpu}";
+            MemoryText = $"%{mem}";
+            CpuColor = ColorForLoad(cpu);
+            MemoryColor = ColorForLoad(mem);
+
             var freeGb = SystemMetrics.FreeDiskGb(_options.Folders.News);
+            var totalGb = SystemMetrics.TotalDiskGb(_options.Folders.News);
+            var usedGb = Math.Max(0, totalGb - freeGb);
+            DiskUsedPercent = totalGb > 0 ? Math.Round(usedGb * 100.0 / totalGb) : 0;
+            DiskUsedText = totalGb > 0 ? $"{usedGb:0} / {totalGb:0} GB kullanildi" : "—";
+            DiskColor = ColorForLoad(DiskUsedPercent);
             DiskText = $"{freeGb:0.0} GB";
             FreeSpaceText = $"{freeGb:0.0} GB";
-            CpuText = $"%{ReadCpu()}";
+
+            UptimeText = FormatUptime(DateTime.Now - _startedAt);
+            PollIntervalText = $"{_options.PollIntervalSeconds} sn";
+            HeartbeatText = $"{_options.HeartbeatIntervalSeconds} sn'de bir";
+
+            CpuPoints = BuildSpark(_cpuHist, cpu);
+            CpuAreaPoints = BuildArea(CpuPoints);
+            MemoryPoints = BuildSpark(_memHist, mem);
+            MemoryAreaPoints = BuildArea(MemoryPoints);
         }
         catch (Exception ex)
         {
@@ -435,6 +533,65 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private static int ReadCpu() => SystemMetrics.CpuPercent();
+
+    /// <summary>Yuk yuzdesine gore renk: yesil &lt;60, sari &lt;85, kirmizi ustu.</summary>
+    private static string ColorForLoad(double pct)
+        => pct < 60 ? "#10B981" : pct < 85 ? "#F59E0B" : "#EF4444";
+
+    private static string FormatUptime(TimeSpan up)
+    {
+        if (up.TotalDays >= 1) return $"{(int)up.TotalDays} g {up.Hours} sa {up.Minutes} dk";
+        if (up.TotalHours >= 1) return $"{up.Hours} sa {up.Minutes} dk";
+        if (up.TotalMinutes >= 1) return $"{up.Minutes} dk {up.Seconds} sn";
+        return $"{up.Seconds} sn";
+    }
+
+    /// <summary>Yeni ornegi tampona ekler ve son N orneği sparkline noktalarina cevirir.</summary>
+    private static PointCollection BuildSpark(Queue<double> hist, double value)
+    {
+        hist.Enqueue(Math.Max(0, Math.Min(100, value)));
+        while (hist.Count > SparkPoints) hist.Dequeue();
+        var arr = hist.ToArray();
+        var pts = new PointCollection();
+        int n = arr.Length;
+        for (int i = 0; i < n; i++)
+        {
+            double x = n <= 1 ? 0 : i / (double)(n - 1) * SparkW;
+            double y = SparkH - arr[i] / 100.0 * SparkH;
+            pts.Add(new Point(x, y));
+        }
+        pts.Freeze();
+        return pts;
+    }
+
+    /// <summary>Sparkline cizgisini, taban kosesinden kapatip dolgulu alan poligonuna cevirir.</summary>
+    private static PointCollection BuildArea(PointCollection line)
+    {
+        var area = new PointCollection();
+        foreach (var p in line) area.Add(p);
+        if (line.Count > 0)
+        {
+            area.Add(new Point(SparkW, SparkH));
+            area.Add(new Point(0, SparkH));
+        }
+        area.Freeze();
+        return area;
+    }
+
+    /// <summary>Onizleme/ornek icin sentetik seriyi sparkline noktalarina cevirir.</summary>
+    private static PointCollection SampleSpark(double[] vals)
+    {
+        var pts = new PointCollection();
+        int n = vals.Length;
+        for (int i = 0; i < n; i++)
+        {
+            double x = n <= 1 ? 0 : i / (double)(n - 1) * SparkW;
+            double y = SparkH - Math.Max(0, Math.Min(100, vals[i])) / 100.0 * SparkH;
+            pts.Add(new Point(x, y));
+        }
+        pts.Freeze();
+        return pts;
+    }
 
     // ==================== Konsol ====================
 
