@@ -40,7 +40,26 @@ public partial class App : Application
                 retainedFileCountLimit: 14)
             .CreateLogger();
 
-        var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder();
+        // Global hata yakalayicilar — sessiz cokmeleri tam stack ile logla.
+        AppDomain.CurrentDomain.UnhandledException += (_, ev) =>
+            Log.Fatal(ev.ExceptionObject as Exception, "UNHANDLED AppDomain exception");
+        DispatcherUnhandledException += (_, ev) =>
+        {
+            Log.Fatal(ev.Exception, "UNHANDLED Dispatcher exception");
+            ev.Handled = true;
+        };
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, ev) =>
+        {
+            Log.Fatal(ev.Exception, "UNOBSERVED Task exception");
+            ev.SetObserved();
+        };
+
+        // Content root = exe dizini (CWD degil) — appsettings.json her zaman exe
+        // yanindan okunur, nereden baslatildigindan bagimsiz.
+        var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            ContentRootPath = AppContext.BaseDirectory,
+        });
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog();
 
@@ -55,6 +74,7 @@ public partial class App : Application
         builder.Services.AddHostedService<HeartbeatService>();
 
         // UI servisleri + ViewModels + Windows
+        builder.Services.AddSingleton<TrayIconHost>();   // DI'a kayitliydi degildi -> StartTrayMode patliyordu
         builder.Services.AddSingleton<NavigationService>();
         builder.Services.AddSingleton<LoginViewModel>();
         builder.Services.AddSingleton<MainViewModel>();
@@ -79,9 +99,10 @@ public partial class App : Application
         else
         {
             var login = Host.Services.GetRequiredService<LoginWindow>();
-            login.Closed += (_, __) =>
+            login.Closed += async (_, __) =>
             {
-                var (t, _, _) = tokenStore.LoadAsync().GetAwaiter().GetResult();
+                // UI thread'i bloke etme (GetResult deadlock yapiyordu) — await ile.
+                var (t, _, _) = await tokenStore.LoadAsync();
                 if (t != null) StartTrayMode();
                 else Shutdown();
             };
@@ -93,6 +114,10 @@ public partial class App : Application
     {
         _trayHost = Services.GetRequiredService<TrayIconHost>();
         _trayHost.Show();
+        // Ilk acilista Ozet dashboard'unu da goster (kapatinca tray'de calismaya devam eder).
+        var main = Services.GetRequiredService<MainWindow>();
+        main.Show();
+        main.Activate();
     }
 
     private async void OnExit(object sender, ExitEventArgs e)
