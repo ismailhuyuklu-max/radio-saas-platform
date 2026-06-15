@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctl="clr-namespace:AdCastPro.SyncClient.UI.Controls"
     Title="AdCast Pro Senkronizasyon İstemcisi"
+    Icon="/AdCastPro.SyncClient;component/Assets/app.ico"
     Width="1360" Height="880" MinWidth="1120" MinHeight="720"
     Background="{StaticResource BgDark}"
     FontFamily="{StaticResource UiFont}"
@@ -25,15 +26,11 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Logo -->
-                <StackPanel Grid.Row="0" Margin="20,22,20,18">
-                    <TextBlock HorizontalAlignment="Center">
-                        <Run Text="AD" Foreground="{StaticResource BrandRed}" FontSize="26" FontWeight="Bold" />
-                        <Run Text="CAST" Foreground="{StaticResource FgPrimary}" FontSize="26" FontWeight="Bold" />
-                        <Run Text=" PRO" Foreground="{StaticResource BrandRed}" FontSize="13" FontWeight="Bold" />
-                    </TextBlock>
-                    <TextBlock Text="Planla. Yayınla. Raporla." Foreground="{StaticResource FgMuted}"
-                               FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                <!-- Logo (gercek AdCast Pro logosu — slogan dahil) -->
+                <StackPanel Grid.Row="0" Margin="14,18,14,14">
+                    <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
+                           Stretch="Uniform" MaxHeight="96" HorizontalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
                 </StackPanel>
 
                 <!-- Nav -->

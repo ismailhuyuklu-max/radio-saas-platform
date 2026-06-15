@@ -35,6 +35,8 @@ public sealed class TrayIconHost : IDisposable
         _icon = new TaskbarIcon
         {
             ToolTipText = "AdCast Pro Sync — başlatılıyor...",
+            IconSource = new System.Windows.Media.Imaging.BitmapImage(
+                new Uri("pack://application:,,,/AdCastPro.SyncClient;component/Assets/app.ico")),
             Visibility = Visibility.Visible,
         };
 

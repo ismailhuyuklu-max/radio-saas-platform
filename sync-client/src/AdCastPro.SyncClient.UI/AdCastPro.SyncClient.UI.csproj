@@ -9,7 +9,13 @@
     <AssemblyName>AdCastPro.SyncClient</AssemblyName>
     <RootNamespace>AdCastPro.SyncClient.UI</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Logo + ikon — pencere/gorev cubugu/tray + sidebar gorseli icin Resource. -->
+    <Resource Include="Assets\adcastpro-logo.png" />
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
   <ItemGroup>
     <!-- App projesindeki appsettings.json'u UI exe ciktisina kopyala (tek kaynak). -->
     <Content Include="..\AdCastPro.SyncClient.App\appsettings.json" Link="appsettings.json">
