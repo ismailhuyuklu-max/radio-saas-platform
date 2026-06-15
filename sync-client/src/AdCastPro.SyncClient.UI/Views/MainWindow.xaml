@@ -120,6 +120,9 @@
                             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
                                 <StackPanel>
                                     <TextBlock Text="Bağlantı Durumu" Style="{StaticResource CardTitle}" />
+                                    <Image Source="{Binding RadioLogoUrl}" Stretch="Uniform" MaxHeight="46"
+                                           HorizontalAlignment="Left" Margin="0,0,0,10"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                                         <Ellipse Width="11" Height="11" Margin="0,0,8,0" VerticalAlignment="Center">
                                             <Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}" /></Ellipse.Fill>

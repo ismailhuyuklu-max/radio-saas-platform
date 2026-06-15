@@ -157,6 +157,7 @@ final class SyncController
                     'frequency' => $radio['frequency'] ?? null,
                     'region' => $radio['region'] ?? null,
                     'province' => $radio['province'] ?? null,
+                    'logo_url' => $radio['logo_url'] ?? null,
                     'national_access' => (bool)($radio['national_access'] ?? false),
                 ] : null,
                 'min_client_version' => self::MIN_CLIENT_VERSION,

@@ -33,7 +33,8 @@ public sealed record RadioInfo(
     string? Frequency,
     string? Region,
     string? Province,
-    bool NationalAccess
+    bool NationalAccess,
+    string? LogoUrl = null
 );
 
 public sealed record RefreshRequest(string RefreshToken);

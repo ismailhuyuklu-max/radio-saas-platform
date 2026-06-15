@@ -27,6 +27,7 @@ import {
   type StationStatus,
   toggleStationStatus,
   updateStation,
+  uploadStationLogo,
 } from '#/api/modules/radioMedia';
 import {
   provisionPartner,
@@ -58,13 +59,17 @@ const form = ref<{
   city_name: string;
   is_active: boolean;
   national_access: boolean;
+  logo_url: string | null;
 }>({
   name: '',
   region_code: 'marmara',
   city_name: '',
   is_active: true,
   national_access: false,
+  logo_url: null,
 });
+const logoUploading = ref(false);
+const logoInput = ref<HTMLInputElement | null>(null);
 
 // ---- Solea link modal ----
 const linkOpen = ref(false);
@@ -125,7 +130,7 @@ async function loadStations() {
 
 function openCreate() {
   editingId.value = null;
-  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false };
+  form.value = { name: '', region_code: 'marmara', city_name: '', is_active: true, national_access: false, logo_url: null };
   modalOpen.value = true;
 }
 function openEdit(s: StationItem) {
@@ -136,8 +141,34 @@ function openEdit(s: StationItem) {
     city_name: s.city_name ?? '',
     is_active: s.is_active ?? s.status === 'active',
     national_access: s.national_access ?? false,
+    logo_url: s.logo_url ?? null,
   };
   modalOpen.value = true;
+}
+
+async function onLogoPicked(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !editingId.value) return;
+  if (file.size > 2 * 1024 * 1024) {
+    message.warning('Logo en fazla 2 MB olabilir.');
+    input.value = '';
+    return;
+  }
+  logoUploading.value = true;
+  try {
+    await uploadStationLogo(editingId.value, file);
+    await loadStations();
+    const fresh = stations.value.find((x) => x.id === editingId.value);
+    if (fresh?.logo_url) form.value.logo_url = `${fresh.logo_url}?t=${Date.now()}`;
+    message.success('Logo yüklendi.');
+  } catch (err) {
+    console.error(err);
+    message.error('Logo yüklenemedi.');
+  } finally {
+    logoUploading.value = false;
+    input.value = '';
+  }
 }
 
 async function saveStation() {
@@ -350,7 +381,14 @@ onMounted(loadStations);
         </thead>
         <tbody>
           <tr v-for="s in filtered" :key="s.id">
-            <td class="td-name">{{ s.name }}</td>
+            <td class="td-name">
+              <img
+                v-if="s.logo_url"
+                :src="s.logo_url"
+                alt=""
+                style="height: 24px; width: auto; max-width: 64px; object-fit: contain; vertical-align: middle; margin-right: 8px; border-radius: 3px"
+              />{{ s.name }}
+            </td>
             <td>{{ s.region_name }}</td>
             <td>{{ s.city_name || '—' }}</td>
             <td>
@@ -420,6 +458,30 @@ onMounted(loadStations);
       @ok="saveStation"
     >
       <div class="stn__form">
+        <label>
+          <span>İstasyon Logosu</span>
+          <div style="display: flex; gap: 14px; align-items: center">
+            <div style="width: 110px; height: 70px; border-radius: 8px; background: #0b1220; border: 1px solid #1e293b; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0">
+              <img v-if="form.logo_url" :src="form.logo_url" alt="logo" style="max-width: 100%; max-height: 100%; object-fit: contain" />
+              <span v-else style="color: #64748b; font-size: 11px">LOGO</span>
+            </div>
+            <div>
+              <input
+                ref="logoInput"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                style="display: none"
+                @change="onLogoPicked"
+              />
+              <Button :loading="logoUploading" :disabled="!editingId" @click="logoInput?.click()">
+                {{ form.logo_url ? 'Logoyu Değiştir' : 'Logo Yükle' }}
+              </Button>
+              <p style="margin: 6px 0 0; font-size: 11px; color: #64748b">
+                {{ editingId ? 'PNG, JPG, WEBP, SVG · maks 2 MB' : 'Logoyu eklemek için önce istasyonu kaydedin.' }}
+              </p>
+            </div>
+          </div>
+        </label>
         <label>
           <span>İstasyon Adı</span>
           <Input v-model:value="form.name" placeholder="Örn. Akdeniz FM" />
