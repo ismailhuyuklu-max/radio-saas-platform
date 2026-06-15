@@ -11,6 +11,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <!-- App projesindeki appsettings.json'u UI exe ciktisina kopyala (tek kaynak). -->
+    <Content Include="..\AdCastPro.SyncClient.App\appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\AdCastPro.SyncClient.Core\AdCastPro.SyncClient.Core.csproj" />
     <ProjectReference Include="..\AdCastPro.SyncClient.Infrastructure\AdCastPro.SyncClient.Infrastructure.csproj" />
     <ProjectReference Include="..\AdCastPro.SyncClient.App\AdCastPro.SyncClient.App.csproj" />
