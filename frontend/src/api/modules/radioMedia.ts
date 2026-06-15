@@ -78,6 +78,8 @@ export interface StationItem {
   user_id?: string | null;
   /** Faz 22: national-access partner sees content across every region. */
   national_access?: boolean;
+  /** İstasyon logosu (MinIO public URL). */
+  logo_url?: string | null;
 }
 
 export interface StationSavePayload {
@@ -719,6 +721,16 @@ export function createStation(payload: StationSavePayload & { auto_provision?: b
 
 export function updateStation(stationId: string, payload: StationSavePayload) {
   return sendApiRequest<StationItem>('PATCH', `/stations/${stationId}`, payload);
+}
+
+/** İstasyon logosu yükle (multipart). Backend MinIO'ya yazar, logo_url döner. */
+export function uploadStationLogo(stationId: string, file: File) {
+  const fd = new FormData();
+  fd.append('logo', file);
+  return requestClient.post<{ code: number; result: { logo_url: string } }>(
+    `/stations/${stationId}/logo`,
+    fd,
+  );
 }
 
 export function deleteStation(stationId: string) {

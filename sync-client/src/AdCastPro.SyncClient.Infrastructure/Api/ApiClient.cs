@@ -211,7 +211,7 @@ public sealed class ApiClient : IApiClient
     private static RadioInfo? MapRadio(RadioRaw? raw)
     {
         if (raw == null) return null;
-        return new RadioInfo(raw.Id, raw.Name, raw.Frequency, raw.Region, raw.Province, raw.NationalAccess);
+        return new RadioInfo(raw.Id, raw.Name, raw.Frequency, raw.Region, raw.Province, raw.NationalAccess, raw.LogoUrl);
     }
 
     private static Manifest MapManifest(ManifestRaw raw)
@@ -265,7 +265,7 @@ public sealed class ApiClient : IApiClient
 
     private sealed record UserRaw(string Id, string Username, string Role);
 
-    private sealed record RadioRaw(string Id, string Name, string? Frequency, string? Region, string? Province, bool NationalAccess);
+    private sealed record RadioRaw(string Id, string Name, string? Frequency, string? Region, string? Province, bool NationalAccess, string? LogoUrl = null);
 
     private sealed record PermsRaw(bool News, bool Ads, bool MediaPlan, bool Sponsor);
 

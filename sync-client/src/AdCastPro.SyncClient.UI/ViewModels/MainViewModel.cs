@@ -50,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _frequency = "—";
     [ObservableProperty] private string _regionName = "—";
     [ObservableProperty] private string _provinceName = "—";
+    [ObservableProperty] private string? _radioLogoUrl;
     [ObservableProperty] private string _lastSyncTime = "Henuz yok";
     [ObservableProperty] private string _connStatusText = "Baglaniyor…";
     [ObservableProperty] private string _connStatusColor = "#F59E0B";
@@ -254,11 +255,26 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var (tokens, user, radio) = await _store.LoadAsync();
+            // Taze radio bilgisi (logo dahil) icin /me cek — basarisizsa kayitliyi kullan.
+            if (tokens != null)
+            {
+                try
+                {
+                    var me = await _api.GetMeAsync();
+                    user = me.User;
+                    radio = me.Radio;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "/me yenileme atlandi (cevrimdisi?)");
+                }
+            }
             ConnUserName = user?.Username ?? "—";
             StationName = radio?.Name ?? "—";
             Frequency = radio?.Frequency ?? "—";
             RegionName = radio?.Region ?? "—";
             ProvinceName = radio?.Province ?? "—";
+            RadioLogoUrl = radio?.LogoUrl;
 
             bool connected = tokens != null;
             ConnStatusText = connected ? "Baglandi" : "Baglanti yok";

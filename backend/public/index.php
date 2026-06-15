@@ -614,7 +614,7 @@ $matrixController = new MatrixController($adminAuthenticator, $matrixRepository,
 $radioCredentialService = new RadioCredentialService($userRepository, $stationRepository);
 $streamTokenRepository = new StreamTokenRepository($pdo);
 $streamTokenService = new StreamTokenService($streamTokenRepository);
-$stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
+$stationController = new StationController($adminAuthenticator, $stationRepository, $tokenRepository, $regionRepository, $auditLogRepository, $radioCredentialService, $streamTokenService, $storage);
 $planningController = new PlanningController($adminAuthenticator, $planRepository, $auditLogRepository, $regionRepository, $stationRepository, $provinceRepository, $stationGroupRepository);
 $trafficMetaController = new TrafficMetaController($adminAuthenticator, $provinceRepository, $stationGroupRepository, $stationRepository);
 $partnerAdminController = new PartnerAdminController($adminAuthenticator, $stationRepository, $auditLogRepository, $radioCredentialService, $streamTokenService);
@@ -1005,6 +1005,11 @@ try {
 
     if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/token$#', $path, $matches)) {
         $stationController->generateToken($matches[1]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/api/v1/stations/([^/]+)/logo$#', $path, $matches)) {
+        $stationController->uploadLogo($matches[1]);
         return;
     }
 

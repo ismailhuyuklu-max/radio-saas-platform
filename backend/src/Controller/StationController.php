@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RadioSaaS\Controller;
 
+use RadioSaaS\Infrastructure\MinioStorage;
 use RadioSaaS\Repository\ApiTokenRepository;
 use RadioSaaS\Repository\AuditLogRepository;
 use RadioSaaS\Repository\RegionRepository;
@@ -23,8 +24,52 @@ final class StationController
         private readonly RegionRepository $regionRepository,
         private readonly AuditLogRepository $auditLogRepository,
         private readonly ?RadioCredentialService $credentialService = null,
-        private readonly ?StreamTokenService $streamTokenService = null
+        private readonly ?StreamTokenService $streamTokenService = null,
+        private readonly ?MinioStorage $storage = null
     ) {
+    }
+
+    /**
+     * POST /api/v1/stations/{id}/logo — istasyon logosu yukle (multipart alan: logo).
+     * radio-media (public) bucket'a yazar, stations.logo_url'i gunceller, public URL doner.
+     */
+    public function uploadLogo(string $stationId): void
+    {
+        $this->guard('stations:write');
+
+        if ($this->storage === null) {
+            throw new RuntimeException('Depolama yapilandirilmamis.');
+        }
+        if (!isset($_FILES['logo']) || !is_uploaded_file($_FILES['logo']['tmp_name'])) {
+            throw new RuntimeException('Logo dosyasi gerekli.');
+        }
+        $tmp = (string) $_FILES['logo']['tmp_name'];
+        $mime = (string) (function_exists('mime_content_type') ? (mime_content_type($tmp) ?: '') : '');
+        $allowed = [
+            'image/png' => 'png', 'image/jpeg' => 'jpg', 'image/jpg' => 'jpg',
+            'image/webp' => 'webp', 'image/svg+xml' => 'svg', 'image/gif' => 'gif',
+        ];
+        if (!isset($allowed[$mime])) {
+            throw new RuntimeException('Desteklenmeyen logo formati (PNG, JPG, WEBP, SVG, GIF).');
+        }
+        if ((int) ($_FILES['logo']['size'] ?? 0) > 2 * 1024 * 1024) {
+            throw new RuntimeException('Logo en fazla 2 MB olabilir.');
+        }
+
+        $bucket = getenv('MINIO_BUCKET_PUBLIC') ?: 'radio-media';
+        $key = 'stations/' . $stationId . '/logo-' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
+        $this->storage->client()->putObject([
+            'Bucket' => $bucket,
+            'Key' => $key,
+            'SourceFile' => $tmp,
+            'ContentType' => $mime,
+        ]);
+
+        $url = $this->storage->publicObjectUrl($bucket, $key);
+        $this->stationRepository->updateProfile($stationId, ['logo_url' => $url]);
+        $this->auditLogRepository->log('admin', 'upload_logo', 'station', $stationId, ['logo_url' => $url]);
+
+        $this->respond(['code' => 0, 'result' => ['logo_url' => $url], 'message' => 'Logo yuklendi'], 200);
     }
 
     public function index(): void
