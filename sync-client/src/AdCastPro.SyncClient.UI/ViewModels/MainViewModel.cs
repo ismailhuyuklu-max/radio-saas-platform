@@ -85,6 +85,14 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _totalSizeText = "0 MB";
     [ObservableProperty] private string _freeSpaceText = "—";
 
+    // ==================== Raporlar (operasyonel ozet) ====================
+    [ObservableProperty] private string _reportTotalFiles = "0";
+    [ObservableProperty] private string _reportTotalSize = "0 B";
+    [ObservableProperty] private string _reportTodayFiles = "0";
+    [ObservableProperty] private string _reportTodaySize = "0 B";
+    [ObservableProperty] private string _reportSlotsReady = "0 / 0";
+    [ObservableProperty] private string _reportLastSync = "Henuz yok";
+
     // ----- Yayina Hazir -----
     [ObservableProperty] private bool _readyToAir = true;
     [ObservableProperty] private string _readyToAirText = "YAYINA HAZIR";
@@ -181,6 +189,12 @@ public sealed partial class MainViewModel : ObservableObject
             FreeSpaceText = "125.6 GB",
             ReadyToAir = true,
             ReadyToAirText = "YAYINA HAZIR",
+            ReportTotalFiles = "25",
+            ReportTotalSize = "512.4 MB",
+            ReportTodayFiles = "6",
+            ReportTodaySize = "66.6 MB",
+            ReportSlotsReady = "7 / 7",
+            ReportLastSync = "8.06.2025 10:24:30",
         };
         foreach (var (time, name) in StandardSlots)
             vm.Slots.Add(new SlotRow { Time = time, Name = name, StatusText = "HAZIR", StatusColor = "#10B981" });
@@ -358,7 +372,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task LoadDownloadsAsync()
     {
-        var recent = await _cache.ListRecentDownloadsAsync(25);
+        var recent = await _cache.ListRecentDownloadsAsync(200);
         RecentDownloads.Clear();
         foreach (var d in recent)
         {
@@ -389,6 +403,17 @@ public sealed partial class MainViewModel : ObservableObject
         LastSyncTime = latest != null
             ? latest.DownloadedAt.ToLocalTime().ToString("d.MM.yyyy HH:mm:ss")
             : "Henuz yok";
+
+        // ---- Raporlar: operasyonel ozet istatistikleri ----
+        var todayLocal = DateTime.Now.Date;
+        var todays = recent.Where(d => d.DownloadedAt.ToLocalTime().Date == todayLocal).ToList();
+        ReportTotalFiles = recent.Count.ToString();
+        ReportTotalSize = FormatSize(totalBytes);
+        ReportTodayFiles = todays.Count.ToString();
+        ReportTodaySize = FormatSize(todays.Sum(d => d.SizeBytes));
+        int slotsReady = Slots.Count(s => s.StatusText == "HAZIR");
+        ReportSlotsReady = $"{slotsReady} / {Slots.Count}";
+        ReportLastSync = LastSyncTime;
     }
 
     // ==================== Canli metrikler ====================
