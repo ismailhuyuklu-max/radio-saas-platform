@@ -16,7 +16,7 @@ public sealed partial class SlotRow : ObservableObject
 /// <summary>Son indirilen dosya satiri.</summary>
 public sealed partial class DownloadRow : ObservableObject
 {
-    [ObservableProperty] private string _icon = "📄";   // 📄
+    [ObservableProperty] private string _icon = "File";   // Lucide kind adi
     [ObservableProperty] private string _fileName = "";
     [ObservableProperty] private string _slot = "";
     [ObservableProperty] private string _size = "";
