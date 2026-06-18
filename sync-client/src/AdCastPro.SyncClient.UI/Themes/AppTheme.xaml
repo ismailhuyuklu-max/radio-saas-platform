@@ -46,6 +46,7 @@
 
     <!-- ===== Converters ===== -->
     <conv:SectionToVisibilityConverter x:Key="SectionToVis" />
+    <conv:LucideKindConverter x:Key="LucideKind" />
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
     <!-- ===== Kaydirma cubugu (tema renkleriyle uyumlu) ===== -->
@@ -219,8 +220,8 @@
                                     <ColumnDefinition Width="26" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{TemplateBinding Tag}"
-                                           FontSize="15" VerticalAlignment="Center"
+                                <iconPacks:PackIconLucide Grid.Column="0" Width="17" Height="17" VerticalAlignment="Center"
+                                           Kind="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource LucideKind}}"
                                            Foreground="{TemplateBinding Foreground}" />
                                 <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
                             </Grid>
@@ -334,6 +335,17 @@
                         </Grid>
                     </Border>
                 </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Klasör seçme (Gözat) butonu: Lucide klasör ikonu (ortak). -->
+    <Style x:Key="IconBrowseButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <iconPacks:PackIconLucide Kind="FolderOpen" Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>
