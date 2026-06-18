@@ -100,7 +100,7 @@ async function handleSubmit() {
         <!-- REBRAND: wide-format wordmark logo (1554×519). Logo zaten
              "Ad Cast Pro" yazısını içerdiği için ayrı h1 duplicate olur —
              a11y için heading'i visually-hidden olarak koruyoruz. -->
-        <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo" />
+        <img src="/adcastpro-logo.png" alt="AdCast Pro" class="login-logo">
         <h1 class="visually-hidden">AdCast Pro</h1>
         <p class="login-tagline">Radyo · TV · Haber · Reklam İçerik Yönetim Platformu</p>
       </div>

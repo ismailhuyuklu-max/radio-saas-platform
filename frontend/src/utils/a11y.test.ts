@@ -3,7 +3,7 @@
  *
  * focusMainContent + installA11y route hook'unun çalışması.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 
 import { focusMainContent, installA11y } from './a11y';

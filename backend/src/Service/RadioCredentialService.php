@@ -11,8 +11,8 @@ use RuntimeException;
 /**
  * Partner-radio credential provisioning.
  *
- * - Generates a deterministic-yet-collision-safe username from the station
- *   name + city (mesk_fm + Konya → meskfm_konya, meskfm_konya_2, ...)
+ * - Uses the station name as the username, with collision-safe suffixes
+ *   only when another user already has the same station name.
  * - Generates a one-time strong password (PasswordPolicy::generate)
  * - Creates the user, binds it to the station, returns the plaintext password
  *   exactly once. The hash is persisted; plaintext is never stored.
@@ -41,10 +41,7 @@ final class RadioCredentialService
             throw new RuntimeException('Bu radyo için zaten kullanıcı oluşturulmuş.');
         }
 
-        $username = $this->generateUniqueUsername(
-            (string) ($station['name'] ?? ''),
-            (string) ($station['city_name'] ?? '')
-        );
+        $username = $this->generateUniqueUsername((string) ($station['name'] ?? ''));
         $password = PasswordPolicy::generate();
         PasswordPolicy::assertStrong($password);
 
@@ -88,42 +85,27 @@ final class RadioCredentialService
     }
 
     /**
-     * Username pattern: <slugified name>_<city> with numeric suffixes for
-     * collisions. Falls back to "_<n>" if the city is unknown.
+     * Username pattern: station name as entered. Numeric suffixes are used
+     * only for collisions, so "Akdeniz FM" becomes "Akdeniz FM 2" if needed.
      */
-    public function generateUniqueUsername(string $name, string $city): string
+    public function generateUniqueUsername(string $name): string
     {
-        $base = $this->slug($name);
+        $base = trim(preg_replace('/\s+/', ' ', $name) ?? '');
         if ($base === '') {
-            $base = 'radio';
+            $base = 'Radyo';
         }
-        $citySlug = $this->slug($city);
-        $candidate = $citySlug === '' ? $base : "{$base}_{$citySlug}";
+        $candidate = $base;
 
         if ($this->userRepository->findByUsername($candidate) === null) {
             return $candidate;
         }
-        // …_2, …_3, … until free (hard cap defends against pathological input).
+        // " 2", " 3", ... until free (hard cap defends against pathological input).
         for ($n = 2; $n <= 999; $n++) {
-            $next = "{$candidate}_{$n}";
+            $next = "{$base} {$n}";
             if ($this->userRepository->findByUsername($next) === null) {
                 return $next;
             }
         }
         throw new RuntimeException('Kullanıcı adı türetilemedi.');
-    }
-
-    /**
-     * Loose ASCII slug that survives Turkish input — drops diacritics, keeps
-     * only [a-z0-9], joins with no separator (kept compact for the prefix).
-     */
-    private function slug(string $value): string
-    {
-        $tr = ['ş' => 's', 'Ş' => 's', 'ı' => 'i', 'İ' => 'i', 'ç' => 'c', 'Ç' => 'c',
-            'ğ' => 'g', 'Ğ' => 'g', 'ü' => 'u', 'Ü' => 'u', 'ö' => 'o', 'Ö' => 'o'];
-        $value = strtr($value, $tr);
-        $value = strtolower($value);
-        $value = preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
-        return $value;
     }
 }

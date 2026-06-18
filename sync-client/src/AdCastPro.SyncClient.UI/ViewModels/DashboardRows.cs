@@ -38,6 +38,29 @@ public sealed partial class CheckRow : ObservableObject
     }
 }
 
+/// <summary>Güncelleme geçmişi satırı (v1.0.0.0 yüklendi · zaman · OK).</summary>
+public sealed partial class UpdateHistoryRow : ObservableObject
+{
+    [ObservableProperty] private string _title = "";
+    [ObservableProperty] private string _detail = "";
+    [ObservableProperty] private string _time = "";
+    [ObservableProperty] private bool _ok = true;
+    public string Mark => Ok ? "OK" : "—";
+    public string Color => Ok ? "#10B981" : "#EF4444";
+    partial void OnOkChanged(bool value)
+    {
+        OnPropertyChanged(nameof(Mark));
+        OnPropertyChanged(nameof(Color));
+    }
+}
+
+/// <summary>Sürüm notu satırı (başlık + açıklama).</summary>
+public sealed partial class ReleaseNoteRow : ObservableObject
+{
+    [ObservableProperty] private string _title = "";
+    [ObservableProperty] private string _detail = "";
+}
+
 /// <summary>Sistem metrikleri — CPU / bellek / disk. P/Invoke + DriveInfo.</summary>
 internal static class SystemMetrics
 {

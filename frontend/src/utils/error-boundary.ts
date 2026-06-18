@@ -66,7 +66,6 @@ function shouldEmit(record: ClientErrorRecord, windowMs: number): boolean {
 
 function defaultSink(record: ClientErrorRecord): void {
   // Yapısal log — DevTools'ta JSON gözüyle okunur.
-  // eslint-disable-next-line no-console
   console.error('[client-error]', record);
 }
 

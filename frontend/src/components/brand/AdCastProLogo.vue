@@ -36,7 +36,7 @@ const resolvedHeight = (): number => {
       decoding="async"
       width="240"
       height="160"
-    />
+    >
   </div>
 </template>
 
