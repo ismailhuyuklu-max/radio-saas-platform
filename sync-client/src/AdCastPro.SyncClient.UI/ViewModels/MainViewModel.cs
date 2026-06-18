@@ -363,7 +363,7 @@ public sealed partial class MainViewModel : ObservableObject
             ("MEDYA_PLANI.pdf", "Medya Planı", "1.2 MB", "8.06.2025 09:52"),
         };
         foreach (var (n, s, sz, d) in dl)
-            vm.RecentDownloads.Add(new DownloadRow { Icon = n.EndsWith(".pdf") ? "📕" : "🎵", FileName = n, Slot = s, Size = sz, Date = d, StatusText = "Tamamlandı" });
+            vm.RecentDownloads.Add(new DownloadRow { Icon = n.EndsWith(".pdf") ? "FileText" : "Music", FileName = n, Slot = s, Size = sz, Date = d, StatusText = "Tamamlandı" });
         foreach (var l in new[]
         {
             "Sunucu bağlantısı başarılı.",
@@ -819,9 +819,9 @@ public sealed partial class MainViewModel : ObservableObject
         var ext = Path.GetExtension(filename).ToLowerInvariant();
         return ext switch
         {
-            ".pdf" => "📕",
-            ".aac" or ".mp3" or ".wav" => "🎵",
-            _ => "📄",
+            ".pdf" => "FileText",
+            ".aac" or ".mp3" or ".wav" => "Music",
+            _ => "File",
         };
     }
 

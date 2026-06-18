@@ -347,7 +347,7 @@
                                                         <ColumnDefinition Width="2.2*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="1.05*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Icon}" FontSize="12" Margin="0,0,6,0"/>
+                                                        <iconPacks:PackIconLucide Kind="{Binding Icon, Converter={StaticResource LucideKind}}" Width="13" Height="13" Foreground="{StaticResource FgMuted}" VerticalAlignment="Center" Margin="0,0,7,0"/>
                                                         <TextBlock Text="{Binding FileName}" Foreground="{StaticResource FgPrimary}" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="1" Text="{Binding Slot}" Style="{StaticResource Muted}"/>
@@ -1081,17 +1081,13 @@
                                 </Grid>
                                 <Border Grid.Row="2" Background="{StaticResource BorderColor}" Height="1"/>
                                 <Grid Grid.Row="3">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <ItemsControl ItemsSource="{Binding RecentDownloads}" VerticalAlignment="Top" Margin="2,2,2,0">
-                                        <ItemsControl.Template>
-                                            <ControlTemplate>
-                                                <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
-                                            </ControlTemplate>
-                                        </ItemsControl.Template>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0"/>
+                                                        <iconPacks:PackIconLucide Kind="{Binding Icon, Converter={StaticResource LucideKind}}" Width="14" Height="14" Foreground="{StaticResource FgMuted}" VerticalAlignment="Center" Margin="0,0,7,0"/>
                                                         <TextBlock Text="{Binding FileName}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="1" Text="{Binding Size}" Style="{StaticResource Muted}"/>
@@ -1101,6 +1097,7 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    </ScrollViewer>
                                     <!-- Premium empty state — alanı doldurur, merkezde -->
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                         <StackPanel.Style>
