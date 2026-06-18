@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctl="clr-namespace:AdCastPro.SyncClient.UI.Controls"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     Title="AdCast Pro Senkronizasyon İstemcisi"
     Icon="/AdCastPro.SyncClient;component/Assets/app.ico"
     Width="1200" Height="760" MinWidth="980" MinHeight="600"
@@ -146,12 +147,16 @@
 
             <!-- ===== Content ===== -->
             <Grid Grid.Row="1">
-                <!-- ============ ÖZET (kartlar alana tam oturur, yanlarda boşluk yok) ============ -->
-                <StackPanel Margin="14,6,14,10" VerticalAlignment="Top"
+                <!-- ============ ÖZET (kartlar alana tam oturur, yanlarda boşluk yok, taşma yok) ============ -->
+                <Grid Margin="14,6,14,10" VerticalAlignment="Stretch"
                             Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ozet}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
                         <!-- Üst sıra: 4 kart -->
-                        <Grid>
+                        <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
@@ -162,35 +167,45 @@
                             <!-- Bağlantı Durumu -->
                             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
                                 <StackPanel>
-                                    <TextBlock Text="Bağlantı Durumu" Style="{StaticResource CardTitle}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="Link"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="BAĞLANTI DURUMU"/>
+                                    </StackPanel>
                                     <Image Source="{Binding RadioLogoUrl}" Stretch="Uniform" MaxHeight="46"
                                            HorizontalAlignment="Left" Margin="0,0,0,10"
                                            RenderOptions.BitmapScalingMode="HighQuality" />
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                        <Ellipse Width="11" Height="11" Margin="0,0,8,0" VerticalAlignment="Center">
-                                            <Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}" /></Ellipse.Fill>
-                                        </Ellipse>
-                                        <TextBlock Text="{Binding ConnStatusText}" FontWeight="Bold" FontSize="15">
-                                            <TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}" /></TextBlock.Foreground>
-                                        </TextBlock>
-                                    </StackPanel>
+                                    <Border CornerRadius="20" Padding="12,6" HorizontalAlignment="Left" Margin="0,0,0,14"
+                                            Background="#0C1726" BorderThickness="1">
+                                        <Border.BorderBrush><SolidColorBrush Color="{Binding ConnStatusColor}" Opacity="0.45"/></Border.BorderBrush>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13" Height="13" Margin="0,0,9,0" VerticalAlignment="Center">
+                                                <Ellipse Width="13" Height="13" Opacity="0.30"><Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}" /></Ellipse.Fill></Ellipse>
+                                                <Ellipse Width="7" Height="7"><Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}" /></Ellipse.Fill>
+                                                    <Ellipse.Effect><DropShadowEffect Color="{Binding ConnStatusColor}" BlurRadius="9" ShadowDepth="0" Opacity="0.9"/></Ellipse.Effect>
+                                                </Ellipse>
+                                            </Grid>
+                                            <TextBlock Text="{Binding ConnStatusText}" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center">
+                                                <TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}" /></TextBlock.Foreground>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Sunucu: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ServerAddress}" Style="{StaticResource ValueText}" Margin="0,3" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Kullanıcı: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ConnUserName}" Style="{StaticResource ValueText}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="İstasyon: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StationName}" Style="{StaticResource ValueText}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Frekans: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Frequency}" Style="{StaticResource ValueText}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Bölge: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RegionName}" Style="{StaticResource ValueText}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="İl: " Style="{StaticResource Muted}" Margin="0,3"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ProvinceName}" Style="{StaticResource ValueText}" Margin="0,3"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Sunucu: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ServerAddress}" Style="{StaticResource ValueText}" Margin="0,2" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Kullanıcı: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ConnUserName}" Style="{StaticResource ValueText}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="İstasyon: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StationName}" Style="{StaticResource ValueText}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Frekans: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Frequency}" Style="{StaticResource ValueText}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Bölge: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RegionName}" Style="{StaticResource ValueText}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="İl: " Style="{StaticResource Muted}" Margin="0,2"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ProvinceName}" Style="{StaticResource ValueText}" Margin="0,2"/>
                                     </Grid>
                                     <Button Content="Bağlantıyı Test Et" Style="{StaticResource GhostButton}" Margin="0,14,0,0"
                                             Command="{Binding SyncNowCommand}" />
@@ -200,35 +215,56 @@
                             <!-- Sistem Durumu -->
                             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,8,0">
                                 <StackPanel>
-                                    <TextBlock Text="Sistem Durumu" Style="{StaticResource CardTitle}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="Monitor"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="SİSTEM DURUMU"/>
+                                    </StackPanel>
                                     <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Servis:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ServiceStatusText}" FontWeight="SemiBold" Foreground="{StaticResource StatusGreen}"/></Grid>
+                                        <TextBlock Text="Servis:" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#0C1726" BorderThickness="1">
+                                            <Border.BorderBrush><SolidColorBrush Color="#19C37D" Opacity="0.4"/></Border.BorderBrush>
+                                            <TextBlock Text="{Binding ServiceStatusText}" FontWeight="Bold" FontSize="10.5" Foreground="{StaticResource StatusGreen}"/></Border></Grid>
                                     <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Bağlantı:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ConnStatusText}" FontWeight="SemiBold"><TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                        <TextBlock Text="Bağlantı:" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#0C1726" BorderThickness="1">
+                                            <Border.BorderBrush><SolidColorBrush Color="{Binding ConnStatusColor}" Opacity="0.4"/></Border.BorderBrush>
+                                            <TextBlock Text="{Binding ConnStatusText}" FontWeight="Bold" FontSize="10.5"><TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></TextBlock.Foreground></TextBlock></Border></Grid>
                                     <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="İndirme Motoru:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding EngineStatusText}" FontWeight="SemiBold" Foreground="{StaticResource StatusGreen}"/></Grid>
+                                        <TextBlock Text="İndirme Motoru:" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#0C1726" BorderThickness="1">
+                                            <Border.BorderBrush><SolidColorBrush Color="#19C37D" Opacity="0.4"/></Border.BorderBrush>
+                                            <TextBlock Text="{Binding EngineStatusText}" FontWeight="Bold" FontSize="10.5" Foreground="{StaticResource StatusGreen}"/></Border></Grid>
                                     <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Son Hata:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding LastErrorText}" FontWeight="SemiBold" Foreground="{StaticResource StatusGreen}"/></Grid>
-                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Disk Alanı:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding DiskText}" FontWeight="SemiBold" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="İşlemci Kullanımı:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding CpuText}" FontWeight="SemiBold" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Bellek Kullanımı:" Style="{StaticResource Muted}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding MemoryText}" FontWeight="SemiBold" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <TextBlock Text="Son Hata:" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#0C1726" BorderThickness="1">
+                                            <Border.BorderBrush><SolidColorBrush Color="#19C37D" Opacity="0.4"/></Border.BorderBrush>
+                                            <TextBlock Text="{Binding LastErrorText}" FontWeight="Bold" FontSize="10.5" Foreground="{StaticResource StatusGreen}"/></Border></Grid>
+                                    <!-- CPU / RAM / Disk mini gösterge çubukları -->
+                                    <StackPanel Margin="0,6,0,0">
+                                        <Grid><TextBlock Text="İşlemci Kullanımı" Style="{StaticResource Muted}" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="{Binding CpuText}" HorizontalAlignment="Right" FontWeight="Bold" FontSize="11.5"><TextBlock.Foreground><SolidColorBrush Color="{Binding CpuColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                        <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding CpuPercent}" Margin="0,4,0,0"><ProgressBar.Foreground><SolidColorBrush Color="{Binding CpuColor}"/></ProgressBar.Foreground></ProgressBar>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,7,0,0">
+                                        <Grid><TextBlock Text="Bellek Kullanımı" Style="{StaticResource Muted}" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="{Binding MemoryText}" HorizontalAlignment="Right" FontWeight="Bold" FontSize="11.5"><TextBlock.Foreground><SolidColorBrush Color="{Binding MemoryColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                        <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding MemoryPercent}" Margin="0,4,0,0"><ProgressBar.Foreground><SolidColorBrush Color="{Binding MemoryColor}"/></ProgressBar.Foreground></ProgressBar>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,7,0,0">
+                                        <Grid><TextBlock Text="Disk Kullanımı" Style="{StaticResource Muted}" VerticalAlignment="Center"/><TextBlock Grid.Column="1" HorizontalAlignment="Right" FontWeight="Bold" FontSize="11.5"><Run Text="%"/><Run Text="{Binding DiskUsedPercent, Mode=OneWay}"/><TextBlock.Foreground><SolidColorBrush Color="{Binding DiskColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                        <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding DiskUsedPercent}" Margin="0,4,0,0"><ProgressBar.Foreground><SolidColorBrush Color="{Binding DiskColor}"/></ProgressBar.Foreground></ProgressBar>
+                                    </StackPanel>
+                                    <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Boş Disk Alanı:" Style="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding DiskText}" FontWeight="SemiBold" Foreground="{StaticResource StatusGreen}"/></Grid>
                                 </StackPanel>
                             </Border>
 
                             <!-- Yayın Kuşakları -->
                             <Border Grid.Column="2" Style="{StaticResource Card}" Margin="8,0,8,0">
                                 <StackPanel>
-                                    <TextBlock Text="Yayın Kuşakları" Style="{StaticResource CardTitle}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="Clock"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="YAYIN KUŞAKLARI"/>
+                                    </StackPanel>
                                     <ItemsControl ItemsSource="{Binding Slots}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -238,9 +274,15 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="{Binding Time}" Style="{StaticResource Muted}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center">
-                                                        <TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground>
-                                                    </TextBlock>
+                                                    <Border Grid.Column="2" CornerRadius="6" Padding="7,2" VerticalAlignment="Center" Background="#0C1726" BorderThickness="1">
+                                                        <Border.BorderBrush><SolidColorBrush Color="{Binding StatusColor}" Opacity="0.4"/></Border.BorderBrush>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding StatusColor}"/></Ellipse.Fill></Ellipse>
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center">
+                                                                <TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </Border>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -253,8 +295,11 @@
                             <!-- Yayın Hazırlık Durumu -->
                             <Border Grid.Column="3" Style="{StaticResource Card}" Margin="8,0,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="Yayın Hazırlık Durumu" Style="{StaticResource CardTitle}" />
-                                    <ctl:DonutProgress Height="150" Width="150" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding ReadinessPercent}" SubText="{Binding ReadinessLabel}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="ShieldCheck"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="YAYIN HAZIRLIK DURUMU"/>
+                                    </StackPanel>
+                                    <ctl:DonutProgress Height="130" Width="130" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding ReadinessPercent}" SubText="{Binding ReadinessLabel}">
                                         <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding ReadinessColor}"/></ctl:DonutProgress.RingColor>
                                     </ctl:DonutProgress>
                                     <TextBlock Text="Tüm yayın dosyaları yayına hazır." Style="{StaticResource Muted}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
@@ -269,7 +314,7 @@
                         </Grid>
 
                         <!-- Orta sıra -->
-                        <Grid Margin="0,12,0,0">
+                        <Grid Grid.Row="1" Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*"/>
                                 <ColumnDefinition Width="1.15*"/>
@@ -279,7 +324,10 @@
                             <!-- Son İndirilen Dosyalar -->
                             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
                                 <StackPanel>
-                                    <TextBlock Text="Son İndirilen Dosyalar" Style="{StaticResource CardTitle}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="FileText"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="SON İNDİRİLEN DOSYALAR"/>
+                                    </StackPanel>
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="2.2*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="1.05*"/>
@@ -290,8 +338,8 @@
                                         <TextBlock Grid.Column="3" Text="Tarih" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="4" Text="Durum" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                     </Grid>
-                                    <Grid MinHeight="170">
-                                    <ItemsControl ItemsSource="{Binding RecentDownloads}" MaxHeight="170" VerticalAlignment="Top">
+                                    <Grid MinHeight="120">
+                                    <ItemsControl ItemsSource="{Binding RecentDownloads}" MaxHeight="150" VerticalAlignment="Top">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,4">
@@ -334,8 +382,11 @@
                             <!-- İndirme Durumu -->
                             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,8,0">
                                 <StackPanel>
-                                    <TextBlock Text="İndirme Durumu" Style="{StaticResource CardTitle}" />
-                                    <ctl:DonutProgress Height="140" Width="140" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding DownloadPercent}" SubText="Tamamlandı">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="Download"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="İNDİRME DURUMU"/>
+                                    </StackPanel>
+                                    <ctl:DonutProgress Height="124" Width="124" HorizontalAlignment="Center" Margin="0,6,0,0" Percent="{Binding DownloadPercent}" SubText="Tamamlandı">
                                         <ctl:DonutProgress.RingColor><SolidColorBrush Color="#10B981"/></ctl:DonutProgress.RingColor>
                                     </ctl:DonutProgress>
                                     <StackPanel Margin="0,10,0,0">
@@ -354,15 +405,26 @@
                             <!-- Yayın Hazırlık Kontrolü -->
                             <Border Grid.Column="2" Style="{StaticResource Card}" Margin="8,0,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="Yayın Hazırlık Kontrolü" Style="{StaticResource CardTitle}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="ShieldCheck"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="YAYIN HAZIRLIK KONTROLÜ"/>
+                                    </StackPanel>
                                     <ItemsControl ItemsSource="{Binding Checks}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Margin="0,3.5">
+                                                <Grid Margin="0,4">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                    <TextBlock Text="✓" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    <Border Width="19" Height="19" CornerRadius="10" Margin="0,0,9,0" VerticalAlignment="Center" BorderThickness="1">
+                                                        <Border.Background><SolidColorBrush Color="{Binding Color}" Opacity="0.16"/></Border.Background>
+                                                        <Border.BorderBrush><SolidColorBrush Color="{Binding Color}" Opacity="0.5"/></Border.BorderBrush>
+                                                        <TextBlock Text="✓" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    </Border>
                                                     <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{StaticResource FgPrimary}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Mark}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    <Border Grid.Column="2" CornerRadius="6" Padding="7,2" VerticalAlignment="Center" BorderThickness="1">
+                                                        <Border.Background><SolidColorBrush Color="{Binding Color}" Opacity="0.12"/></Border.Background>
+                                                        <Border.BorderBrush><SolidColorBrush Color="{Binding Color}" Opacity="0.4"/></Border.BorderBrush>
+                                                        <TextBlock Text="{Binding Mark}" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    </Border>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -373,64 +435,10 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
+                </Grid>
 
-                        <!-- Alt sıra -->
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*"/><ColumnDefinition Width="1*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Konsol -->
-                            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
-                                <StackPanel>
-                                    <Grid>
-                                        <TextBlock Text="Konsol" Style="{StaticResource CardTitle}"/>
-                                        <Button Content="Temizle" Style="{StaticResource GhostButton}" Padding="10,5" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                FontSize="11" Command="{Binding ClearConsoleCommand}"/>
-                                    </Grid>
-                                    <Border Background="#070B14" CornerRadius="8" Padding="12" Height="120">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <ItemsControl ItemsSource="{Binding ConsoleLines}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11.5" Foreground="#86EFAC" Margin="0,1"/>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </Border>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Hızlı İşlemler -->
-                            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="Hızlı İşlemler" Style="{StaticResource CardTitle}"/>
-
-                                    <!-- Son Senkronizasyon bilgi barı -->
-                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,12">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="SON SENKRONİZASYON" Style="{StaticResource Muted}" FontSize="10"/>
-                                                <TextBlock Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13" Margin="0,2,0,0"/>
-                                            </StackPanel>
-                                            <Button Grid.Column="1" Content="⟳" FontSize="14" Width="34" Height="34" Style="{StaticResource GhostButton}" Padding="0" VerticalAlignment="Center" ToolTip="Yenile" Command="{Binding RefreshCommand}"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <Button Content="☁ Şimdi Senkronize Et" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Command="{Binding SyncNowCommand}"/>
-                                    <Button Content="≣ Yayın Listesini Yenile" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding RefreshListCommand}"/>
-                                    <Button Content="📈 Geçmiş Raporları Göster" Style="{StaticResource GhostButton}" Margin="0,0,0,8" Command="{Binding NavigateCommand}" CommandParameter="raporlar"/>
-                                    <Button Content="⚙ Ayarları Aç" Style="{StaticResource GhostButton}" Command="{Binding NavigateCommand}" CommandParameter="ayarlar"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                </StackPanel>
-
-                <!-- ============ DİĞER BÖLÜMLER (scroll'lu) ============ -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,12,24,16">
-                    <StackPanel>
+                <!-- ============ DİĞER BÖLÜMLER (alanı doldurur, scroll yok) ============ -->
+                <Grid Margin="24,12,24,16">
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=indirilen}">
                         <StackPanel>
                             <TextBlock Text="İndirilen Dosyalar" Style="{StaticResource CardTitle}"/>
@@ -450,45 +458,164 @@
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=kusak}">
-                        <StackPanel>
-                            <TextBlock Text="Yayın Kuşakları" Style="{StaticResource CardTitle}"/>
-                            <ItemsControl ItemsSource="{Binding Slots}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Time}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Başlık + hazır chip -->
+                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Yayın Kuşakları" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock Text="Günlük yayın planı — her kuşağın hazırlık durumu" Style="{StaticResource Muted}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" CornerRadius="8" Padding="13,6" Background="#16202F" BorderBrush="#243149" BorderThickness="1" VerticalAlignment="Center">
+                                    <TextBlock VerticalAlignment="Center"><Run Text="{Binding ReportSlotsReady}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="13"/><Run Text=" hazır" Foreground="{StaticResource FgMuted}" FontSize="11.5"/></TextBlock>
+                                </Border>
+                            </Grid>
+
+                            <!-- Plan listesi — alanı eşit satırlarla doldurur -->
+                            <Border Grid.Row="1" CornerRadius="12" BorderThickness="1" Padding="6,4">
+                                <Border.Background><SolidColorBrush Color="#0C1322"/></Border.Background>
+                                <Border.BorderBrush><SolidColorBrush Color="#1E293B"/></Border.BorderBrush>
+                                <ItemsControl ItemsSource="{Binding Slots}" VerticalAlignment="Stretch">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="1"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="9" Padding="12,0" Margin="2,1" BorderThickness="0,0,0,1" BorderBrush="#141E30">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#131E33"/></Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" CornerRadius="6" Width="62" Height="28" Background="#11192B" BorderBrush="#243149" BorderThickness="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Time}" FontFamily="Consolas" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="12.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                                                    <Border Grid.Column="2" CornerRadius="7" Padding="11,4" VerticalAlignment="Center" Background="#16202F">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding StatusColor}"/></Ellipse.Fill></Ellipse>
+                                                            <TextBlock Text="{Binding StatusText}" FontWeight="Bold" FontSize="10.5"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+
+                            <!-- Özet bandı (alta) -->
+                            <Border Grid.Row="2" CornerRadius="12" Padding="18,13" BorderThickness="1" Margin="0,14,0,0">
+                                <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#15233B" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                <Border.BorderBrush><SolidColorBrush Color="#243149"/></Border.BorderBrush>
+                                <UniformGrid Columns="4">
+                                    <StackPanel><TextBlock Text="TOPLAM KUŞAK" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="7" Foreground="{StaticResource FgPrimary}" FontSize="18" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="HAZIR" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding ReportSlotsReady}" Foreground="{StaticResource StatusGreen}" FontSize="18" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="SON KONTROL" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding LastCheckTime}" Foreground="{StaticResource FgPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="SON SENKRONİZASYON" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel>
+                                </UniformGrid>
+                            </Border>
+                        </Grid>
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=liste}">
-                        <StackPanel>
-                            <TextBlock Text="Yayın Listesi" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="Sunucudan alınan güncel yayın kuşağı planı." Style="{StaticResource Muted}" Margin="0,0,0,10"/>
-                            <ItemsControl ItemsSource="{Binding Slots}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Time}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Başlık + hazır chip -->
+                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Yayın Listesi" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock Text="Sunucudan alınan güncel yayın kuşağı planı." Style="{StaticResource Muted}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" CornerRadius="8" Padding="13,6" Background="#16202F" BorderBrush="#243149" BorderThickness="1" VerticalAlignment="Center">
+                                    <TextBlock VerticalAlignment="Center"><Run Text="{Binding ReportSlotsReady}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="13"/><Run Text=" hazır" Foreground="{StaticResource FgMuted}" FontSize="11.5"/></TextBlock>
+                                </Border>
+                            </Grid>
+
+                            <!-- Plan listesi — alanı eşit satırlarla doldurur -->
+                            <Border Grid.Row="1" CornerRadius="12" BorderThickness="1" Padding="6,4">
+                                <Border.Background><SolidColorBrush Color="#0C1322"/></Border.Background>
+                                <Border.BorderBrush><SolidColorBrush Color="#1E293B"/></Border.BorderBrush>
+                                <ItemsControl ItemsSource="{Binding Slots}" VerticalAlignment="Stretch">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="1"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="9" Padding="12,0" Margin="2,1" BorderThickness="0,0,0,1" BorderBrush="#141E30">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#131E33"/></Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" CornerRadius="6" Width="62" Height="28" Background="#11192B" BorderBrush="#243149" BorderThickness="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Time}" FontFamily="Consolas" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="12.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                                                    <Border Grid.Column="2" CornerRadius="7" Padding="11,4" VerticalAlignment="Center" Background="#16202F">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding StatusColor}"/></Ellipse.Fill></Ellipse>
+                                                            <TextBlock Text="{Binding StatusText}" FontWeight="Bold" FontSize="10.5"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+
+                            <!-- Özet bandı (alta) -->
+                            <Border Grid.Row="2" CornerRadius="12" Padding="18,13" BorderThickness="1" Margin="0,14,0,0">
+                                <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#15233B" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                <Border.BorderBrush><SolidColorBrush Color="#243149"/></Border.BorderBrush>
+                                <UniformGrid Columns="4">
+                                    <StackPanel><TextBlock Text="TOPLAM KUŞAK" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="7" Foreground="{StaticResource FgPrimary}" FontSize="18" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="HAZIR" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding ReportSlotsReady}" Foreground="{StaticResource StatusGreen}" FontSize="18" FontWeight="Bold" Margin="0,3,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="SON KONTROL" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding LastCheckTime}" Foreground="{StaticResource FgPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+                                    <StackPanel><TextBlock Text="SON SENKRONİZASYON" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel>
+                                </UniformGrid>
+                            </Border>
+                        </Grid>
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=servis}">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0,0,0,4">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <TextBlock Text="Servis Durumu — Sistem İzleme" Style="{StaticResource CardTitle}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconLucide Kind="Activity" Width="17" Height="17" Foreground="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                    <TextBlock Text="Servis Durumu — Sistem İzleme" Style="{StaticResource CardTitle}" VerticalAlignment="Center"/>
+                                </StackPanel>
                                 <Border Grid.Column="1" Background="#10331F" CornerRadius="10" Padding="10,4" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse Width="8" Height="8" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -497,152 +624,341 @@
                                 </Border>
                             </Grid>
 
-                            <!-- Kaynak gauge'lari: CPU / RAM / Disk -->
-                            <UniformGrid Columns="3" Margin="0,6,0,2">
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8" Margin="0,0,8,0">
+                            <!-- Kaynak gauge'lari: CPU / RAM / Disk — premium metrik panelleri -->
+                            <UniformGrid Grid.Row="1" Columns="3" Margin="0,8,0,2">
+                                <!-- CPU -->
+                                <Border CornerRadius="14" Padding="15,13" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#1E2D44">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0.6,1"><GradientStop Color="#13212F" Offset="0"/><GradientStop Color="#0A111D" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.Effect><DropShadowEffect Color="#000814" BlurRadius="16" ShadowDepth="0" Opacity="0.40"/></Border.Effect>
                                     <StackPanel>
-                                        <TextBlock Text="İŞLEMCİ (CPU)" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
-                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding CpuPercent}" SubText="kullanım">
-                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding CpuColor}"/></ctl:DonutProgress.RingColor>
-                                        </ctl:DonutProgress>
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="22" Height="22" CornerRadius="6" Background="#11283C" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="Cpu" Width="12" Height="12" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="İŞLEMCİ (CPU)" Style="{StaticResource Muted}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Polyline HorizontalAlignment="Right" VerticalAlignment="Center" Points="0,8 4,8 6,3 9,11 12,5 15,8 26,8" Stroke="#38BDF8" StrokeThickness="1.6" StrokeLineJoin="Round"/>
+                                        </Grid>
+                                        <Grid Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <ctl:DonutProgress Height="92" Width="92" VerticalAlignment="Center" Percent="{Binding CpuPercent}" SubText="kullanım">
+                                                <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding CpuColor}"/></ctl:DonutProgress.RingColor>
+                                            </ctl:DonutProgress>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                                                <TextBlock Text="CPU Kullanımı" Style="{StaticResource Muted}" FontSize="11"/>
+                                                <TextBlock Text="{Binding CpuText}" FontSize="25" FontWeight="Bold" Margin="0,1,0,4"><TextBlock.Foreground><SolidColorBrush Color="{Binding CpuColor}"/></TextBlock.Foreground></TextBlock>
+                                                <Border CornerRadius="6" Padding="7,2" HorizontalAlignment="Left" Background="#0C1726" BorderThickness="1">
+                                                    <Border.BorderBrush><SolidColorBrush Color="{Binding CpuColor}" Opacity="0.4"/></Border.BorderBrush>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding CpuColor}"/></Ellipse.Fill></Ellipse>
+                                                        <TextBlock Text="{Binding CpuLevelText}" FontSize="10.5" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding CpuColor}"/></TextBlock.Foreground></TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                                <TextBlock Text="{Binding CpuLevelDetail}" Foreground="{StaticResource FgDim}" FontSize="11" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8" Margin="0,0,8,0">
+                                <!-- RAM -->
+                                <Border CornerRadius="14" Padding="15,13" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#262145">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0.6,1"><GradientStop Color="#1A1730" Offset="0"/><GradientStop Color="#0B0A18" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.Effect><DropShadowEffect Color="#000814" BlurRadius="16" ShadowDepth="0" Opacity="0.40"/></Border.Effect>
                                     <StackPanel>
-                                        <TextBlock Text="BELLEK (RAM)" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
-                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding MemoryPercent}" SubText="kullanım">
-                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding MemoryColor}"/></ctl:DonutProgress.RingColor>
-                                        </ctl:DonutProgress>
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="22" Height="22" CornerRadius="6" Background="#241F3C" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="MemoryStick" Width="12" Height="12" Foreground="#A78BFA" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="BELLEK (RAM)" Style="{StaticResource Muted}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Polyline HorizontalAlignment="Right" VerticalAlignment="Center" Points="0,8 4,8 6,3 9,11 12,5 15,8 26,8" Stroke="#A78BFA" StrokeThickness="1.6" StrokeLineJoin="Round"/>
+                                        </Grid>
+                                        <Grid Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <ctl:DonutProgress Height="92" Width="92" VerticalAlignment="Center" Percent="{Binding MemoryPercent}" SubText="kullanım">
+                                                <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding MemoryColor}"/></ctl:DonutProgress.RingColor>
+                                            </ctl:DonutProgress>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                                                <TextBlock Text="Bellek Kullanımı" Style="{StaticResource Muted}" FontSize="11"/>
+                                                <TextBlock Text="{Binding MemoryText}" FontSize="25" FontWeight="Bold" Margin="0,1,0,4"><TextBlock.Foreground><SolidColorBrush Color="{Binding MemoryColor}"/></TextBlock.Foreground></TextBlock>
+                                                <Border CornerRadius="6" Padding="7,2" HorizontalAlignment="Left" Background="#0C1726" BorderThickness="1">
+                                                    <Border.BorderBrush><SolidColorBrush Color="{Binding MemoryColor}" Opacity="0.4"/></Border.BorderBrush>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding MemoryColor}"/></Ellipse.Fill></Ellipse>
+                                                        <TextBlock Text="{Binding MemoryLevelText}" FontSize="10.5" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding MemoryColor}"/></TextBlock.Foreground></TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                                <TextBlock Text="{Binding MemoryLevelDetail}" Foreground="{StaticResource FgDim}" FontSize="11" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="8,8">
+                                <!-- DİSK -->
+                                <Border CornerRadius="14" Padding="15,13" BorderThickness="1" BorderBrush="#15402F">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0.6,1"><GradientStop Color="#0F2018" Offset="0"/><GradientStop Color="#091410" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.Effect><DropShadowEffect Color="#000814" BlurRadius="16" ShadowDepth="0" Opacity="0.40"/></Border.Effect>
                                     <StackPanel>
-                                        <TextBlock Text="DİSK" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center"/>
-                                        <ctl:DonutProgress Height="94" Width="94" HorizontalAlignment="Center" Margin="0,2,0,0" Percent="{Binding DiskUsedPercent}" SubText="dolu">
-                                            <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding DiskColor}"/></ctl:DonutProgress.RingColor>
-                                        </ctl:DonutProgress>
-                                        <TextBlock Text="{Binding DiskUsedText}" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                        <TextBlock HorizontalAlignment="Center" FontSize="11"><Run Text="Boş: " Foreground="{StaticResource FgMuted}"/><Run Text="{Binding FreeSpaceText}" Foreground="{StaticResource StatusGreen}"/></TextBlock>
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="22" Height="22" CornerRadius="6" Background="#10301F" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="HardDrive" Width="12" Height="12" Foreground="#19C37D" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="DİSK" Style="{StaticResource Muted}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Polyline HorizontalAlignment="Right" VerticalAlignment="Center" Points="0,8 4,8 6,3 9,11 12,5 15,8 26,8" Stroke="#19C37D" StrokeThickness="1.6" StrokeLineJoin="Round"/>
+                                        </Grid>
+                                        <Grid Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <ctl:DonutProgress Height="92" Width="92" VerticalAlignment="Center" Percent="{Binding DiskUsedPercent}" SubText="dolu">
+                                                <ctl:DonutProgress.RingColor><SolidColorBrush Color="{Binding DiskColor}"/></ctl:DonutProgress.RingColor>
+                                            </ctl:DonutProgress>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                                                <TextBlock Text="Disk Kullanımı" Style="{StaticResource Muted}" FontSize="11"/>
+                                                <TextBlock Text="{Binding DiskUsedText}" Foreground="{StaticResource FgPrimary}" FontSize="13" FontWeight="Bold" Margin="0,2,0,1" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Margin="0,0,0,5" FontSize="11.5"><Run Text="Boş: " Foreground="{StaticResource FgMuted}"/><Run Text="{Binding FreeSpaceText}" Foreground="{StaticResource StatusGreen}" FontWeight="SemiBold"/></TextBlock>
+                                                <Border CornerRadius="6" Padding="7,2" HorizontalAlignment="Left" Background="#0C1726" BorderThickness="1">
+                                                    <Border.BorderBrush><SolidColorBrush Color="{Binding DiskColor}" Opacity="0.4"/></Border.BorderBrush>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"><Ellipse.Fill><SolidColorBrush Color="{Binding DiskColor}"/></Ellipse.Fill></Ellipse>
+                                                        <TextBlock Text="{Binding DiskLevelText}" FontSize="10.5" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding DiskColor}"/></TextBlock.Foreground></TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
                             </UniformGrid>
 
                             <!-- Gecmis grafikleri: CPU & RAM (sparkline) -->
-                            <UniformGrid Columns="2" Margin="0,6,0,2">
+                            <UniformGrid Grid.Row="2" Columns="2" Margin="0,6,0,2">
                                 <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12" Margin="0,0,8,0">
                                     <StackPanel>
                                         <Grid>
-                                            <TextBlock Text="İşlemci Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/>
-                                            <TextBlock Text="{Binding CpuText}" Foreground="#38BDF8" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="20" Height="20" CornerRadius="5" Background="#11283C" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="Activity" Width="11" Height="11" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="İşlemci Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Border HorizontalAlignment="Right" CornerRadius="6" Padding="8,2" Background="#0B1B2B" BorderBrush="#1E4A66" BorderThickness="1">
+                                                <TextBlock Text="{Binding CpuText}" Foreground="#38BDF8" FontWeight="Bold" FontSize="12"/>
+                                            </Border>
                                         </Grid>
-                                        <Border Background="#070B14" CornerRadius="8" Margin="0,8,0,0" Padding="6">
-                                            <Viewbox Height="48" Stretch="Fill">
-                                                <Grid Width="300" Height="70">
-                                                    <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Polygon Points="{Binding CpuAreaPoints}">
-                                                        <Polygon.Fill>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                                <GradientStop Color="#6638BDF8" Offset="0"/>
-                                                                <GradientStop Color="#0038BDF8" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Polygon.Fill>
-                                                    </Polygon>
-                                                    <Polyline Points="{Binding CpuPoints}" Stroke="#38BDF8" StrokeThickness="2.5" StrokeLineJoin="Round">
-                                                        <Polyline.Effect><DropShadowEffect Color="#38BDF8" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
-                                                    </Polyline>
+                                        <Border Background="#070B14" CornerRadius="8" Margin="0,10,0,0" Padding="10,9" BorderBrush="#0E1A2A" BorderThickness="1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                <Grid Grid.Row="0" Grid.Column="0" Height="84" Margin="0,0,8,0">
+                                                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="*"/><RowDefinition Height="*"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                    <TextBlock Grid.Row="0" Text="100%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="1" Text="75%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="2" Text="50%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="3" Text="25%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="3" Text="0%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Bottom"/>
                                                 </Grid>
-                                            </Viewbox>
+                                                <Viewbox Grid.Row="0" Grid.Column="1" Height="84" Stretch="Fill">
+                                                    <Grid Width="300" Height="70">
+                                                        <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Polygon Points="{Binding CpuAreaPoints}">
+                                                            <Polygon.Fill>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                    <GradientStop Color="#6638BDF8" Offset="0"/>
+                                                                    <GradientStop Color="#0038BDF8" Offset="1"/>
+                                                                </LinearGradientBrush>
+                                                            </Polygon.Fill>
+                                                        </Polygon>
+                                                        <Polyline Points="{Binding CpuPoints}" Stroke="#38BDF8" StrokeThickness="2.5" StrokeLineJoin="Round">
+                                                            <Polyline.Effect><DropShadowEffect Color="#38BDF8" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
+                                                        </Polyline>
+                                                    </Grid>
+                                                </Viewbox>
+                                                <Grid Grid.Row="1" Grid.Column="1" Margin="0,5,0,0">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="-60sn" Foreground="{StaticResource FgDim}" FontSize="8.5"/>
+                                                    <TextBlock Grid.Column="1" Text="-40sn" Foreground="{StaticResource FgDim}" FontSize="8.5" HorizontalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="2" Text="-20sn" Foreground="{StaticResource FgDim}" FontSize="8.5" HorizontalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="Şimdi" Foreground="{StaticResource FgMuted}" FontSize="8.5" FontWeight="SemiBold"/>
+                                                </Grid>
+                                            </Grid>
                                         </Border>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12">
                                     <StackPanel>
                                         <Grid>
-                                            <TextBlock Text="Bellek Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/>
-                                            <TextBlock Text="{Binding MemoryText}" Foreground="#A78BFA" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="20" Height="20" CornerRadius="5" Background="#241F3C" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="Activity" Width="11" Height="11" Foreground="#A78BFA" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="Bellek Geçmişi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Border HorizontalAlignment="Right" CornerRadius="6" Padding="8,2" Background="#1A1530" BorderBrush="#3B2F66" BorderThickness="1">
+                                                <TextBlock Text="{Binding MemoryText}" Foreground="#A78BFA" FontWeight="Bold" FontSize="12"/>
+                                            </Border>
                                         </Grid>
-                                        <Border Background="#070B14" CornerRadius="8" Margin="0,8,0,0" Padding="6">
-                                            <Viewbox Height="48" Stretch="Fill">
-                                                <Grid Width="300" Height="70">
-                                                    <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
-                                                    <Polygon Points="{Binding MemoryAreaPoints}">
-                                                        <Polygon.Fill>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                                <GradientStop Color="#66A78BFA" Offset="0"/>
-                                                                <GradientStop Color="#00A78BFA" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Polygon.Fill>
-                                                    </Polygon>
-                                                    <Polyline Points="{Binding MemoryPoints}" Stroke="#A78BFA" StrokeThickness="2.5" StrokeLineJoin="Round">
-                                                        <Polyline.Effect><DropShadowEffect Color="#A78BFA" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
-                                                    </Polyline>
+                                        <Border Background="#070B14" CornerRadius="8" Margin="0,10,0,0" Padding="10,9" BorderBrush="#0E1A2A" BorderThickness="1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                <Grid Grid.Row="0" Grid.Column="0" Height="84" Margin="0,0,8,0">
+                                                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="*"/><RowDefinition Height="*"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                    <TextBlock Grid.Row="0" Text="100%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="1" Text="75%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="2" Text="50%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="3" Text="25%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Row="3" Text="0%" Foreground="{StaticResource FgDim}" FontSize="8.5" VerticalAlignment="Bottom"/>
                                                 </Grid>
-                                            </Viewbox>
+                                                <Viewbox Grid.Row="0" Grid.Column="1" Height="84" Stretch="Fill">
+                                                    <Grid Width="300" Height="70">
+                                                        <Line X1="0" Y1="17.5" X2="300" Y2="17.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Line X1="0" Y1="35" X2="300" Y2="35" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Line X1="0" Y1="52.5" X2="300" Y2="52.5" Stroke="{StaticResource BorderColor}" StrokeThickness="0.5"/>
+                                                        <Polygon Points="{Binding MemoryAreaPoints}">
+                                                            <Polygon.Fill>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                    <GradientStop Color="#66A78BFA" Offset="0"/>
+                                                                    <GradientStop Color="#00A78BFA" Offset="1"/>
+                                                                </LinearGradientBrush>
+                                                            </Polygon.Fill>
+                                                        </Polygon>
+                                                        <Polyline Points="{Binding MemoryPoints}" Stroke="#A78BFA" StrokeThickness="2.5" StrokeLineJoin="Round">
+                                                            <Polyline.Effect><DropShadowEffect Color="#A78BFA" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Polyline.Effect>
+                                                        </Polyline>
+                                                    </Grid>
+                                                </Viewbox>
+                                                <Grid Grid.Row="1" Grid.Column="1" Margin="0,5,0,0">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="-60sn" Foreground="{StaticResource FgDim}" FontSize="8.5"/>
+                                                    <TextBlock Grid.Column="1" Text="-40sn" Foreground="{StaticResource FgDim}" FontSize="8.5" HorizontalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="2" Text="-20sn" Foreground="{StaticResource FgDim}" FontSize="8.5" HorizontalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="Şimdi" Foreground="{StaticResource FgMuted}" FontSize="8.5" FontWeight="SemiBold"/>
+                                                </Grid>
+                                            </Grid>
                                         </Border>
                                     </StackPanel>
                                 </Border>
                             </UniformGrid>
 
-                            <!-- Servis sagligi kartlari -->
-                            <UniformGrid Columns="4" Margin="0,6,0,2">
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
-                                    <StackPanel>
-                                        <TextBlock Text="SENKRONİZASYON SERVİSİ" Style="{StaticResource Muted}" FontSize="10"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <Ellipse Width="9" Height="9" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
-                                            <TextBlock Text="{Binding ServiceStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                            <!-- Servis sagligi kartlari — ikon + sinyal gostergeli -->
+                            <UniformGrid Grid.Row="3" Columns="4" Margin="0,8,0,2">
+                                <!-- Senkronizasyon Servisi -->
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="13,12" Margin="0,0,8,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="9" Background="#10241A" BorderBrush="#1B5E3A" BorderThickness="1" VerticalAlignment="Center" Margin="0,0,11,0">
+                                            <iconPacks:PackIconLucide Kind="RefreshCw" Width="16" Height="16" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="SENKRONİZASYON SERVİSİ" Style="{StaticResource Muted}" FontSize="9.5" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                <Ellipse Width="8" Height="8" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Effect><DropShadowEffect Color="#19C37D" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Ellipse.Effect></Ellipse>
+                                                <TextBlock Text="{Binding ServiceStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="14"/>
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
-                                </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
-                                    <StackPanel>
-                                        <TextBlock Text="İNDİRME MOTORU" Style="{StaticResource Muted}" FontSize="10"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <Ellipse Width="9" Height="9" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
-                                            <TextBlock Text="{Binding EngineStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="6,0,0,2">
+                                            <Rectangle Width="3" Height="7" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="11" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="15" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="19" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
                                         </StackPanel>
-                                    </StackPanel>
+                                    </Grid>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12" Margin="0,0,8,0">
-                                    <StackPanel>
-                                        <TextBlock Text="SUNUCU BAĞLANTISI" Style="{StaticResource Muted}" FontSize="10"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Ellipse.Fill></Ellipse>
-                                            <TextBlock Text="{Binding ConnStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14"/>
+                                <!-- İndirme Motoru -->
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="13,12" Margin="0,0,8,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="9" Background="#10241A" BorderBrush="#1B5E3A" BorderThickness="1" VerticalAlignment="Center" Margin="0,0,11,0">
+                                            <iconPacks:PackIconLucide Kind="Download" Width="16" Height="16" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="İNDİRME MOTORU" Style="{StaticResource Muted}" FontSize="9.5" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                <Ellipse Width="8" Height="8" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Effect><DropShadowEffect Color="#19C37D" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Ellipse.Effect></Ellipse>
+                                                <TextBlock Text="{Binding EngineStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="14"/>
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="6,0,0,2">
+                                            <Rectangle Width="3" Height="7" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="11" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="15" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                            <Rectangle Width="3" Height="19" Fill="#19C37D" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="12,12">
-                                    <StackPanel>
-                                        <TextBlock Text="ÇALIŞMA SÜRESİ" Style="{StaticResource Muted}" FontSize="10"/>
-                                        <TextBlock Text="{Binding UptimeText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="14" Margin="0,6,0,0"/>
-                                    </StackPanel>
+                                <!-- Sunucu Bağlantısı -->
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="13,12" Margin="0,0,8,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="9" Background="#0E1E2E" BorderThickness="1" VerticalAlignment="Center" Margin="0,0,11,0">
+                                            <Border.BorderBrush><SolidColorBrush Color="{Binding ConnStatusColor}" Opacity="0.5"/></Border.BorderBrush>
+                                            <iconPacks:PackIconLucide Kind="SatelliteDish" Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center"><iconPacks:PackIconLucide.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></iconPacks:PackIconLucide.Foreground></iconPacks:PackIconLucide>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="SUNUCU BAĞLANTISI" Style="{StaticResource Muted}" FontSize="9.5" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Ellipse.Fill><Ellipse.Effect><DropShadowEffect Color="#19C37D" BlurRadius="7" ShadowDepth="0" Opacity="0.85"/></Ellipse.Effect></Ellipse>
+                                                <TextBlock Text="{Binding ConnStatusText}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="14"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="6,0,0,2">
+                                            <Rectangle Width="3" Height="7" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"><Rectangle.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Rectangle.Fill></Rectangle>
+                                            <Rectangle Width="3" Height="11" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"><Rectangle.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Rectangle.Fill></Rectangle>
+                                            <Rectangle Width="3" Height="15" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"><Rectangle.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Rectangle.Fill></Rectangle>
+                                            <Rectangle Width="3" Height="19" RadiusX="1.5" RadiusY="1.5" Margin="1,0" VerticalAlignment="Bottom"><Rectangle.Fill><SolidColorBrush Color="{Binding ConnStatusColor}"/></Rectangle.Fill></Rectangle>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <!-- Çalışma Süresi -->
+                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="13,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="9" Background="#191428" BorderBrush="#332A52" BorderThickness="1" VerticalAlignment="Center" Margin="0,0,11,0">
+                                            <iconPacks:PackIconLucide Kind="Clock" Width="16" Height="16" Foreground="#A78BFA" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="ÇALIŞMA SÜRESİ" Style="{StaticResource Muted}" FontSize="9.5" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding UptimeText}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="14" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </Border>
                             </UniformGrid>
 
                             <!-- Senkronizasyon & Ag bilgileri + Son olaylar -->
-                            <Grid Margin="0,8,0,0">
+                            <Grid Grid.Row="4" Margin="0,8,0,0" VerticalAlignment="Top">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <Border Grid.Column="0" Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12" Margin="0,0,8,0">
                                     <StackPanel>
-                                        <TextBlock Text="Senkronizasyon &amp; Ağ" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8"/>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Sunucu" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ServerAddress}" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Bağlantı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ConnStatusText}"><TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></TextBlock.Foreground></TextBlock></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son senkronizasyon" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son kontrol" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastCheckTime}" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Tarama aralığı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding PollIntervalText}" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Heartbeat" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding HeartbeatText}" Foreground="{StaticResource FgPrimary}"/></Grid>
-                                        <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son hata" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastErrorText}" Foreground="{StaticResource FgPrimary}"/></Grid>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                            <Border Width="20" Height="20" CornerRadius="5" Background="#11283C" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="Globe" Width="11" Height="11" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                            <TextBlock Text="Senkronizasyon &amp; Ağ" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <!-- Sol kolon -->
+                                            <StackPanel Grid.Column="0">
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Sunucu" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ServerAddress}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/></Grid>
+                                                <Border Height="1" Background="#13202F" Margin="0,2"/>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Bağlantı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding ConnStatusText}" FontWeight="SemiBold"><TextBlock.Foreground><SolidColorBrush Color="{Binding ConnStatusColor}"/></TextBlock.Foreground></TextBlock></Grid>
+                                                <Border Height="1" Background="#13202F" Margin="0,2"/>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son senkronizasyon" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastSyncTime}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                                <Border Height="1" Background="#13202F" Margin="0,2"/>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son kontrol" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastCheckTime}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                            </StackPanel>
+                                            <!-- Sağ kolon -->
+                                            <StackPanel Grid.Column="2">
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Tarama aralığı" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding PollIntervalText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                                <Border Height="1" Background="#13202F" Margin="0,2"/>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Heartbeat" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding HeartbeatText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                                <Border Height="1" Background="#13202F" Margin="0,2"/>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son hata" Style="{StaticResource Muted}"/>
+                                                    <Border Grid.Column="1" CornerRadius="6" Padding="7,1" Background="#0C1726" BorderBrush="#1B5E3A" BorderThickness="1"><TextBlock Text="{Binding LastErrorText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="11"/></Border></Grid>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="12" Padding="14,12">
                                     <StackPanel>
-                                        <TextBlock Text="Son Olaylar" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8"/>
-                                        <Border Background="#070B14" CornerRadius="8" Height="96" Padding="8">
+                                        <Grid Margin="0,0,0,10">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="20" Height="20" CornerRadius="5" Background="#0B1B14" Margin="0,0,8,0"><iconPacks:PackIconLucide Kind="Terminal" Width="11" Height="11" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <TextBlock Text="Son Olaylar" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Ellipse Width="7" Height="7" Fill="{StaticResource StatusGreen}" HorizontalAlignment="Right" VerticalAlignment="Center"><Ellipse.Effect><DropShadowEffect Color="#19C37D" BlurRadius="7" ShadowDepth="0" Opacity="0.9"/></Ellipse.Effect></Ellipse>
+                                        </Grid>
+                                        <Border Background="#060A12" CornerRadius="8" Height="92" Padding="11,9" BorderBrush="#0E2118" BorderThickness="1">
                                             <ItemsControl ItemsSource="{Binding ConsoleLines}">
                                                 <ItemsControl.Template>
                                                     <ControlTemplate>
@@ -651,7 +967,9 @@
                                                 </ItemsControl.Template>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <TextBlock Text="{Binding}" Foreground="#86EFAC" FontFamily="Consolas" FontSize="11.5" TextWrapping="Wrap" Margin="0,1"/>
+                                                        <TextBlock Text="{Binding}" Foreground="#86EFAC" FontFamily="Consolas" FontSize="11.5" TextWrapping="Wrap" Margin="0,1.5">
+                                                            <TextBlock.Effect><DropShadowEffect Color="#22C55E" BlurRadius="5" ShadowDepth="0" Opacity="0.35"/></TextBlock.Effect>
+                                                        </TextBlock>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
@@ -659,116 +977,158 @@
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=raporlar}">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0,0,0,2">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="Raporlar — Operasyonel Özet" Style="{StaticResource CardTitle}"/>
-                                <Button Grid.Column="1" Content="🔄 Yenile" Style="{StaticResource GhostButton}" Padding="14,6" Command="{Binding RefreshCommand}"/>
+                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Padding="15,7" Command="{Binding RefreshCommand}">
+                                    <StackPanel Orientation="Horizontal"><TextBlock Text="🔄" FontSize="12.5" Margin="0,0,7,0"/><TextBlock Text="Yenile" FontWeight="SemiBold"/></StackPanel>
+                                </Button>
                             </Grid>
 
-                            <!-- Özet istatistik kartları -->
-                            <UniformGrid Columns="4" Margin="0,6,0,16">
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,8,0">
+                            <!-- Özet istatistik kartları (gradyan, premium) -->
+                            <UniformGrid Grid.Row="1" Columns="4" Margin="0,6,0,16">
+                                <Border CornerRadius="12" Padding="15,13" Margin="0,0,11,0" BorderThickness="1">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#17243C" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.BorderBrush><SolidColorBrush Color="#27344C"/></Border.BorderBrush>
                                     <StackPanel>
-                                        <TextBlock Text="TOPLAM İNDİRİLEN" Style="{StaticResource Muted}" FontSize="10.5"/>
-                                        <TextBlock Margin="0,4,0,0"><Run Text="{Binding ReportTotalFiles}" Foreground="{StaticResource FgPrimary}" FontSize="22" FontWeight="Bold"/><Run Text=" dosya" Foreground="{StaticResource FgMuted}" FontSize="12"/></TextBlock>
-                                        <TextBlock Text="{Binding ReportTotalSize}" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="TOPLAM İNDİRİLEN" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock Margin="0,6,0,0"><Run Text="{Binding ReportTotalFiles}" Foreground="{StaticResource FgPrimary}" FontSize="23" FontWeight="Bold"/><Run Text=" dosya" Foreground="{StaticResource FgMuted}" FontSize="12"/></TextBlock>
+                                        <TextBlock Text="{Binding ReportTotalSize}" Style="{StaticResource Muted}" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,8,0">
+                                <Border CornerRadius="12" Padding="15,13" Margin="0,0,11,0" BorderThickness="1">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#13261D" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.BorderBrush><SolidColorBrush Color="#1F3A2C"/></Border.BorderBrush>
                                     <StackPanel>
-                                        <TextBlock Text="BUGÜN İNDİRİLEN" Style="{StaticResource Muted}" FontSize="10.5"/>
-                                        <TextBlock Margin="0,4,0,0"><Run Text="{Binding ReportTodayFiles}" Foreground="{StaticResource StatusGreen}" FontSize="22" FontWeight="Bold"/><Run Text=" dosya" Foreground="{StaticResource FgMuted}" FontSize="12"/></TextBlock>
-                                        <TextBlock Text="{Binding ReportTodaySize}" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="BUGÜN İNDİRİLEN" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock Margin="0,6,0,0"><Run Text="{Binding ReportTodayFiles}" Foreground="{StaticResource StatusGreen}" FontSize="23" FontWeight="Bold"/><Run Text=" dosya" Foreground="{StaticResource FgMuted}" FontSize="12"/></TextBlock>
+                                        <TextBlock Text="{Binding ReportTodaySize}" Style="{StaticResource Muted}" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,8,0">
+                                <Border CornerRadius="12" Padding="15,13" Margin="0,0,11,0" BorderThickness="1">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#17243C" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.BorderBrush><SolidColorBrush Color="#27344C"/></Border.BorderBrush>
                                     <StackPanel>
-                                        <TextBlock Text="HAZIR YAYIN KUŞAĞI" Style="{StaticResource Muted}" FontSize="10.5"/>
-                                        <TextBlock Text="{Binding ReportSlotsReady}" Foreground="{StaticResource FgPrimary}" FontSize="22" FontWeight="Bold" Margin="0,4,0,0"/>
-                                        <TextBlock Text="hazır / toplam" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="HAZIR YAYIN KUŞAĞI" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding ReportSlotsReady}" Foreground="{StaticResource FgPrimary}" FontSize="23" FontWeight="Bold" Margin="0,6,0,0"/>
+                                        <TextBlock Text="hazır / toplam" Style="{StaticResource Muted}" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                                <Border CornerRadius="12" Padding="15,13" BorderThickness="1">
+                                    <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#17243C" Offset="0"/><GradientStop Color="#0E1626" Offset="1"/></LinearGradientBrush></Border.Background>
+                                    <Border.BorderBrush><SolidColorBrush Color="#27344C"/></Border.BorderBrush>
                                     <StackPanel>
-                                        <TextBlock Text="SON SENKRONİZASYON" Style="{StaticResource Muted}" FontSize="10.5"/>
-                                        <TextBlock Text="{Binding ReportLastSync}" Foreground="{StaticResource FgPrimary}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                        <TextBlock Text="SON SENKRONİZASYON" Foreground="{StaticResource FgMuted}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding ReportLastSync}" Foreground="{StaticResource FgPrimary}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,7,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </UniformGrid>
 
                             <!-- Yayın Kuşağı Durumu -->
-                            <TextBlock Text="Yayın Kuşağı Durumu" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13.5" Margin="0,0,0,6"/>
-                            <ItemsControl ItemsSource="{Binding Slots}" Margin="0,0,0,16">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Time}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <StackPanel Grid.Row="2" Margin="0,0,0,14">
+                                <TextBlock Text="YAYIN KUŞAĞI DURUMU" Foreground="{StaticResource FgMuted}" FontWeight="Bold" FontSize="11" Margin="0,0,0,7"/>
+                                <Border CornerRadius="10" BorderThickness="1" Padding="14,6">
+                                    <Border.Background><SolidColorBrush Color="#0E1626"/></Border.Background>
+                                    <Border.BorderBrush><SolidColorBrush Color="#1E293B"/></Border.BorderBrush>
+                                    <ItemsControl ItemsSource="{Binding Slots}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="64"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Time}" Foreground="{StaticResource FgMuted}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource FgPrimary}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <Border Grid.Column="2" CornerRadius="6" Padding="9,2.5" VerticalAlignment="Center" Background="#16202F">
+                                                        <TextBlock Text="{Binding StatusText}" FontWeight="Bold" FontSize="10"><TextBlock.Foreground><SolidColorBrush Color="{Binding StatusColor}"/></TextBlock.Foreground></TextBlock>
+                                                    </Border>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </StackPanel>
 
-                            <!-- İndirilen Dosyalar (detaylı) -->
-                            <TextBlock Text="İndirilen Dosyalar (Detaylı)" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13.5" Margin="0,0,0,6"/>
-                            <Grid Margin="0,0,0,4">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <TextBlock Text="Dosya" Style="{StaticResource Muted}" FontSize="11"/>
-                                <TextBlock Grid.Column="1" Text="Boyut" Style="{StaticResource Muted}" FontSize="11"/>
-                                <TextBlock Grid.Column="2" Text="Tarih" Style="{StaticResource Muted}" FontSize="11"/>
-                                <TextBlock Grid.Column="3" Text="Durum" Style="{StaticResource Muted}" FontSize="11"/>
-                            </Grid>
-                            <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,0,0,2"/>
-                            <Grid MinHeight="230">
-                            <ItemsControl ItemsSource="{Binding RecentDownloads}" VerticalAlignment="Top">
-                                <ItemsControl.Template>
-                                    <ControlTemplate>
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="320"><ItemsPresenter/></ScrollViewer>
-                                    </ControlTemplate>
-                                </ItemsControl.Template>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Icon}" Margin="0,0,6,0"/>
-                                                <TextBlock Text="{Binding FileName}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding Size}" Style="{StaticResource Muted}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding Date}" Style="{StaticResource Muted}"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding StatusText}" Foreground="{StaticResource StatusGreen}" FontSize="12.5"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <StackPanel.Style>
-                                        <Style TargetType="StackPanel">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RecentDownloads.Count}" Value="0">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </StackPanel.Style>
-                                    <TextBlock Text="📭" FontSize="30" HorizontalAlignment="Center" Opacity="0.5"/>
-                                    <TextBlock Text="Henüz dosya indirilmedi" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                                    <TextBlock Text="İlk senkronizasyonda indirilen dosyalar burada listelenir." Foreground="{StaticResource FgDim}" FontSize="11.5" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                                </StackPanel>
+                            <!-- İndirilen Dosyalar (alanı doldurur) -->
+                            <Grid Grid.Row="3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="İNDİRİLEN DOSYALAR" Foreground="{StaticResource FgMuted}" FontWeight="Bold" FontSize="11" Margin="0,0,0,7"/>
+                                <Grid Grid.Row="1" Margin="2,0,2,5">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Dosya" Style="{StaticResource Muted}" FontSize="10.5"/>
+                                    <TextBlock Grid.Column="1" Text="Boyut" Style="{StaticResource Muted}" FontSize="10.5"/>
+                                    <TextBlock Grid.Column="2" Text="Tarih" Style="{StaticResource Muted}" FontSize="10.5"/>
+                                    <TextBlock Grid.Column="3" Text="Durum" Style="{StaticResource Muted}" FontSize="10.5"/>
+                                </Grid>
+                                <Border Grid.Row="2" Background="{StaticResource BorderColor}" Height="1"/>
+                                <Grid Grid.Row="3">
+                                    <ItemsControl ItemsSource="{Binding RecentDownloads}" VerticalAlignment="Top" Margin="2,2,2,0">
+                                        <ItemsControl.Template>
+                                            <ControlTemplate>
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
+                                            </ControlTemplate>
+                                        </ItemsControl.Template>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding FileName}" Foreground="{StaticResource FgPrimary}" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Size}" Style="{StaticResource Muted}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Date}" Style="{StaticResource Muted}"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding StatusText}" Foreground="{StaticResource StatusGreen}" FontSize="12.5"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <!-- Premium empty state — alanı doldurur, merkezde -->
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RecentDownloads.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Border Width="66" Height="66" CornerRadius="33" HorizontalAlignment="Center" Background="#13203A" BorderBrush="#243149" BorderThickness="1">
+                                            <TextBlock Text="📭" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9"/>
+                                        </Border>
+                                        <TextBlock Text="Henüz dosya indirilmedi" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13.5" HorizontalAlignment="Center" Margin="0,14,0,0"/>
+                                        <TextBlock Text="İlk senkronizasyonda indirilen dosyalar burada listelenir." Foreground="{StaticResource FgDim}" FontSize="11.5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
 
-                            <Button Content="🛠 Teknik Günlükler (Sorun Giderme)" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,16,0,0" Padding="14,8" Click="OnLogs"/>
-                        </StackPanel>
+                            <Button Grid.Row="4" Content="🛠 Teknik Günlükler (Sorun Giderme)" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,14,0,0" Padding="15,9" Click="OnLogs"/>
+                        </Grid>
                     </Border>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=ayarlar}">
-                        <StackPanel DataContext="{Binding SettingsVm}">
+                        <Grid DataContext="{Binding SettingsVm}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0">
                             <TextBlock Text="Ayarlar" Style="{StaticResource CardTitle}"/>
                             <TextBlock Text="İçerik klasörleri — her tür kendi klasörüne indirilir. Klasör seçmek için 📁 simgesini kullanın." Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
 
@@ -863,24 +1223,33 @@
                                     </Grid>
                                 </StackPanel>
                             </UniformGrid>
+                            </StackPanel>
 
-                            <!-- Senkronizasyon ayarlari + Kaydet -->
-                            <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,4,0,14"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Tarama aralığı (sn):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34" Width="80"><TextBox Text="{Binding PollIntervalSeconds}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12.5"/></Border>
-                                </StackPanel>
-                                <CheckBox Grid.Column="1" Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}" IsChecked="{Binding AutoStartWithWindows}" VerticalAlignment="Center" Margin="22,0,0,0"/>
-                                <Button Grid.Column="2" Content="Kaydet" Style="{StaticResource PrimaryButton}" Padding="26,9" Command="{Binding SaveCommand}"/>
-                            </Grid>
-                        </StackPanel>
+                            <!-- Genel ayarlar + Kaydet — panelin alt aksiyon bandı -->
+                            <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
+                                <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,0,0,16"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Tarama aralığı (sn):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="7" Height="34" Width="80"><TextBox Text="{Binding PollIntervalSeconds}" BorderThickness="0" Background="Transparent" Foreground="{StaticResource FgPrimary}" CaretBrush="{StaticResource FgPrimary}" VerticalContentAlignment="Center" Padding="9,0" FontSize="12.5"/></Border>
+                                    </StackPanel>
+                                    <CheckBox Grid.Column="1" Content="Windows ile birlikte başlat" Foreground="{StaticResource FgPrimary}" IsChecked="{Binding AutoStartWithWindows}" VerticalAlignment="Center" Margin="22,0,0,0"/>
+                                    <Button Grid.Column="2" Content="💾 Kaydet" Style="{StaticResource PrimaryButton}" Padding="30,10" Command="{Binding SaveCommand}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- ====== DESTEK ====== -->
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=destek}">
-                        <StackPanel DataContext="{Binding SupportVm}" MaxWidth="760" HorizontalAlignment="Left">
+                        <Grid DataContext="{Binding SupportVm}" MaxWidth="1040" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Sol kolon: Form -->
+                            <StackPanel Grid.Column="0" Margin="0,0,20,0">
                             <TextBlock Text="Destek Talebi" Style="{StaticResource CardTitle}"/>
                             <TextBlock Text="Bir sorununuz mu var? Aşağıdaki formu doldurun; ekibimiz en kısa sürede sizinle iletişime geçecektir." Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
 
@@ -953,22 +1322,251 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                        </StackPanel>
+                            </StackPanel>
+
+                            <!-- Sağ kolon: Destek Süreci + bilgi notları -->
+                            <Border Grid.Column="1" CornerRadius="14" Padding="20,20" BorderThickness="1" VerticalAlignment="Stretch">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0.4,1">
+                                        <GradientStop Color="#13203A" Offset="0"/>
+                                        <GradientStop Color="#0C1322" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Border.BorderBrush><SolidColorBrush Color="#243149"/></Border.BorderBrush>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="🛟 DESTEK SÜRECİ" Foreground="{StaticResource FgMuted}" FontWeight="Bold" FontSize="11" Margin="0,0,0,18"/>
+
+                                    <Grid Margin="0,0,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Border Width="30" Height="30" CornerRadius="15" Background="#1E2B45" BorderBrush="{StaticResource BrandRed}" BorderThickness="1.3" VerticalAlignment="Top"><TextBlock Text="1" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="13,0,0,0"><TextBlock Text="Talebinizi gönderin" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="Formu doldurup gönderin; radyo bilgileriniz otomatik eklenir." Foreground="{StaticResource FgMuted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"/></StackPanel>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Border Width="30" Height="30" CornerRadius="15" Background="#1E2B45" BorderBrush="#3A4A66" BorderThickness="1.3" VerticalAlignment="Top"><TextBlock Text="2" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="13,0,0,0"><TextBlock Text="Ekibimiz incelesin" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="Destek ekibimiz talebinizi değerlendirir." Foreground="{StaticResource FgMuted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"/></StackPanel>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Border Width="30" Height="30" CornerRadius="15" Background="#1E2B45" BorderBrush="#3A4A66" BorderThickness="1.3" VerticalAlignment="Top"><TextBlock Text="3" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="13,0,0,0"><TextBlock Text="Sizinle iletişime geçilsin" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="Verdiğiniz telefon/e-posta üzerinden dönüş yapılır." Foreground="{StaticResource FgMuted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"/></StackPanel>
+                                    </Grid>
+
+                                    <Border Background="{StaticResource BorderColor}" Height="1" Margin="0,18,0,14"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="⏱" FontSize="13" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Ortalama yanıt süresi: 1 iş günü" Foreground="{StaticResource FgMuted}" FontSize="11.5" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🔒" FontSize="13" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Bilgileriniz yalnızca destek amacıyla kullanılır" Foreground="{StaticResource FgMuted}" FontSize="11.5" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </Border>
 
-                    <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=guncelleme}">
-                        <StackPanel>
-                            <TextBlock Text="Güncellemeler" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="Mevcut sürüm: 1.0.0.0" Style="{StaticResource Muted}"/>
-                            <TextBlock Text="Otomatik güncelleme etkin." Style="{StaticResource Muted}" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <Grid Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=guncelleme}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Başlık şeridi -->
+                        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="44" Height="44" CornerRadius="11" Background="#10241A" BorderBrush="#1B5E3A" BorderThickness="1" Margin="0,0,14,0">
+                                    <iconPacks:PackIconLucide Kind="RefreshCw" Width="20" Height="20" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Güncellemeler" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Text="Sistem güncel ve otomatik güncelleme etkin" Style="{StaticResource Muted}" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Border Grid.Column="2" CornerRadius="10" Padding="14,7" VerticalAlignment="Center" Background="#10311F" BorderBrush="#1B7A4E" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconLucide Kind="ShieldCheck" Width="18" Height="18" Foreground="{StaticResource StatusGreen}" VerticalAlignment="Center"/>
+                                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding UpdateStatusText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="12.5"/>
+                                            <TextBlock Text="{Binding UpdateStatusDetail}" Style="{StaticResource Muted}" FontSize="10.5"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- 1. sıra: Sürüm Durumu + Otomatik Güncelleme -->
+                        <Grid Grid.Row="1" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="1.3*"/></Grid.ColumnDefinitions>
+
+                            <!-- Sürüm Durumu -->
+                            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
+                                <Grid>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="SÜRÜM DURUMU" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" Margin="0,0,0,6"/>
+                                    <Grid Grid.Row="1" VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding AppVersion}" Foreground="{StaticResource FgPrimary}" FontWeight="Bold" FontSize="34"/>
+                                            <TextBlock Text="Mevcut sürüm" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                            <TextBlock Margin="0,14,0,0"><Run Text="Son kontrol: " Foreground="{StaticResource FgMuted}" FontSize="11.5"/><Run Text="{Binding LastUpdateCheckShort}" Foreground="{StaticResource StatusGreen}" FontWeight="SemiBold" FontSize="11.5"/></TextBlock>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" Width="148" Height="148">
+                                            <ctl:DonutProgress Percent="{Binding UpdateReadinessPercent}" HideValue="True">
+                                                <ctl:DonutProgress.RingColor><SolidColorBrush Color="#19C37D"/></ctl:DonutProgress.RingColor>
+                                            </ctl:DonutProgress>
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <iconPacks:PackIconLucide Kind="ShieldCheck" Width="34" Height="34" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center">
+                                                    <iconPacks:PackIconLucide.Effect><DropShadowEffect Color="#19C37D" BlurRadius="12" ShadowDepth="0" Opacity="0.6"/></iconPacks:PackIconLucide.Effect>
+                                                </iconPacks:PackIconLucide>
+                                                <TextBlock Text="{Binding UpdateStatusText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                    <Button Grid.Row="2" Style="{StaticResource GhostButton}" Margin="0,14,0,0" Command="{Binding CheckUpdateCommand}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconLucide Kind="RotateCw" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Güncellemeyi Kontrol Et" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Otomatik Güncelleme -->
+                            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="OTOMATİK GÜNCELLEME" Style="{StaticResource Muted}" FontWeight="Bold" FontSize="11" Margin="0,0,0,10"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Otomatik güncelleme" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="13.5"/>
+                                            <TextBlock Text="Yeni güncellemeler otomatik olarak indirilir ve yüklenir." Style="{StaticResource Muted}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <ToggleButton Style="{StaticResource ToggleSwitch}" IsChecked="{Binding AutoUpdateEnabled}"/>
+                                            <TextBlock Text="Etkin" Foreground="{StaticResource StatusGreen}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Border Height="1" Background="#16243A" Margin="0,12"/>
+
+                                    <!-- Ayar satırları -->
+                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <iconPacks:PackIconLucide Style="{StaticResource MetricIcon}" Kind="GitBranch" Margin="0,0,9,0"/>
+                                        <TextBlock Grid.Column="1" Text="Güncelleme kanalı" Foreground="{StaticResource FgPrimary}" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding UpdateChannel}" Foreground="{StaticResource FgMuted}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <iconPacks:PackIconLucide Grid.Column="3" Kind="ChevronDown" Width="13" Height="13" Foreground="{StaticResource FgDim}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <iconPacks:PackIconLucide Style="{StaticResource MetricIcon}" Kind="Wifi" Margin="0,0,9,0"/>
+                                        <TextBlock Grid.Column="1" Text="İndirme politikası" Foreground="{StaticResource FgPrimary}" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding DownloadPolicy}" Foreground="{StaticResource FgMuted}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <iconPacks:PackIconLucide Grid.Column="3" Kind="ChevronDown" Width="13" Height="13" Foreground="{StaticResource FgDim}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <iconPacks:PackIconLucide Style="{StaticResource MetricIcon}" Kind="Calendar" Margin="0,0,9,0"/>
+                                        <TextBlock Grid.Column="1" Text="Güncelleme zamanlaması" Foreground="{StaticResource FgPrimary}" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding UpdateSchedule}" Foreground="{StaticResource FgMuted}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <iconPacks:PackIconLucide Grid.Column="3" Kind="ChevronDown" Width="13" Height="13" Foreground="{StaticResource FgDim}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+
+                                    <Border Height="1" Background="#16243A" Margin="0,10"/>
+
+                                    <!-- Bilgi satırları -->
+                                    <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son güncelleme kontrolü" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastUpdateCheckText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                    <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son başarılı güncelleme" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastSuccessfulUpdateText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                    <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Son güncelleme sonucu" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding LastUpdateResultText}" Foreground="{StaticResource StatusGreen}" FontWeight="Bold"/></Grid>
+                                    <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Sonraki kontrol" Style="{StaticResource Muted}"/><TextBlock Grid.Column="1" Text="{Binding NextUpdateCheckText}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold"/></Grid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- 2. sıra: Güncelleme Geçmişi + Sürüm Notları -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+                            <!-- Güncelleme Geçmişi -->
+                            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
+                                <Grid>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="History"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="GÜNCELLEME GEÇMİŞİ"/>
+                                    </StackPanel>
+                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding UpdateHistory}" VerticalAlignment="Top">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,5">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <Border Width="22" Height="22" CornerRadius="11" Margin="0,0,11,0" VerticalAlignment="Center" BorderThickness="1">
+                                                        <Border.Background><SolidColorBrush Color="{Binding Color}" Opacity="0.16"/></Border.Background>
+                                                        <Border.BorderBrush><SolidColorBrush Color="{Binding Color}" Opacity="0.5"/></Border.BorderBrush>
+                                                        <iconPacks:PackIconLucide Kind="Check" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"><iconPacks:PackIconLucide.Foreground><SolidColorBrush Color="{Binding Color}"/></iconPacks:PackIconLucide.Foreground></iconPacks:PackIconLucide>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,8,0">
+                                                        <iconPacks:PackIconLucide Kind="Calendar" Width="11" Height="11" Foreground="{StaticResource FgDim}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                        <TextBlock Text="{Binding Time}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="3" CornerRadius="6" Padding="8,2" VerticalAlignment="Center" BorderThickness="1">
+                                                        <Border.Background><SolidColorBrush Color="{Binding Color}" Opacity="0.12"/></Border.Background>
+                                                        <Border.BorderBrush><SolidColorBrush Color="{Binding Color}" Opacity="0.4"/></Border.BorderBrush>
+                                                        <TextBlock Text="{Binding Mark}" FontSize="10.5" FontWeight="Bold"><TextBlock.Foreground><SolidColorBrush Color="{Binding Color}"/></TextBlock.Foreground></TextBlock>
+                                                    </Border>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Button Grid.Row="2" Style="{StaticResource GhostButton}" Margin="0,10,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconLucide Kind="History" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Tüm geçmişi görüntüle" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Sürüm Notları -->
+                            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                        <iconPacks:PackIconLucide Style="{StaticResource CardHeaderIcon}" Kind="FileText"/>
+                                        <TextBlock Style="{StaticResource CardTitleInline}" Text="SÜRÜM NOTLARI"/>
+                                    </StackPanel>
+                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding ReleaseNotes}" VerticalAlignment="Top">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,6">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Border Width="22" Height="22" CornerRadius="11" Margin="0,1,11,0" VerticalAlignment="Top" Background="#10241A" BorderBrush="#1B5E3A" BorderThickness="1">
+                                                        <iconPacks:PackIconLucide Kind="Check" Width="12" Height="12" Foreground="{StaticResource StatusGreen}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource FgPrimary}" FontWeight="SemiBold" FontSize="12.5"/>
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Button Grid.Row="2" Style="{StaticResource GhostButton}" Margin="0,10,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconLucide Kind="FileText" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Detayları görüntüle" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
 
                     <Border Style="{StaticResource Card}" Visibility="{Binding SelectedSection, Converter={StaticResource SectionToVis}, ConverterParameter=hakkinda}">
-                        <StackPanel HorizontalAlignment="Center" MaxWidth="680" Margin="0,8,0,8">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="700" Margin="0,8,0,8">
                             <!-- Logo -->
                             <Image Source="/AdCastPro.SyncClient;component/Assets/adcastpro-logo.png"
-                                   Stretch="Uniform" MaxHeight="110" HorizontalAlignment="Center" Margin="0,0,0,4"
+                                   Stretch="Uniform" MaxHeight="126" HorizontalAlignment="Center" Margin="0,0,0,6"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="Yayın Senkronizasyon İstemcisi" Style="{StaticResource Muted}" HorizontalAlignment="Center" FontSize="13"/>
                             <TextBlock Text="Planla. Yayınla. Raporla." Foreground="{StaticResource BrandRed}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="13"/>
@@ -1029,8 +1627,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Grid>
 
             <!-- Footer -->

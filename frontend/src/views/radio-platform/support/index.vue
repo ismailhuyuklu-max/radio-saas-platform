@@ -1,16 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 
-import {
-  Button,
-  Drawer,
-  Input,
-  Select,
-  Table,
-  Tag,
-  Textarea,
-  message,
-} from 'ant-design-vue';
+import { Button, Input, Modal, Select, message } from 'ant-design-vue';
 
 import {
   getSupportRequest,
@@ -25,13 +16,20 @@ const STATUS_TONE: Record<SupportStatus, string> = {
   new: 'blue',
   in_progress: 'orange',
   resolved: 'green',
-  closed: 'default',
+  closed: 'muted',
 };
 
 const statusOptions = (Object.keys(SUPPORT_STATUS_LABELS) as SupportStatus[]).map((s) => ({
   label: SUPPORT_STATUS_LABELS[s],
   value: s,
 }));
+
+function toneOf(s: string): string {
+  return STATUS_TONE[s as SupportStatus] ?? 'muted';
+}
+function labelOf(s: string): string {
+  return SUPPORT_STATUS_LABELS[s as SupportStatus] ?? s;
+}
 
 const loading = ref(false);
 const rows = ref<SupportTicket[]>([]);
@@ -62,28 +60,8 @@ function fmtDate(iso: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('tr-TR');
 }
 
-const columns: any[] = [
-  { title: 'Tarih', key: 'created_at', width: 150 },
-  { title: 'Radyo Adı', key: 'radio_name', width: 150 },
-  { title: 'Frekans', key: 'frequency', width: 90 },
-  { title: 'Bölge', key: 'region', width: 110 },
-  { title: 'İl', key: 'city', width: 100 },
-  { title: 'Ad Soyad', key: 'full_name', width: 150 },
-  { title: 'Telefon', key: 'phone', width: 130 },
-  { title: 'E-posta', key: 'email', width: 180 },
-  { title: 'Durum', key: 'status', width: 130 },
-  { title: 'İşlem', key: 'action', width: 100, fixed: 'right' },
-];
-
-function toneOf(s: string): string {
-  return STATUS_TONE[s as SupportStatus] ?? 'default';
-}
-function labelOf(s: string): string {
-  return SUPPORT_STATUS_LABELS[s as SupportStatus] ?? s;
-}
-
-// ---- Detay ----
-const drawerOpen = ref(false);
+// ---- Detay (Modal) ----
+const detailOpen = ref(false);
 const saving = ref(false);
 const detail = reactive<{ ticket: SupportTicket | null; status: SupportStatus; note: string }>({
   ticket: null,
@@ -91,16 +69,21 @@ const detail = reactive<{ ticket: SupportTicket | null; status: SupportStatus; n
   note: '',
 });
 
-async function openDetail(row: any) {
-  drawerOpen.value = true;
+async function openDetail(row: SupportTicket) {
+  detail.ticket = row;
+  detail.status = row.status;
+  detail.note = row.admin_note ?? '';
+  detailOpen.value = true;
   try {
     const fresh = await getSupportRequest(row.id);
-    detail.ticket = fresh ?? row;
+    if (fresh) {
+      detail.ticket = fresh;
+      detail.status = fresh.status;
+      detail.note = fresh.admin_note ?? '';
+    }
   } catch {
-    detail.ticket = row;
+    // satırdaki veriyle devam
   }
-  detail.status = detail.ticket?.status ?? 'new';
-  detail.note = detail.ticket?.admin_note ?? '';
 }
 
 async function saveDetail() {
@@ -112,10 +95,11 @@ async function saveDetail() {
       admin_note: detail.note,
     });
     message.success('Talep güncellendi.');
-    detail.ticket = updated ?? detail.ticket;
-    // listeyi yansit
-    const idx = rows.value.findIndex((r) => r.id === detail.ticket?.id);
-    if (idx >= 0 && detail.ticket) rows.value[idx] = { ...rows.value[idx], ...detail.ticket };
+    if (updated) {
+      const idx = rows.value.findIndex((r) => r.id === updated.id);
+      if (idx >= 0) rows.value[idx] = updated;
+    }
+    detailOpen.value = false;
   } catch (error) {
     console.error(error);
     message.error('Talep güncellenemedi.');
@@ -161,39 +145,38 @@ const counts = computed(() => {
         allow-clear
         @press-enter="load"
       />
-      <Button @click="load">Ara</Button>
+      <Button :loading="loading" @click="load">Ara</Button>
     </div>
 
-    <Table
-      :columns="columns"
-      :data-source="rows"
-      :loading="loading"
-      :pagination="{ pageSize: 20, showSizeChanger: false }"
-      row-key="id"
-      size="middle"
-      :scroll="{ x: 1280 }"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'created_at'">{{ fmtDate(record.created_at) }}</template>
-        <template v-else-if="column.key === 'radio_name'">{{ record.radio_name || '—' }}</template>
-        <template v-else-if="column.key === 'frequency'">{{ record.frequency || '—' }}</template>
-        <template v-else-if="column.key === 'region'">{{ record.region || '—' }}</template>
-        <template v-else-if="column.key === 'city'">{{ record.city || '—' }}</template>
-        <template v-else-if="column.key === 'status'">
-          <Tag :color="toneOf(record.status)">{{ labelOf(record.status) }}</Tag>
-        </template>
-        <template v-else-if="column.key === 'action'">
-          <Button type="link" size="small" @click="openDetail(record)">Detay</Button>
-        </template>
-      </template>
-    </Table>
+    <div class="sup__tablewrap">
+      <table class="sup__table">
+        <thead>
+          <tr>
+            <th>Tarih</th><th>Radyo Adı</th><th>Frekans</th><th>Bölge</th><th>İl</th>
+            <th>Ad Soyad</th><th>Telefon</th><th>E-posta</th><th>Durum</th><th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in rows" :key="r.id">
+            <td>{{ fmtDate(r.created_at) }}</td>
+            <td>{{ r.radio_name || '—' }}</td>
+            <td>{{ r.frequency || '—' }}</td>
+            <td>{{ r.region || '—' }}</td>
+            <td>{{ r.city || '—' }}</td>
+            <td>{{ r.full_name }}</td>
+            <td>{{ r.phone }}</td>
+            <td>{{ r.email }}</td>
+            <td><span class="sup__pill" :class="`sup__pill--${toneOf(r.status)}`">{{ labelOf(r.status) }}</span></td>
+            <td><button class="sup__link" type="button" @click="openDetail(r)">Detay</button></td>
+          </tr>
+          <tr v-if="!loading && rows.length === 0">
+            <td colspan="10" class="sup__empty">Henüz destek talebi yok.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <Drawer
-      v-model:open="drawerOpen"
-      title="Destek Talebi Detayı"
-      width="520"
-      :body-style="{ paddingBottom: '80px' }"
-    >
+    <Modal v-model:open="detailOpen" title="Destek Talebi Detayı" :footer="null" :width="560">
       <template v-if="detail.ticket">
         <section class="sup__card">
           <h3 class="sup__card-title">📻 Radyo Bilgileri</h3>
@@ -221,87 +204,60 @@ const counts = computed(() => {
           <label class="sup__label">Durum</label>
           <Select v-model:value="detail.status" :options="statusOptions" style="width: 100%" />
           <label class="sup__label" style="margin-top: 12px">Admin Notu</label>
-          <Textarea v-model:value="detail.note" :rows="4" placeholder="İç not (yayıncı görmez)" />
+          <textarea v-model="detail.note" class="sup__textarea" rows="4" placeholder="İç not (yayıncı görmez)"></textarea>
           <Button type="primary" :loading="saving" block style="margin-top: 16px" @click="saveDetail">
             Kaydet
           </Button>
         </section>
       </template>
-    </Drawer>
+    </Modal>
   </div>
 </template>
 
 <style scoped>
-.sup {
-  padding: 16px;
-}
+.sup { padding: 16px; }
 .sup__head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  justify-content: space-between; margin-bottom: 16px;
 }
-.sup__title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-}
-.sup__sub {
-  margin: 2px 0 0;
-  color: var(--c-text-3, #94a3b8);
-  font-size: 13px;
-}
-.sup__stats {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.sup__chip {
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
+.sup__title { margin: 0; font-size: 20px; font-weight: 800; }
+.sup__sub { margin: 2px 0 0; color: var(--c-text-3, #94a3b8); font-size: 13px; }
+.sup__stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.sup__chip { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .sup__chip--blue { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
 .sup__chip--orange { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 .sup__chip--green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-.sup__filters {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+.sup__filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.sup__tablewrap {
+  overflow-x: auto; border: 1px solid var(--c-line, #1e293b); border-radius: 12px;
 }
-.sup__card {
-  border: 1px solid var(--c-line, #1e293b);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 14px;
+.sup__table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+.sup__table th {
+  text-align: left; padding: 11px 12px; font-weight: 700; font-size: 12px;
+  color: var(--c-text-3, #94a3b8); border-bottom: 1px solid var(--c-line, #1e293b);
+  white-space: nowrap;
 }
-.sup__card-title {
-  margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 800;
+.sup__table td {
+  padding: 11px 12px; border-bottom: 1px solid var(--c-line, #1e293b);
+  color: var(--c-text, #e2e8f0); white-space: nowrap;
 }
-.sup__kv {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0;
-  font-size: 13px;
-}
+.sup__table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+.sup__empty { text-align: center; color: var(--c-text-3, #94a3b8); padding: 28px; }
+.sup__pill { padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.sup__pill--blue { background: rgba(37, 99, 235, 0.16); color: #60a5fa; }
+.sup__pill--orange { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+.sup__pill--green { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+.sup__pill--muted { background: rgba(148, 163, 184, 0.16); color: #94a3b8; }
+.sup__link { background: none; border: 0; color: #60a5fa; cursor: pointer; font-weight: 600; padding: 0; }
+.sup__card { border: 1px solid var(--c-line, #1e293b); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+.sup__card-title { margin: 0 0 10px; font-size: 13px; font-weight: 800; }
+.sup__kv { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 13px; }
 .sup__kv span { color: var(--c-text-3, #94a3b8); }
-.sup__msg {
-  margin: 0;
-  white-space: pre-wrap;
-  line-height: 1.6;
-  font-size: 14px;
-}
-.sup__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 12px;
-  color: var(--c-text-3, #94a3b8);
+.sup__msg { margin: 0; white-space: pre-wrap; line-height: 1.6; font-size: 14px; }
+.sup__label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--c-text-3, #94a3b8); }
+.sup__textarea {
+  width: 100%; background: var(--c-surface-2, #0b1220); color: var(--c-text, #e2e8f0);
+  border: 1px solid var(--c-line, #1e293b); border-radius: 8px; padding: 8px 10px;
+  font-family: inherit; font-size: 13px; resize: vertical;
 }
 </style>

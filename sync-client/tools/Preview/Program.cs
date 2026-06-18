@@ -44,6 +44,9 @@ internal static class Program
             w = 1200; h = 760;
         }
 
+        if (int.TryParse(Environment.GetEnvironmentVariable("PREVIEW_W"), out var ew) && ew > 0) w = ew;
+        if (int.TryParse(Environment.GetEnvironmentVariable("PREVIEW_H"), out var eh) && eh > 0) h = eh;
+
         win.WindowStartupLocation = WindowStartupLocation.Manual;
         win.Left = -10000;
         win.Top = -10000;
